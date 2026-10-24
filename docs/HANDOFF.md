@@ -42,6 +42,7 @@ src/app/core/auth.service.ts    login Google, comprobación de invitación, MODO
 src/app/core/guards.ts          allowedGuard, loginGuard
 src/app/core/prices.service.ts  carga /api/prices en un signal
 src/app/pages/login.page.ts     pantalla de login
+src/app/core/catalog.service.ts F2 paso 2: catálogo en memoria, búsqueda y filtros
 src/app/pages/home.page.ts      pantalla de COMPROBACIÓN (sustituir en F2)
 src/environments/firebase.config.ts   config web de Firebase (aún con REEMPLAZAR)
 netlify/functions/prices.mts    GET /api/prices
@@ -206,24 +207,40 @@ llega al corte y se quedan con todas las que pasen de 0,1. Esto es lo que hace q
 nuevo entre solo (sección 7). **Sin este filtro el mapeo se degrada mucho**: dejando pasar las
 expansiones de promos como candidatas, las bajas pasan de 6 a 24.
 
+**El mapeo se hace por grupos, no carta a carta.** Esto es lo más importante del algoritmo
+y el prototipo de F0 no lo hacía. Dentro de un set puede haber **varias cartas distintas con
+el mismo nombre exacto**: en Origins, Kai'Sa es la unidad `OGN-247`, la leyenda `OGN-299` y
+la leyenda firmada `OGN-299*`, y Cardmarket tiene un producto para cada una, los tres con el
+nombre `Kai'Sa, Daughter of the Void` (0,32 € · 95 € · 1.100 €). Decidiendo carta a carta,
+las tres se llevaban el producto más barato.
+
 1. Normalizar nombre: minúsculas, `' - '` → `', '`, quitar `(…)` y `Starter`, quitar puntuación excepto `,` y `/`.
-2. Candidatos = productos con el mismo nombre normalizado.
+2. Agrupar las cartas del catálogo por **set + nombre normalizado**. Candidatos = productos con ese mismo nombre.
 3. Sin candidatos → sin mapear (son tokens, que no se venden sueltos).
-4. Sufijo `-P` o "Promo" en el nombre → el más barato de su expansión; media si solo había uno, baja si había varios.
-5. Sufijo `A`/`B` o `alt: true` → la **segunda** variante más barata del set, confianza media.
-6. Sin sufijo:
-   - 1 producto en el set → confianza alta.
-   - varios → **el más barato** (normal + foil) es la base. Confianza alta si el siguiente cuesta ≥ 3×; si no, baja.
-   - 0 en el set y 1 en total → confianza media.
+4. Las promos de un set normal (`SFD-R03B`, Nexus Night) salen del grupo: no se venden en la expansión del set sino en las de promos, así que se les asigna el candidato más barato de **fuera** del set (media si solo había uno, baja si varios). En los sets que son de promos enteros (OPP, PR, JDG) no se separa nada: allí la promo es la carta normal.
+5. Ordenar las cartas del grupo de más barata a más cara (ver abajo) y los productos del set por precio, y **emparejarlos uno a uno en ese orden**.
+   - Si las dos listas miden lo mismo: alta si el grupo es de una sola carta o si cada escalón de precio multiplica por 3 o más al anterior; media si los precios están juntos.
+   - Si no cuadran: se empareja lo que se puede con confianza baja y el resto queda sin mapear.
 
-**Clave descubierta:** las variantes tienen **el mismo nombre exacto** y el orden de `idProduct` **no es fiable** (en las runas de Spiritforged está invertido respecto a Origins). La única señal útil es el precio: la base es la más barata. Ojo: Radiance y sets recién salidos tienen la versión normal sin `trend`; ordenar por normal + foil, no solo por normal.
+**Orden de las variantes** (`ordenVariante`): normal → alt art → Showcase → Signature, y dentro
+de cada nivel por número de colección. **Ordenar solo por número no vale**: las cartas
+especiales llevan numeración propia y empiezan otra vez por 1, así que `RAD-SP2` (la Showcase
+de Akali, 28,30 €) se colocaba antes que `RAD-015` (la Rare normal, 0,57 €) y se intercambiaban
+los precios.
 
-Resultado sobre **todo el catálogo** (1.638 cartas): 1.268 alta, 185 media, 110 baja, 75 sin mapear.
+**Clave descubierta:** las variantes tienen **el mismo nombre exacto** y el orden de `idProduct` **no es fiable** (en las runas de Spiritforged está invertido respecto a Origins). La única señal útil es el precio. Ojo: Radiance y sets recién salidos tienen la versión normal sin `trend`; ordenar por normal + foil, no solo por normal.
+
+Resultado sobre **todo el catálogo** (1.638 cartas): **1.301 alta, 141 media, 170 baja, 26 sin mapear**,
+y **cero colisiones** dentro de un mismo set (dos cartas del mismo set apuntando al mismo
+producto). Con el algoritmo carta a carta había 183 colisiones y 75 sin mapear, entre ellas las
+50 cartas **Signature**, que son las más caras del juego.
 
 Resultado con las 390 cartas de Fran (`npm run build:catalog -- --check`):
-**371 alta, 6 media, 6 baja, 2 sin mapear, 5 fuera del catálogo**. Reproduce las 371 altas del
-prototipo de F0. Valor ≈ 310 € (infravalorado: 14 cartas sin precio en Cardmarket todavía).
-Validado a mano: `SFD-198 Arise!` → `866945`, coincide con la web de Cardmarket.
+**365 alta, 15 media, 3 baja, 2 sin mapear, 5 fuera del catálogo**. Valor ≈ 310 €
+(infravalorado: 14 cartas sin precio en Cardmarket todavía). El producto elegido es **el mismo
+que daba el prototipo de F0 en las 385 cartas**; lo que cambia son 20 etiquetas de confianza,
+ahora más prudentes. Validado a mano: `SFD-198 Arise!` → `866945`, coincide con la web de
+Cardmarket, y `OGN-299*` → `847500`, la Kai'Sa firmada de 1.100 €.
 
 Consecuencia de diseño, **aceptada por el usuario**: los errores posibles son por construcción entre variantes de precio parecido, o sea baratos. No se pide revisión manual. En su lugar:
 - Mostrar confianza baja como "precio aproximado".
@@ -254,7 +271,7 @@ Mapeo validado contra el CSV real.
 
 ### F2 — Catálogo, buscador y colección ← SIGUIENTE
 1. ✅ `tools/build-catalog.mts`: RiftHunt + Cardmarket → `public/data/catalog.json` (1.638 cartas, 10 sets) + `mapping.json`. `npm run build:catalog -- --check` valida contra `collection1.csv` y da 371 altas, igual que F0.
-2. Servicio de catálogo: carga los JSON, índice por `cardId`, búsqueda por nombre y código.
+2. ✅ `src/app/core/catalog.service.ts`: carga los dos JSON una sola vez, índice por `cardId` (siempre en mayúsculas), `search()` por nombre o código con orden de relevancia, `filter()` por set, rareza, dominio y tipo, y signals `rarities/types/domains` sacados del propio catálogo para montar los filtros sin listas a mano. El service worker ya cachea `/data/*.json`.
 3. Servicio de colección sobre Firestore (y almacén falso en modo demo), con la misma interfaz.
 4. Al primer login, crear `users/{uid}` con nombre y email.
 5. Pantallas: catálogo con imágenes y filtros (set, rareza, dominio, tipo) · ficha de carta con precio normal/foil, confianza del mapeo y botón de corregir · "Mi colección" con valor total y aviso de cartas sin precio · +/− normal y foil con guardado inmediato y optimista.
