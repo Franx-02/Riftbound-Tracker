@@ -35,6 +35,8 @@ git push -u origin main
 Abre la URL, entra con Google. Deberías ver "Login e invitación: correctos" y el número de productos de Cardmarket. En el móvil, "Añadir a pantalla de inicio" instala la PWA.
 
 ## Desarrollo local
+Mientras `firebase.config.ts` siga con `REEMPLAZAR` y abras la app en localhost, arranca en **modo demo**: el login entra sin cuenta. Fuera de localhost nunca se activa.
+
 ```bash
 npm install
 npx netlify dev     # Angular + funciones en http://localhost:8888

@@ -62,3 +62,10 @@ button:disabled { opacity: 0.5; cursor: default; }
 .muted { color: var(--muted); }
 .ok { color: var(--ok); }
 .error { color: var(--error); }
+.demo {
+  font-size: 0.85rem;
+  color: var(--accent);
+  border: 1px dashed var(--accent);
+  border-radius: 8px;
+  padding: 6px 10px;
+}

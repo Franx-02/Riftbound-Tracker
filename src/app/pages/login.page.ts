@@ -21,6 +21,9 @@ import { AuthService } from '../core/auth.service';
         }
         @default {
           <p class="muted">Acceso solo por invitación.</p>
+          @if (auth.demo) {
+            <p class="demo">Modo demo: Firebase aún sin configurar. El botón entra sin cuenta.</p>
+          }
           <button (click)="signIn()" [disabled]="busy()">Entrar con Google</button>
         }
       }
