@@ -168,6 +168,65 @@ describe('CollectionService (modo demo)', () => {
     expect(col.uid()).toBeNull();
     expect(col.other('sans')).toBeUndefined();
   });
+
+  describe('importar', () => {
+    const guardado = () =>
+      JSON.parse(localStorage.getItem('riftbound-demo-collection-demo') ?? '{}') as Record<
+        string,
+        unknown
+      >;
+
+    beforeEach(async () => {
+      col.adjust('OGN-001', 'normal', 2);
+      col.adjust('OGN-089', 'foil', 1);
+      await col.flush();
+    });
+
+    it('sumar añade a lo que ya tienes y no toca lo demás', async () => {
+      const r = await col.importCollection(
+        new Map([
+          ['OGN-001', { normal: 1, foil: 1 }],
+          ['RAD-114', { normal: 3, foil: 0 }],
+        ]),
+        'sumar',
+      );
+      expect(col.qty('OGN-001')).toEqual({ normal: 3, foil: 1 });
+      expect(col.qty('OGN-089')).toEqual({ normal: 0, foil: 1 });
+      expect(col.qty('RAD-114')).toEqual({ normal: 3, foil: 0 });
+      expect(r).toEqual({ escritas: 2, borradas: 0 });
+      expect(Object.keys(guardado()).sort()).toEqual(['OGN-001', 'OGN-089', 'RAD-114']);
+    });
+
+    it('sustituir deja la colección exactamente como el fichero', async () => {
+      const r = await col.importCollection(
+        new Map([['RAD-114', { normal: 3, foil: 0 }]]),
+        'sustituir',
+      );
+      expect([...col.cards().keys()]).toEqual(['RAD-114']);
+      expect(r).toEqual({ escritas: 1, borradas: 2 });
+      expect(Object.keys(guardado())).toEqual(['RAD-114']);
+    });
+
+    it('solo escribe lo que cambia', async () => {
+      const r = await col.importCollection(
+        new Map([['OGN-001', { normal: 2, foil: 0 }]]),
+        'sustituir',
+      );
+      expect(r).toEqual({ escritas: 0, borradas: 1 });
+    });
+
+    it('el alias de DotGG se guarda y sobrevive a los +/−', async () => {
+      await col.importCollection(
+        new Map([['OPP-004', { normal: 2, foil: 0, alias: 'OGS-004-P' }]]),
+        'sumar',
+      );
+      col.adjust('OPP-004', 'normal', 1);
+      await col.flush();
+
+      expect(col.qty('OPP-004')).toEqual({ normal: 3, foil: 0, alias: 'OGS-004-P' });
+      expect(guardado()['OPP-004']).toEqual({ normal: 3, foil: 0, alias: 'OGS-004-P' });
+    });
+  });
 });
 
 describe('UsersService (modo demo)', () => {

@@ -56,19 +56,24 @@ interface Fila {
         @if (!propia()) {
           <span class="solo-lectura">solo lectura</span>
         }
-        @if (otros().length) {
-          <label class="selector">
-            <span class="muted">Ver</span>
-            <!-- [selected] por opción y no [value] en el select: los perfiles llegan después
-                 y un [value] aplicado antes de que exista la opción se pierde. -->
-            <select aria-label="Ver la colección de" (change)="cambiarDueno($event)">
-              <option value="" [selected]="propia()">Mi colección</option>
-              @for (p of otros(); track p.uid) {
-                <option [value]="p.uid" [selected]="p.uid === uid()">{{ p.displayName }}</option>
-              }
-            </select>
-          </label>
-        }
+        <div class="acciones">
+          @if (propia()) {
+            <a class="enlace-accion" routerLink="/importar">Importar / exportar</a>
+          }
+          @if (otros().length) {
+            <label class="selector">
+              <span class="muted">Ver</span>
+              <!-- [selected] por opción y no [value] en el select: los perfiles llegan después
+                   y un [value] aplicado antes de que exista la opción se pierde. -->
+              <select aria-label="Ver la colección de" (change)="cambiarDueno($event)">
+                <option value="" [selected]="propia()">Mi colección</option>
+                @for (p of otros(); track p.uid) {
+                  <option [value]="p.uid" [selected]="p.uid === uid()">{{ p.displayName }}</option>
+                }
+              </select>
+            </label>
+          }
+        </div>
       </header>
 
       @if (!catalog.loaded() || !fuente()) {
@@ -135,8 +140,14 @@ interface Fila {
           <section class="vacio">
             @if (propia()) {
               <h2>Aún no tienes cartas</h2>
-              <p class="muted">Búscalas en el catálogo y añádelas con el botón +.</p>
-              <a class="boton" routerLink="/catalogo">Ir al catálogo</a>
+              <p class="muted">
+                Búscalas en el catálogo y añádelas con el botón +, o importa la que tengas en
+                Riftbound.gg o Riftatlas.
+              </p>
+              <div class="botones-vacio">
+                <a class="boton" routerLink="/catalogo">Ir al catálogo</a>
+                <a class="boton secundario" routerLink="/importar">Importar CSV</a>
+              </div>
             } @else {
               <h2>{{ nombreDueno() }} aún no tiene cartas</h2>
             }
@@ -248,12 +259,32 @@ interface Fila {
       border-radius: 999px;
       padding: 1px 8px;
     }
-    .selector {
+    .acciones {
       margin-left: auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px 16px;
+    }
+    .enlace-accion {
+      font-size: 0.9rem;
+    }
+    .selector {
       display: flex;
       align-items: center;
       gap: 8px;
       font-size: 0.9rem;
+    }
+    .botones-vacio {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+    }
+    .boton.secundario {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
     }
     .resumen {
       display: grid;

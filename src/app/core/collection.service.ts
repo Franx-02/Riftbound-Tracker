@@ -1,5 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { collection, deleteDoc, doc, getDocs, setDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDocs, setDoc, writeBatch } from 'firebase/firestore';
 import { AuthService } from './auth.service';
 import { DEMO, escribirDemo, leerDemo } from './demo';
 import { db } from './firebase';
@@ -8,12 +8,24 @@ import { db } from './firebase';
 export interface CardQty {
   normal: number;
   foil: number;
+  /**
+   * Id original de DotGG cuando, al importar, la carta se enlazó con otra del catálogo
+   * (`OGS-004-P` se guarda como `OPP-004`). La exportación lo usa para devolver el
+   * fichero tal como entró. Ver src/app/core/csv.ts.
+   */
+  alias?: string;
 }
 
 export type Finish = 'normal' | 'foil';
 export type CollectionMap = ReadonlyMap<string, CardQty>;
+export type ImportMode = 'sumar' | 'sustituir';
 
 const VACIO: CardQty = { normal: 0, foil: 0 };
+/** Firestore admite 500 operaciones por lote; se deja margen. */
+const POR_LOTE = 450;
+
+/** Un cambio para escribir en lote: `qty` a null borra el documento. */
+type Cambio = readonly [cardId: string, qty: CardQty | null];
 
 /**
  * Almacén de colecciones. Dos implementaciones con la misma interfaz: Firestore y,
@@ -23,6 +35,19 @@ interface CollectionStore {
   read(uid: string): Promise<Map<string, CardQty>>;
   /** `qty` a null borra el documento: una carta con 0 normales y 0 foils no se guarda. */
   write(uid: string, cardId: string, qty: CardQty | null): Promise<void>;
+  /** Muchos cambios de golpe (importar). Avisa del avance con `progreso(hechos, total)`. */
+  writeMany(
+    uid: string,
+    cambios: Cambio[],
+    progreso?: (hechos: number, total: number) => void,
+  ): Promise<void>;
+}
+
+/** Solo los campos que admiten las reglas: `alias` únicamente si existe. */
+function documento(qty: CardQty) {
+  return qty.alias
+    ? { normal: qty.normal, foil: qty.foil, alias: qty.alias }
+    : { normal: qty.normal, foil: qty.foil };
 }
 
 class FirestoreStore implements CollectionStore {
@@ -33,7 +58,21 @@ class FirestoreStore implements CollectionStore {
 
   async write(uid: string, cardId: string, qty: CardQty | null): Promise<void> {
     const ref = doc(db, 'users', uid, 'collection', cardId);
-    await (qty ? setDoc(ref, { normal: qty.normal, foil: qty.foil }) : deleteDoc(ref));
+    await (qty ? setDoc(ref, documento(qty)) : deleteDoc(ref));
+  }
+
+  async writeMany(uid: string, cambios: Cambio[], progreso?: (h: number, t: number) => void) {
+    for (let i = 0; i < cambios.length; i += POR_LOTE) {
+      const lote = writeBatch(db);
+      for (const [cardId, qty] of cambios.slice(i, i + POR_LOTE)) {
+        const ref = doc(db, 'users', uid, 'collection', cardId);
+        if (qty) lote.set(ref, documento(qty));
+        else lote.delete(ref);
+      }
+      // Cada lote es atómico: o entra entero o no entra nada.
+      await lote.commit();
+      progreso?.(Math.min(i + POR_LOTE, cambios.length), cambios.length);
+    }
   }
 }
 
@@ -44,10 +83,17 @@ class DemoStore implements CollectionStore {
   }
 
   async write(uid: string, cardId: string, qty: CardQty | null): Promise<void> {
+    await this.writeMany(uid, [[cardId, qty]]);
+  }
+
+  async writeMany(uid: string, cambios: Cambio[], progreso?: (h: number, t: number) => void) {
     const guardado = leerDemo<Record<string, CardQty>>(`collection-${uid}`, {});
-    if (qty) guardado[cardId] = qty;
-    else delete guardado[cardId];
+    for (const [cardId, qty] of cambios) {
+      if (qty) guardado[cardId] = documento(qty);
+      else delete guardado[cardId];
+    }
     escribirDemo(`collection-${uid}`, guardado);
+    progreso?.(cambios.length, cambios.length);
   }
 }
 
@@ -185,7 +231,12 @@ export class CollectionService {
       this.error.set('Tu colección aún no se ha cargado');
       return;
     }
-    const limpio: CardQty = { normal: Math.max(0, qty.normal), foil: Math.max(0, qty.foil) };
+    // Con ...qty se conserva el alias de DotGG al tocar los +/− de una carta importada.
+    const limpio: CardQty = {
+      ...qty,
+      normal: Math.max(0, qty.normal),
+      foil: Math.max(0, qty.foil),
+    };
     const anterior = this.cards().get(id);
     this.aplicar(uid, id, limpio);
 
@@ -206,6 +257,63 @@ export class CollectionService {
   /** Espera a que no queden escrituras en vuelo. Para los tests y antes de exportar. */
   async flush(): Promise<void> {
     await Promise.all([...this.cola.values()].map((p) => p.catch(() => {})));
+  }
+
+  /**
+   * Importa una colección entera en la propia.
+   *  - `sumar`: añade las copias a las que ya tienes.
+   *  - `sustituir`: tu colección pasa a ser exactamente la importada (borra lo demás).
+   * Solo escribe lo que cambia. No es optimista: con cientos de cartas, enseñar algo
+   * que luego falla a medias confundiría más que esperar. Lanza si falla un lote; los
+   * lotes ya escritos se quedan, y la colección en pantalla se relee para no mentir.
+   */
+  async importCollection(
+    importadas: ReadonlyMap<string, CardQty>,
+    modo: ImportMode,
+    progreso?: (hechos: number, total: number) => void,
+  ): Promise<{ escritas: number; borradas: number }> {
+    await this.loadMine();
+    const uid = this.uid();
+    if (!uid || !this.editable()) throw new Error('Tu colección aún no se ha cargado');
+    await this.flush();
+
+    const actual = this.cards();
+    const final = new Map<string, CardQty>(modo === 'sumar' ? actual : []);
+    for (const [cardId, q] of importadas) {
+      const previo = modo === 'sumar' ? actual.get(cardId) : undefined;
+      final.set(cardId, {
+        normal: Math.min(9999, (previo?.normal ?? 0) + q.normal),
+        foil: Math.min(9999, (previo?.foil ?? 0) + q.foil),
+        ...((q.alias ?? previo?.alias) ? { alias: q.alias ?? previo?.alias } : {}),
+      });
+    }
+
+    const cambios: Cambio[] = [];
+    for (const [cardId, q] of final) {
+      const antes = actual.get(cardId);
+      const igual =
+        antes?.normal === q.normal && antes?.foil === q.foil && antes?.alias === q.alias;
+      if (!igual) cambios.push([cardId, q.normal || q.foil ? q : null]);
+    }
+    let borradas = 0;
+    for (const cardId of actual.keys()) {
+      if (!final.has(cardId)) {
+        cambios.push([cardId, null]);
+        borradas++;
+      }
+    }
+
+    try {
+      await this.store.writeMany(uid, cambios, progreso);
+      this.cards.set(new Map([...final].filter(([, q]) => q.normal || q.foil)));
+      this.error.set(null);
+      return { escritas: cambios.length - borradas, borradas };
+    } catch (e) {
+      // Un fallo a medias deja escritos los lotes anteriores: se relee para enseñar la verdad.
+      this.cargaPropia = null;
+      await this.loadMine();
+      throw e;
+    }
   }
 
   private aplicar(uid: string, cardId: string, qty: CardQty | null): void {
@@ -231,8 +339,10 @@ export function totalsOf(cards: CollectionMap) {
 
 /** Un documento escrito a mano o de una versión anterior podría traer basura. */
 function normalizarQty(datos: unknown): CardQty {
-  const d = (datos ?? {}) as Partial<Record<Finish, unknown>>;
-  return { normal: entero(d.normal), foil: entero(d.foil) };
+  const d = (datos ?? {}) as Partial<Record<Finish | 'alias', unknown>>;
+  const qty: CardQty = { normal: entero(d.normal), foil: entero(d.foil) };
+  if (typeof d.alias === 'string' && d.alias) qty.alias = d.alias;
+  return qty;
 }
 
 function entero(valor: unknown): number {

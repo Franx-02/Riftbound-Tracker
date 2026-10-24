@@ -2,13 +2,14 @@
 
 App para gestionar colecciones de Riftbound con precios de Cardmarket. Angular (PWA) en Netlify, login y datos en Firebase. Coste: 0 €.
 
-## Estado: F2 terminada en código, pendiente de desplegar
+## Estado: desplegada en https://riftboundtracker.netlify.app (F1 a F3)
 
 - Registro y login con Google: entra cualquiera y la primera vez se crea su colección.
 - Catálogo de todas las cartas (10 sets, Radiance incluido) con búsqueda y filtros.
 - Ficha de carta con precio de Cardmarket, aviso cuando el precio es aproximado y botón para corregir el producto.
 - Mi colección: copias normales y foil con +/−, valor total y aviso de las cartas que aún no tienen precio.
-- Colección de los demás miembros del grupo, en solo lectura, desde el selector "Ver".
+- Colección de los demás usuarios, en solo lectura, desde el selector "Ver".
+- Importar y exportar CSV en formato DotGG (Riftbound.gg, Riftatlas), con revisión antes de guardar.
 
 ## Puesta en marcha (una sola vez, ~20 min)
 
@@ -35,12 +36,13 @@ git push -u origin main
 Abre la URL y entra con Google. Deberías llegar a "Mi colección" con el valor a 0,00 € y la fecha de los precios de Cardmarket debajo; si los precios fallan, sale un aviso rojo arriba. Añade una carta desde el catálogo, recarga y comprueba que sigue ahí: eso confirma que Firestore guarda. En el móvil, "Añadir a pantalla de inicio" instala la PWA.
 
 ## Desarrollo local
-Mientras `firebase.config.ts` siga con `REEMPLAZAR` y abras la app en localhost, arranca en **modo demo**: el login entra sin cuenta. Fuera de localhost nunca se activa.
+`npx netlify dev` usa el Firebase real. Para probar sin tocar datos reales está el **modo demo**: el login entra sin cuenta y todo se guarda en el navegador. Solo funciona en localhost.
 
 ```bash
 npm install         # necesita Node 22 o superior
-npx netlify dev     # Angular + funciones en http://localhost:8888
-npm test            # tests
+npx netlify dev     # Angular + funciones en http://localhost:8888, contra Firebase real
+npm run start:demo  # lo mismo, en modo demo
+npm test            # tests (siempre en modo demo)
 ```
 `localhost` ya está autorizado en Firebase por defecto.
 

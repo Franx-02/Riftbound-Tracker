@@ -35,15 +35,17 @@ service cloud.firestore {
         && shortString(request.resource.data.displayName, 80);
     }
 
-    // Colección: users/{uid}/collection/{cardId} = { normal, foil }.
+    // Colección: users/{uid}/collection/{cardId} = { normal, foil, alias? }.
+    // `alias` es el id original de DotGG de una carta enlazada al importar (OGS-004-P → OPP-004).
     match /users/{uid}/collection/{cardId} {
       allow read: if signedIn();
       allow delete: if owner(uid);
       allow create, update: if owner(uid)
         && cardId.size() <= 20
-        && request.resource.data.keys().hasOnly(['normal', 'foil'])
+        && request.resource.data.keys().hasOnly(['normal', 'foil', 'alias'])
         && copies(request.resource.data.normal)
-        && copies(request.resource.data.foil);
+        && copies(request.resource.data.foil)
+        && (!('alias' in request.resource.data) || shortString(request.resource.data.alias, 20));
     }
 
     // Correcciones de mapeo compartidas: cualquiera lee y corrige, y vale para todos.

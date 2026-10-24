@@ -2,7 +2,7 @@
 
 App PWA (Angular 22 + Netlify + Firebase) para colecciones de cartas de Riftbound con precios de Cardmarket. Registro abierto con Google (cualquiera entra), coste 0 €.
 
-**Lee `docs/HANDOFF.md` antes de empezar cualquier tarea.** Contiene las decisiones, los datos externos, el algoritmo de mapeo y el plan por fases. F2 tiene el código terminado; su criterio de salida, igual que el de F1, espera al despliegue en Firebase y Netlify. La siguiente fase de código es **F3** (importar y exportar CSV).
+**Lee `docs/HANDOFF.md` antes de empezar cualquier tarea.** Contiene las decisiones, los datos externos, el algoritmo de mapeo y el plan por fases. Desplegada en https://riftboundtracker.netlify.app con F1 a F3 hechas. La siguiente fase es **F4** (traducción al español).
 
 ## Comandos
 - `npm install`
@@ -10,7 +10,9 @@ App PWA (Angular 22 + Netlify + Firebase) para colecciones de cartas de Riftboun
 - `npm run build` → debe compilar sin errores antes de dar algo por terminado (**necesita Node 22+**; con Node 20 el CLI de Angular ni arranca)
 - `npm run build:catalog -- --check` → regenera public/data/*.json y valida el mapeo con collection1.csv
 - `npm run check:tools` → typecheck de tools/*.mts
-- `npm test` → tests con vitest y jsdom (también necesita Node 22+)
+- `npm test` → tests con vitest y jsdom, siempre en modo demo (también necesita Node 22+)
+- `npm run start:demo` → `netlify dev` en modo demo, para probar en local sin tocar el Firestore real
+- `npm run check:import` → ida y vuelta de tools/collection1.csv (criterio de salida de F3)
 
 ## Reglas del proyecto
 - Angular moderno: componentes standalone, signals, control flow `@if/@for`, `inject()`.

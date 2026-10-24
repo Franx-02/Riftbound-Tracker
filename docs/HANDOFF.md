@@ -92,7 +92,7 @@ Lo describe paso a paso el README y la guía PDF: crear proyecto Firebase, activ
 ### Firestore
 ```
 users/{uid}                            { displayName }            ← perfil público: SOLO el nombre (lo lee cualquiera)
-users/{uid}/collection/{cardId}        { normal, foil }
+users/{uid}/collection/{cardId}        { normal, foil, alias? }   ← alias = id original de DotGG (F3)
 users/{uid}/wishlist/{cardId}          { qty, nota }
 users/{uid}/decks/{deckId}             { nombre, leyenda, cartas: { [cardId]: qty } }
 mappingOverrides/{cardId}              { idProduct, by, at }      ← correcciones de mapeo compartidas
@@ -201,10 +201,14 @@ minúscula dentro de `riftboundId` (`sfd-110a-221`) y corresponde a `alternate_a
 escribe indistintamente, así que `build-catalog.mts` guarda el `cardId` **en mayúsculas**
 (`SFD-110A`) y todas las búsquedas comparan en mayúsculas.
 
-**5 IDs de DotGG no existen en el catálogo** y hay que resolverlos con una tabla de alias en F3:
-`OGN-089b` y `OGS-004-P`, `VEN-037-P` (promos Nexus Night, que en el catálogo viven en los sets
-OPP/PR con otra numeración) y `SFD-T01`, `SFD-T02` (tokens de doble cara, que no están ni en el
-catálogo ni en Cardmarket).
+**5 IDs de DotGG no existen en el catálogo.** Resuelto en F3 sin tabla a mano (`src/app/core/csv.ts`):
+- `OGN-089b` → `OPP-089B` y `OGS-004-P` → `OPP-004`: las promos de Nexus Night viven en el set OPP
+  con el mismo número. Regla genérica: un id desconocido que es promo (sufijo `-P` o `b`, o "Promo" en
+  el nombre) se enlaza con `OPP-<número><sufijo>` **solo si el nombre coincide**. La carta se guarda
+  con el id del catálogo (así tiene imagen y precio) y con un campo `alias` que conserva el id de
+  DotGG, para que la exportación devuelva el fichero tal como entró.
+- `VEN-037-P` (no hay versión promo de Barbara en el catálogo) y `SFD-T01`, `SFD-T02` (tokens) se
+  guardan con su id tal cual. Salen en Mi colección como "fuera del catálogo" y se exportan igual.
 
 ## 6. Mapeo cardId → idProduct (el núcleo del proyecto)
 
@@ -301,8 +305,27 @@ Mapeo validado contra el CSV real.
    - Leer la colección de otro cuesta una lectura de Firestore por carta. Se cachea por sesión; con 3 usuarios y ~400 cartas sobra el plan Spark (sección 4).
 **Salida:** Fran gestiona su colección entera desde el móvil. **Pendiente:** necesita el despliegue de F1.
 
-### F3 — Importar / exportar
+### F3 — Importar / exportar ✅
 Import DotGG (y Collectr y Legacy si es barato), con informe de filas no reconocidas. Export DotGG. **Salida:** importar `collection1.csv` y exportarlo da el mismo contenido.
+
+Hecho y **criterio de salida cumplido**, comprobado de dos formas: `npm run check:import` (con el
+catálogo real y el mismo código que la app) y en el navegador, importando el fichero y descargando la
+exportación: 390 filas de 390 iguales en código, normales y foils.
+- `src/app/core/csv.ts`: funciones puras. Lee DotGG y Legacy, con comillas, BOM, CRLF y `;` (el
+  separador de Excel en España). Rechaza con línea y motivo los códigos y cantidades no válidos, suma
+  las filas repetidas y se salta las que están a cero.
+- **Collectr no está**: sin un fichero real de ejemplo no se pueden adivinar sus columnas. Lo mismo
+  Piltover Archive, que no se ha podido confirmar que exporte colecciones.
+- Pantalla `/importar`, enlazada desde Mi colección: revisión antes de guardar nada (cartas, copias,
+  valor estimado, enlazadas, fuera del catálogo y rechazadas) y modo **Sumar** o **Sustituir** (con
+  aviso de cuántas cartas se borrarían y confirmación). Exportar descarga `riftbound-coleccion-AAAA-MM-DD.csv`.
+- `CollectionService.importCollection` escribe en lotes de Firestore de 450 y **solo lo que cambia**:
+  reimportar el mismo fichero son 0 escrituras. Si un lote falla, relee la colección para no enseñar
+  algo que no se guardó.
+- Las reglas admiten el campo `alias` (texto de hasta 20). **Hay que volver a publicar `firestore.rules`.**
+- Exportar escribe los códigos en mayúsculas (`OGN-089A`); DotGG mezcla `a` y `A`, que son lo mismo.
+- `npm run start:demo` arranca `netlify dev` en modo demo aunque la config de Firebase esté rellena:
+  sirve para probar en local sin tocar el Firestore real (es lo que se usó para probar F3).
 
 ### F4 — Traducción al español
 Primero un glosario fijo de términos del juego (keywords, tipos, dominios), luego todos los textos usando el glosario, revisados. `catalog_es.json`. Selector EN/ES. No hay edición oficial en español; Riot ha anunciado primero el francés.

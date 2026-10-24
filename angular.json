@@ -94,6 +94,9 @@
             },
             "development": {
               "buildTarget": "riftbound-app:build:development"
+            },
+            "demo": {
+              "buildTarget": "riftbound-app:build:development,demo"
             }
           },
           "defaultConfiguration": "development"

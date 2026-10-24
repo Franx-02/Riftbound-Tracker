@@ -25,6 +25,11 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/collection.page').then((m) => m.CollectionPage),
       },
       {
+        path: 'importar',
+        title: 'Importar y exportar · Riftbound',
+        loadComponent: () => import('./pages/import.page').then((m) => m.ImportPage),
+      },
+      {
         path: 'catalogo',
         title: 'Catálogo · Riftbound',
         loadComponent: () => import('./pages/catalog.page').then((m) => m.CatalogPage),
