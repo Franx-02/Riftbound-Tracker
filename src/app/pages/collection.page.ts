@@ -510,7 +510,8 @@ interface Fila {
       margin: 0;
       padding: 0;
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      /* Como en Riftbound.gg: cartas grandes (unas 6 columnas a 1440 px). En móvil, dos. */
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
       gap: 12px;
     }
     .rejilla > li {

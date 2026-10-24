@@ -10,7 +10,11 @@ import { CardQty, CollectionService, Finish } from '../core/collection.service';
   template: `
     @for (f of finishes; track f.id) {
       <div class="fila" [class.tiene]="qty()[f.id] > 0" [class.foil]="f.id === 'foil'">
-        <span class="etiqueta">{{ f.label }}</span>
+        <!-- Dos versiones de la etiqueta: en cartas estrechas solo cabe la inicial. -->
+        <span class="etiqueta" [attr.title]="f.label">
+          <span class="largo">{{ f.label }}</span
+          ><span class="corto" aria-hidden="true">{{ f.label.charAt(0) }}</span>
+        </span>
         @if (editable()) {
           <button
             type="button"
@@ -37,14 +41,33 @@ import { CardQty, CollectionService, Finish } from '../core/collection.service';
     }
   `,
   styles: `
+    /* Se adapta al ancho que le dan (el de la carta), no al de la ventana: con varias
+       columnas, una carta de escritorio puede ser tan estrecha como una de móvil. */
     :host {
       display: grid;
+      grid-template-columns: minmax(0, 1fr);
       gap: 4px;
+      container-type: inline-size;
     }
     .fila {
       display: flex;
       align-items: center;
       gap: 6px;
+      min-width: 0;
+    }
+    .corto {
+      display: none;
+    }
+    @container (max-width: 150px) {
+      .largo {
+        display: none;
+      }
+      .corto {
+        display: inline;
+      }
+      .fila {
+        gap: 4px;
+      }
     }
     .etiqueta {
       flex: 1;
@@ -75,11 +98,8 @@ import { CardQty, CollectionService, Finish } from '../core/collection.service';
       color: var(--text);
       border-color: var(--border);
     }
-    /* En las tarjetas de dos columnas del móvil no caben botones de 32 px. */
-    @media (max-width: 420px) {
-      .fila {
-        gap: 4px;
-      }
+    /* En cartas estrechas no caben botones de 32 px. */
+    @container (max-width: 200px) {
       .paso {
         width: 28px;
         height: 28px;
@@ -138,6 +158,19 @@ import { CardQty, CollectionService, Finish } from '../core/collection.service';
     }
     :host(.overlay) .paso:disabled {
       opacity: 0.35;
+    }
+    /* Al final para ganar a los tamaños de arriba: cartas muy estrechas (móvil de
+       320 px a dos columnas), botones de 24 px. */
+    @container (max-width: 125px) {
+      .paso,
+      :host(.overlay) .paso {
+        width: 24px;
+        height: 24px;
+        font-size: 1rem;
+      }
+      .n {
+        min-width: 1.2em;
+      }
     }
   `,
   host: {
