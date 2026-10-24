@@ -74,6 +74,14 @@
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
+            },
+            "demo": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/firebase.config.ts",
+                  "with": "src/environments/firebase.config.demo.ts"
+                }
+              ]
             }
           },
           "defaultConfiguration": "production"
@@ -93,7 +101,7 @@
         "test": {
           "builder": "@angular/build:unit-test",
           "options": {
-            "buildTarget": "::development",
+            "buildTarget": "::development,demo",
             "tsConfig": "tsconfig.spec.json",
             "runner": "vitest"
           }

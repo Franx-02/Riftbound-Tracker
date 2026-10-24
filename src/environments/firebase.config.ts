@@ -1,11 +1,11 @@
 // Configuración web de Firebase. Estos valores son públicos por diseño:
 // la seguridad la ponen las reglas de Firestore (firestore.rules), no ocultar esto.
-// Sustitúyelos por los de tu proyecto: Consola de Firebase → Configuración del proyecto → Tus apps → Web.
+// Proyecto: Consola de Firebase → riftboundtracker-f0dce → Configuración del proyecto → Tus apps → Web.
 export const firebaseConfig = {
-  apiKey: 'REEMPLAZAR',
-  authDomain: 'REEMPLAZAR.firebaseapp.com',
-  projectId: 'REEMPLAZAR',
-  storageBucket: 'REEMPLAZAR.firebasestorage.app',
-  messagingSenderId: 'REEMPLAZAR',
-  appId: 'REEMPLAZAR',
+  apiKey: 'AIzaSyDdVuEa_OSQHPUS51cnZn7GRKGf-43WU3g',
+  authDomain: 'riftboundtracker-f0dce.firebaseapp.com',
+  projectId: 'riftboundtracker-f0dce',
+  storageBucket: 'riftboundtracker-f0dce.firebasestorage.app',
+  messagingSenderId: '530798779611',
+  appId: '1:530798779611:web:56f9e8505c4aa476a0c0fe',
 };
