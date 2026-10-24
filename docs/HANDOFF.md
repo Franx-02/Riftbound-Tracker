@@ -1,6 +1,6 @@
 # Riftbound Collection — Informe de traspaso
 
-Fecha: 24/10/2026. Estado: **F0 cerrada, F1 con código terminado y sin desplegar.**
+Fecha: 24/10/2026. Estado: **F0 cerrada, F1 con código terminado y sin desplegar, F2 empezada (paso 1 hecho).**
 Este documento recoge todo lo decidido y descubierto hasta ahora. Las secciones marcadas **[NO VERIFICADO]** son suposiciones que hay que comprobar antes de construir encima.
 
 ---
@@ -47,10 +47,18 @@ src/environments/firebase.config.ts   config web de Firebase (aún con REEMPLAZA
 netlify/functions/prices.mts    GET /api/prices
 netlify.toml                    build, publish, redirect SPA
 firestore.rules                 reglas de seguridad
-tools/generar_mapeo.py          prototipo del mapeo (Python, F0)
-tools/mapping.json              mapeo de las 390 cartas de Fran
+tools/generar_mapeo.py          prototipo del mapeo (Python, F0; sustituido, se puede borrar)
+tools/mapping.json              mapeo de las 390 cartas de Fran (F0, obsoleto)
 tools/mapeo_revision.csv        mapeo con confianza y motivo, para revisar
+tools/build-catalog.mts         F2 paso 1: genera el catálogo y el mapeo completos
+tsconfig.tools.json             typecheck de tools/ (`npm run check:tools`)
+public/data/catalog.json        1.638 cartas de 10 sets (generado, va al repo)
+public/data/mapping.json        cardId → idProduct, confianza, motivo y candidatos
 ```
+
+**Node 22 o superior es obligatorio en local.** El CLI de Angular 22 rechaza Node 20 y
+`npm run build` ni arranca. `netlify.toml` ya fija `NODE_VERSION = "22"` para el despliegue.
+`npm run build:catalog` sí funciona con Node 20.
 
 Verificado:
 - `ng build` compila sin errores (≈205 KB transferidos, sobre todo Firebase).
@@ -88,7 +96,7 @@ Decisiones abiertas del modelo:
 - Añadir más adelante en `collection`: condición e idioma. El usuario no lo pidió; no implementar sin preguntar.
 
 ### Datos estáticos del catálogo (a construir en F2)
-- `catalog.json`: cartas de todos los sets (de Riftcodex) con texto EN.
+- `catalog.json`: cartas de todos los sets (de RiftHunt) con texto EN. **Ya generado.**
 - `catalog_es.json`: texto ES por `cardId`.
 - `mapping.json`: `cardId → { idProduct, confianza }`.
 
@@ -106,7 +114,7 @@ https://downloads.s3.cardmarket.com/productCatalog/priceGuide/price_guide_22.jso
 - Se regenera **una vez al día** (madrugada). No existe precio "en tiempo real".
 - **Normal y foil son el mismo `idProduct`**, con campos distintos. Encaja con las columnas Normal/Foil de DotGG.
 - **`0` significa "sin datos", no 0 €.** Ya se convierte a `null` en la función. La UI debe mostrar "sin precio" y no sumarlo al total como 0 sin avisar.
-- Los nombres usan coma: `Annie, Fiery`. DotGG y Riftcodex usan guion: `Annie - Fiery`.
+- Los nombres usan coma: `Annie, Fiery`, igual que RiftHunt. DotGG usa guion: `Annie - Fiery`.
 - **No hay número de colección** en ningún campo. `idMetacard` agrupa todas las variantes de una carta.
 - `www.cardmarket.com` bloquea clientes automáticos (Cloudflare). No hacer scraping.
 
@@ -122,18 +130,37 @@ IDs de expansión observados (24/10/2026):
 | Radiance | 6659 |
 | Promos y extras | 6322, 6483, 6567, 6588, 6921, 6480, 6705, 6681 |
 
-No codificar esta tabla a mano en la app: resolverla con Riftcodex (ver abajo).
+Esta tabla **no está codificada** en ninguna parte: `build-catalog.mts` la deduce sola
+cruzando los nombres del catálogo con los de Cardmarket (ver sección 6). Queda aquí solo
+como referencia para depurar.
 
-### Riftcodex (catálogo, texto, imágenes)
+### RiftHunt — fuente del catálogo (verificado 24/10/2026)
+API pública, sin auth, CORS abierto. Base: `https://api.rifthunt.com`. Docs: https://rifthunt.com/api/
+- `GET /bulk/cards` → `{ fetched, sets[], cards[] }`, un único fichero con **todo** (1,5 MB, 1.702 impresiones).
+- También `GET /sets`, `/sets/:code`, `/cards/search?q=`, `/cards/named?exact=`, `/cards/:id`, `/bulk/prices` (precios de TCGplayer, no se usan).
+- Campos por carta: `riftboundId` (`rad-114-167`), `name`, `cleanName`, `num`, `energy`, `might`, `power`, `type`, `supertype`, `rarity`, `domains[]`, `text`, `rich`, `flavour`, `set`, `setName`, `tags[]`, `artist`, `tcgId`, `imgUrl`, `orientation`, `alt`, `sig`, `over`.
+- Dice `"source": "riftcodex.com"`, pero su copia es **más completa** que la API de Riftcodex en vivo.
+- Repite algunas impresiones de promos (OPP): hay que deduplicar por `riftboundId`.
+- Es una instantánea con fecha (`fetched`), no datos en vivo: la del 24/10/2026 era del 19/10.
+
+**Por qué no Riftcodex directamente (comprobado con peticiones reales el 24/10/2026):**
+su API en vivo **no tiene Radiance** (`/cards?set_id=RAD` devuelve 0, `/sets` no lo lista,
+`/sets/cardmarket/6659` da error 500), y le faltan las runas y los tokens de Spiritforged.
+De las 390 cartas de Fran, Riftcodex cubre **279**; RiftHunt cubre **385**. Radiance salió el
+**23/10/2026**, un día antes de esta sesión, y Fran ya tiene 99 cartas del set: una fuente que
+tarde días en incorporar un set nuevo no sirve para el requisito de la sección 7.
+
+### Riftcodex (alternativa, no se usa)
 API pública, sin auth. Base: `https://api.riftcodex.com`. Docs: https://riftcodex.com/docs
 - `GET /cards?set_id=sfd&sort=collector_number&page=1&size=100` (máx. 100 por página)
 - `GET /cards/name?exact=...` / `?fuzzy=...`
 - `GET /cards/riftbound/{id}` (p. ej. `ogn-179`, parcial e insensible a mayúsculas)
 - `GET /cards/search?query=...` (texto completo)
-- Sets: búsqueda por set ID, TCGPlayer ID o **Cardmarket ID** **[NO VERIFICADO: ruta exacta y formato]**.
+- `GET /sets` devuelve `cardmarket_id` por set (a veces `null`, a veces una lista). Rutas: `/sets/set-id/{id}`, `/sets/tcgplayer/{id}`, `/sets/cardmarket/{id}`. Hay `openapi.json` en la raíz.
+- Respuesta paginada: `{ items[], total, page, size, pages }` (verificado).
+- No existe `public_code` en la respuesta real; sí `riftbound_id`.
 - Campos de carta: `name`, `id`, `riftbound_id` (`ogn-179-298`), `public_code` (`OGN-179/298`), `collector_number`, `attributes {energy, might, power}`, `classification {type, supertype, rarity, domain[]}`, `text {rich, plain}`, `set {set_id, label}`, `media {image_url, artist, accessibility_text}`, `tags`, `orientation`, `metadata {alternate_art, overnumbered, signature}`, `tcgplayer_id`.
 - **No tiene ID de Cardmarket ni idioma.**
-- **[NO VERIFICADO]** formato de la respuesta paginada (envoltorio, total, siguiente página). Comprobar con una petición real antes de escribir el cliente.
 - Descubierto: Riftcodex tiene **1** "Azir - Sovereign" (`sfd-177-221`) y Cardmarket tiene **2** productos con ese nombre en Spiritforged. Las fuentes no coinciden en el número de variantes.
 - Es un proyecto de fans: guardar el catálogo generado en el repo para no depender de que la API siga viva.
 
@@ -152,26 +179,51 @@ Importador de Riftatlas confirmado; acepta tres formatos:
 | sufijo mayúscula | `RAD-114A`, `SFD-110A` | variante (¿alt art?) |
 | `-P` | `OGS-004-P`, `VEN-037-P` | promo Nexus Night |
 
-La promo de Nexus Night de Origins es `OGN-089b` (con "Promo" en el nombre), y las de Spiritforged/Vendetta usan `-P`. **[NO VERIFICADO]** si `a` y `A` significan lo mismo.
+La promo de Nexus Night de Origins es `OGN-089b` (con "Promo" en el nombre), y las de Spiritforged/Vendetta usan `-P`.
+
+**Resuelto (24/10/2026): `a` y `A` son lo mismo.** En el catálogo el sufijo va siempre en
+minúscula dentro de `riftboundId` (`sfd-110a-221`) y corresponde a `alternate_art`. DotGG lo
+escribe indistintamente, así que `build-catalog.mts` guarda el `cardId` **en mayúsculas**
+(`SFD-110A`) y todas las búsquedas comparan en mayúsculas.
+
+**5 IDs de DotGG no existen en el catálogo** y hay que resolverlos con una tabla de alias en F3:
+`OGN-089b` y `OGS-004-P`, `VEN-037-P` (promos Nexus Night, que en el catálogo viven en los sets
+OPP/PR con otra numeración) y `SFD-T01`, `SFD-T02` (tokens de doble cara, que no están ni en el
+catálogo ni en Cardmarket).
 
 ## 6. Mapeo cardId → idProduct (el núcleo del proyecto)
 
 No existe una fuente que una el número de colección con el producto de Cardmarket. El mapeo es heurístico.
 
-Algoritmo actual (`tools/generar_mapeo.py`, portar a TypeScript):
+Algoritmo (`tools/build-catalog.mts`, ya en TypeScript; el `.py` queda solo de referencia):
+
+**Paso previo — qué expansión de Cardmarket es cada set, sin tabla a mano.** Para cada par
+(set, expansión) se calcula un solape tipo Jaccard: nombres compartidos ÷ (cartas del set +
+productos de la expansión − compartidos). Un set normal da **0,95 o más** con su expansión
+(OGN·6286 = 0,97, RAD·6659 = 0,95, SFD·6399 = 1,01) y como mucho 0,28 con cualquier otra, así
+que se corta en 0,5. Los sets de promos (OPP, PR, JDG) no tienen expansión propia: ninguno
+llega al corte y se quedan con todas las que pasen de 0,1. Esto es lo que hace que un set
+nuevo entre solo (sección 7). **Sin este filtro el mapeo se degrada mucho**: dejando pasar las
+expansiones de promos como candidatas, las bajas pasan de 6 a 24.
+
 1. Normalizar nombre: minúsculas, `' - '` → `', '`, quitar `(…)` y `Starter`, quitar puntuación excepto `,` y `/`.
 2. Candidatos = productos con el mismo nombre normalizado.
 3. Sin candidatos → sin mapear (son tokens, que no se venden sueltos).
-4. Sufijo `-P` o "Promo" en el nombre → candidato único en expansiones de promos, si no, sin mapear.
-5. Sufijo `a`/`A` → la **segunda** variante más barata del set principal.
+4. Sufijo `-P` o "Promo" en el nombre → el más barato de su expansión; media si solo había uno, baja si había varios.
+5. Sufijo `A`/`B` o `alt: true` → la **segunda** variante más barata del set, confianza media.
 6. Sin sufijo:
-   - 1 producto en el set principal → confianza alta.
+   - 1 producto en el set → confianza alta.
    - varios → **el más barato** (normal + foil) es la base. Confianza alta si el siguiente cuesta ≥ 3×; si no, baja.
-   - 0 en el set principal y 1 en total → confianza media.
+   - 0 en el set y 1 en total → confianza media.
 
 **Clave descubierta:** las variantes tienen **el mismo nombre exacto** y el orden de `idProduct` **no es fiable** (en las runas de Spiritforged está invertido respecto a Origins). La única señal útil es el precio: la base es la más barata. Ojo: Radiance y sets recién salidos tienen la versión normal sin `trend`; ordenar por normal + foil, no solo por normal.
 
-Resultado con las 390 cartas de Fran: **371 alta, 8 media, 6 baja, 5 sin mapear** (4 tokens + `OGN-089b`). Valor ≈ 320 € (infravalorado: 14 cartas de Radiance sin precio normal todavía). Validado a mano: `SFD-198 Arise!` → `866945`, coincide con la web de Cardmarket.
+Resultado sobre **todo el catálogo** (1.638 cartas): 1.268 alta, 185 media, 110 baja, 75 sin mapear.
+
+Resultado con las 390 cartas de Fran (`npm run build:catalog -- --check`):
+**371 alta, 6 media, 6 baja, 2 sin mapear, 5 fuera del catálogo**. Reproduce las 371 altas del
+prototipo de F0. Valor ≈ 310 € (infravalorado: 14 cartas sin precio en Cardmarket todavía).
+Validado a mano: `SFD-198 Arise!` → `866945`, coincide con la web de Cardmarket.
 
 Consecuencia de diseño, **aceptada por el usuario**: los errores posibles son por construcción entre variantes de precio parecido, o sea baratos. No se pide revisión manual. En su lugar:
 - Mostrar confianza baja como "precio aproximado".
@@ -182,8 +234,8 @@ Consecuencia de diseño, **aceptada por el usuario**: los errores posibles son p
 Requisito del usuario: la app debe incorporar sola cada set nuevo.
 
 Recomendación: **GitHub Action diaria** (gratis) que:
-1. Descarga `products_singles_22.json` y el catálogo de Riftcodex.
-2. Regenera `catalog.json` y `mapping.json`.
+1. Ejecuta `npm run build:catalog` (descarga RiftHunt y Cardmarket).
+2. Comprueba con `-- --check` que el mapeo no se degrada.
 3. **Hace commit solo si hay cambios**, lo que dispara un despliegue en Netlify.
 
 Por qué no una Netlify Scheduled Function: no puede hacer commit en el repo y tiene límite de tiempo. Los precios **no** van en la Action; siguen saliendo de `/api/prices` con caché, porque cambian a diario y cada commit gasta créditos de build de Netlify.
@@ -201,7 +253,7 @@ Mapeo validado contra el CSV real.
 **Salida:** URL de Netlify, los tres entran con Google, un email no invitado se queda fuera, `/api/prices` responde.
 
 ### F2 — Catálogo, buscador y colección ← SIGUIENTE
-1. Script `tools/build-catalog.ts` (Node, sin Python): Riftcodex + Cardmarket → `public/data/catalog.json` + `mapping.json`. Portar el algoritmo de la sección 6. Test con `collection1.csv`: debe reproducir 371/8/6/5.
+1. ✅ `tools/build-catalog.mts`: RiftHunt + Cardmarket → `public/data/catalog.json` (1.638 cartas, 10 sets) + `mapping.json`. `npm run build:catalog -- --check` valida contra `collection1.csv` y da 371 altas, igual que F0.
 2. Servicio de catálogo: carga los JSON, índice por `cardId`, búsqueda por nombre y código.
 3. Servicio de colección sobre Firestore (y almacén falso en modo demo), con la misma interfaz.
 4. Al primer login, crear `users/{uid}` con nombre y email.
@@ -229,7 +281,7 @@ OCR en el navegador (p. ej. Tesseract.js) del código impreso abajo a la izquier
 - **Cuotas gratuitas:** Netlify pausa el sitio si se agotan los 300 créditos/mes; vigilar bucles que llamen a funciones. Firestore Spark: 50k lecturas y 20k escrituras al día.
 - **iOS:** con la PWA instalada, `signInWithPopup` puede fallar. Plan B: `signInWithRedirect`, que requiere configurar el dominio de auth.
 - **Términos:** la app es gratuita y privada. Antes de abrirla a gente fuera del grupo, revisar los términos de Cardmarket sobre sus datos y la política de contenido de fans de Riot (imágenes y textos son de Riot).
-- **Riftcodex** es de fans y puede desaparecer: el catálogo vive en el repo.
+- **RiftHunt** y **Riftcodex** son proyectos de fans y pueden desaparecer: por eso el catálogo generado vive en el repo. RiftHunt además publica una instantánea con fecha, no datos en vivo: si deja de actualizarse, el síntoma será que un set nuevo no aparece.
 - **Precios del día, no del minuto.** La web de Cardmarket mostrará cifras algo distintas a lo largo del día. Es esperado.
 
 ## 10. Sobre el usuario y cómo trabajar con él
