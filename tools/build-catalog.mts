@@ -35,6 +35,8 @@ interface CartaFuente {
   rarity: string;
   domains: string[];
   text: string;
+  /** El mismo texto en HTML: conserva saltos de línea y listas que `text` pierde. */
+  rich: string | null;
   flavour: string | null;
   set: string;
   setName: string;
@@ -111,6 +113,44 @@ async function bajarJson<T>(url: string): Promise<T> {
 }
 
 /** Normaliza un nombre para comparar entre fuentes: DotGG usa " - " donde Cardmarket usa ", ". */
+const ENTIDADES: Record<string, string> = {
+  '&gt;': '>',
+  '&lt;': '<',
+  '&amp;': '&',
+  '&quot;': '"',
+  '&#39;': "'",
+  '&apos;': "'",
+  '&nbsp;': ' ',
+};
+
+/** El origen trae entidades HTML sin decodificar (`[&gt;]`, `&quot;`) también en `text`. */
+function decodificar(texto: string): string {
+  return texto.replace(/&(gt|lt|amp|quot|#39|apos|nbsp);/g, (e) => ENTIDADES[e] ?? e);
+}
+
+/**
+ * Texto de reglas legible a partir de `rich`. El campo `text` del origen se come los
+ * saltos de línea (815 cartas los tienen en `rich` y solo 158 en `text`), y sin ellos
+ * quedan cosas como "...an additional time.When I hold...". Las listas de opciones
+ * ("choose one —") salen con viñetas.
+ */
+export function textoDeReglas(
+  rich: string | null | undefined,
+  text: string | null | undefined,
+): string {
+  if (!rich) return decodificar(text ?? '').trim();
+  return decodificar(
+    rich
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/p>\s*<p[^>]*>/gi, '\n')
+      .replace(/<li[^>]*>/gi, '\n• ')
+      .replace(/<[^>]+>/g, ''),
+  )
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{2,}/g, '\n')
+    .trim();
+}
+
 function normalizar(nombre: string): string {
   let s = nombre.toLowerCase().split(' - ').join(', ');
   s = s.replace(/\(.*?\)/g, '');
@@ -483,8 +523,8 @@ async function main(): Promise<void> {
       energy: c.energy,
       might: c.might,
       power: c.power,
-      text: c.text ?? '',
-      flavour: c.flavour,
+      text: textoDeReglas(c.rich, c.text),
+      flavour: c.flavour ? decodificar(c.flavour).trim() : null,
       tags: c.tags ?? [],
       artist: c.artist,
       imgUrl: c.imgUrl,

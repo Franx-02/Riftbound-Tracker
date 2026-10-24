@@ -1,6 +1,7 @@
 import { Component, Injectable, computed, inject, signal } from '@angular/core';
 import { CatalogService } from '../core/catalog.service';
 import { CollectionService } from '../core/collection.service';
+import { TraduccionService } from '../core/traduccion.service';
 import { CardTileComponent } from '../ui/card-tile.component';
 import { LoadMoreComponent } from '../ui/load-more.component';
 
@@ -56,19 +57,19 @@ export class CatalogFiltersState {
         <select aria-label="Rareza" [value]="f.rarity()" (change)="cambiar(f.rarity, $event)">
           <option value="">Cualquier rareza</option>
           @for (r of catalog.rarities(); track r) {
-            <option [value]="r">{{ r }}</option>
+            <option [value]="r">{{ t.etiqueta(r) }}</option>
           }
         </select>
         <select aria-label="Dominio" [value]="f.domain()" (change)="cambiar(f.domain, $event)">
           <option value="">Cualquier dominio</option>
           @for (d of catalog.domains(); track d) {
-            <option [value]="d">{{ d }}</option>
+            <option [value]="d">{{ t.etiqueta(d) }}</option>
           }
         </select>
         <select aria-label="Tipo" [value]="f.type()" (change)="cambiar(f.type, $event)">
           <option value="">Cualquier tipo</option>
-          @for (t of catalog.types(); track t) {
-            <option [value]="t">{{ t }}</option>
+          @for (tipo of catalog.types(); track tipo) {
+            <option [value]="tipo">{{ t.etiqueta(tipo) }}</option>
           }
         </select>
         <label class="check">
@@ -181,6 +182,7 @@ export class CatalogPage {
   protected readonly catalog = inject(CatalogService);
   protected readonly col = inject(CollectionService);
   protected readonly f = inject(CatalogFiltersState);
+  protected readonly t = inject(TraduccionService);
 
   protected readonly hayFiltros = computed(
     () =>

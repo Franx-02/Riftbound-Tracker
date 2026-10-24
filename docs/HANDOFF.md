@@ -331,8 +331,30 @@ exportación: 390 filas de 390 iguales en código, normales y foils.
 - `npm run start:demo` arranca `netlify dev` en modo demo aunque la config de Firebase esté rellena:
   sirve para probar en local sin tocar el Firestore real (es lo que se usó para probar F3).
 
-### F4 — Traducción al español
+### F4 — Traducción al español ← EN CURSO
 Primero un glosario fijo de términos del juego (keywords, tipos, dominios), luego todos los textos usando el glosario, revisados. `catalog_es.json`. Selector EN/ES. No hay edición oficial en español; Riot ha anunciado primero el francés.
+
+Hecho (24/10/2026):
+- **Texto de origen arreglado**: el catálogo se genera desde el campo `rich` de RiftHunt, no desde
+  `text`, que perdía los saltos de línea (797 cartas los tienen) y las listas de opciones. Las
+  entidades HTML (`&gt;`, `&quot;`) se decodifican: antes la ficha enseñaba `[&gt;]` como si fuera
+  una keyword. `[>]` y `[>>]` se pintan como las flechas ▶ y ▶▶ de las cartas.
+- **Glosario**: `docs/glosario.md`. Tiene decisiones pendientes del usuario (marcadas con ⚠️):
+  keywords en inglés o traducidas, kill → matar o destruir, Signature → Firma o Exclusiva.
+- **Infraestructura**: `src/app/core/traduccion.ts` (clave por hash del texto inglés y validador),
+  `TraduccionService` (idioma ES/EN guardado en el navegador, carga de `catalog_es.json`),
+  selector ES/EN en la ficha, aviso "aún no está traducida" y tipos, dominios y rarezas traducidos
+  en la ficha y en los filtros del catálogo.
+- **Flujo de trabajo**: `npm run traducir -- pendientes [--set OGN] [--max 50]` saca lo que falta;
+  las traducciones se escriben en `tools/traduccion/lotes/*.json` (fuente de verdad, revisable en
+  git); `npm run traducir -- aplicar` valida cada una (símbolos, keywords, números, flechas, líneas
+  y viñetas) y regenera `public/data/catalog_es.json`. Lo que no pasa no entra.
+- La clave es un hash del texto inglés: las alt arts comparten traducción y, si Riot corrige un
+  texto, esa carta vuelve al inglés con aviso en vez de enseñar una traducción desfasada.
+- **Volumen**: 1.164 textos de reglas y 773 de ambientación distintos. Hecha una muestra de 17
+  (`000-muestra.json`) con la opción A del glosario, para que el usuario la revise.
+
+Pendiente: que el usuario apruebe el glosario, y traducir el resto por lotes.
 
 ### F5 — Lista de deseos
 Cartas que faltan, coste total en Cardmarket y **quién del grupo tiene copias** de cada una.

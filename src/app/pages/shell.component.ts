@@ -5,6 +5,7 @@ import { CatalogService } from '../core/catalog.service';
 import { CollectionService } from '../core/collection.service';
 import { MappingOverridesService } from '../core/mapping-overrides.service';
 import { PricesService } from '../core/prices.service';
+import { TraduccionService } from '../core/traduccion.service';
 
 /** Marco de la app con sesión: barra, navegación y carga de los datos compartidos. */
 @Component({
@@ -110,6 +111,7 @@ export class ShellComponent implements OnInit {
   private readonly prices = inject(PricesService);
   private readonly overrides = inject(MappingOverridesService);
   private readonly collection = inject(CollectionService);
+  private readonly traduccion = inject(TraduccionService);
   private readonly router = inject(Router);
 
   /** Lo que impide usar la app, en una frase. Los errores de guardado los enseña cada pantalla. */
@@ -128,6 +130,7 @@ export class ShellComponent implements OnInit {
     void this.prices.load();
     void this.overrides.load();
     void this.collection.loadMine();
+    void this.traduccion.load();
   }
 
   async logout(): Promise<void> {

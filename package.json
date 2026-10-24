@@ -10,7 +10,8 @@
     "build:catalog": "tsx tools/build-catalog.mts",
     "check:tools": "tsc -p tsconfig.tools.json",
     "check:import": "tsx tools/check-import.mts",
-    "start:demo": "netlify dev --command \"npx ng serve --port 4200 --configuration demo\""
+    "start:demo": "netlify dev --command \"npx ng serve --port 4200 --configuration demo\"",
+    "traducir": "tsx tools/traducir.mts"
   },
   "private": true,
   "packageManager": "npm@10.9.9",

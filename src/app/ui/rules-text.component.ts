@@ -5,7 +5,8 @@ type Trozo =
   | { tipo: 'keyword'; valor: string }
   | { tipo: 'energia'; valor: string }
   | { tipo: 'runa'; valor: string; dominio: string; letra: string }
-  | { tipo: 'icono'; valor: string; titulo: string };
+  | { tipo: 'icono'; valor: string; titulo: string }
+  | { tipo: 'flecha'; valor: string };
 
 const ICONOS: Record<string, { valor: string; titulo: string }> = {
   might: { valor: '⚔', titulo: 'Might' },
@@ -26,6 +27,10 @@ const ICONOS: Record<string, { valor: string; titulo: string }> = {
           @switch (t.tipo) {
             @case ('keyword') {
               <strong class="kw">{{ t.valor }}</strong>
+            }
+            @case ('flecha') {
+              <!-- La flecha de las cartas: separa la condición ([Level 3], [Reaction]...) del efecto. -->
+              <span class="flecha" aria-hidden="true">{{ t.valor }}</span>
             }
             @case ('energia') {
               <span class="ficha energia" [attr.aria-label]="t.valor + ' de energía'">{{
@@ -64,6 +69,12 @@ const ICONOS: Record<string, { valor: string; titulo: string }> = {
     }
     .kw {
       color: var(--accent);
+    }
+    .flecha {
+      color: var(--muted);
+      font-size: 0.75em;
+      margin: 0 3px;
+      vertical-align: 0.1em;
     }
     .ficha {
       display: inline-grid;
@@ -131,7 +142,9 @@ function trocear(parrafo: string): Trozo[] {
     if (m.index! > ultimo) salida.push({ tipo: 'texto', valor: parrafo.slice(ultimo, m.index) });
     ultimo = m.index! + m[0].length;
     if (m[2]) {
-      salida.push({ tipo: 'keyword', valor: m[2] });
+      // [>] y [>>] no son keywords: son las flechas impresas en la carta.
+      if (/^>+$/.test(m[2])) salida.push({ tipo: 'flecha', valor: m[2].length > 1 ? '▶▶' : '▶' });
+      else salida.push({ tipo: 'keyword', valor: m[2] });
       continue;
     }
     const simbolo = m[1];

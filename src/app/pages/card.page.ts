@@ -6,6 +6,7 @@ import { CatalogService } from '../core/catalog.service';
 import { CollectionService } from '../core/collection.service';
 import { MappingOverridesService } from '../core/mapping-overrides.service';
 import { PricesService } from '../core/prices.service';
+import { TraduccionService } from '../core/traduccion.service';
 import { ValuationService } from '../core/valuation.service';
 import { ConfidenceBadgeComponent } from '../ui/confidence-badge.component';
 import { EurPipe, ThumbPipe } from '../ui/pipes';
@@ -50,11 +51,11 @@ import { RulesTextComponent } from '../ui/rules-text.component';
           <div class="datos">
             <header>
               <h1>{{ c.name }}</h1>
-              <p class="muted">{{ c.cardId }} · {{ c.setName }} · {{ c.rarity }}</p>
+              <p class="muted">{{ c.cardId }} · {{ c.setName }} · {{ t.etiqueta(c.rarity) }}</p>
               <p class="tipo">
-                {{ c.supertype ? c.supertype + ' ' : '' }}{{ c.type }}
+                {{ tipo() }}
                 @if (c.domains.length) {
-                  · {{ c.domains.join(', ') }}
+                  · {{ dominios() }}
                 }
                 @if (c.energy !== null) {
                   · energía {{ c.energy }}
@@ -176,10 +177,40 @@ import { RulesTextComponent } from '../ui/rules-text.component';
 
             @if (c.text) {
               <section class="bloque">
-                <h2>Texto</h2>
-                <app-rules-text [text]="c.text" />
+                <h2>
+                  Texto
+                  <span class="idiomas" role="group" aria-label="Idioma del texto">
+                    <button
+                      type="button"
+                      [class.activo]="t.idioma() === 'es'"
+                      [attr.aria-pressed]="t.idioma() === 'es'"
+                      (click)="t.idioma.set('es')"
+                    >
+                      ES
+                    </button>
+                    <button
+                      type="button"
+                      [class.activo]="t.idioma() === 'en'"
+                      [attr.aria-pressed]="t.idioma() === 'en'"
+                      (click)="t.idioma.set('en')"
+                    >
+                      EN
+                    </button>
+                  </span>
+                </h2>
+                @if (reglas().sinTraducir) {
+                  <p class="sin-traducir">
+                    Esta carta aún no está traducida: se muestra en inglés.
+                  </p>
+                }
+                <app-rules-text [text]="reglas().valor" [attr.lang]="idiomaReglas()" />
                 @if (c.flavour) {
-                  <p class="flavour">{{ c.flavour }}</p>
+                  <p
+                    class="flavour"
+                    [attr.lang]="ambientacion().sinTraducir || t.idioma() === 'en' ? 'en' : 'es'"
+                  >
+                    {{ ambientacion().valor }}
+                  </p>
                 }
               </section>
             }
@@ -321,6 +352,30 @@ import { RulesTextComponent } from '../ui/rules-text.component';
       color: var(--muted);
       margin: 12px 0 0;
     }
+    .idiomas {
+      margin-left: auto;
+      display: inline-flex;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .idiomas button {
+      border: 0;
+      border-radius: 0;
+      padding: 3px 10px;
+      font-size: 0.75rem;
+      background: transparent;
+      color: var(--muted);
+    }
+    .idiomas button.activo {
+      background: var(--surface-2);
+      color: var(--text);
+    }
+    .sin-traducir {
+      font-size: 0.8rem;
+      color: var(--accent);
+      margin: 0 0 8px;
+    }
 
     @media (max-width: 700px) {
       .ficha {
@@ -349,12 +404,31 @@ export class CardPage {
   private readonly location = inject(Location);
   private readonly title = inject(Title);
   private readonly router = inject(Router);
+  protected readonly t = inject(TraduccionService);
 
   /** De la ruta `/carta/:cardId`. */
   readonly cardId = input.required<string>();
 
   protected readonly card = computed(() => this.catalog.card(this.cardId()));
   protected readonly pricing = computed(() => this.valuation.pricing(this.cardId()));
+
+  // Texto en el idioma elegido; si falta la traducción, en inglés y avisando.
+  protected readonly reglas = computed(() => this.t.texto(this.card()?.text));
+  protected readonly ambientacion = computed(() => this.t.texto(this.card()?.flavour));
+  protected readonly idiomaReglas = computed(() =>
+    this.t.idioma() === 'en' || this.reglas().sinTraducir ? 'en' : 'es',
+  );
+  /** "Champion Unit" en inglés; "Unidad · Campeón" en español, que pone el tipo delante. */
+  protected readonly tipo = computed(() => {
+    const c = this.card();
+    if (!c) return '';
+    if (this.t.idioma() === 'en') return c.supertype ? `${c.supertype} ${c.type}` : c.type;
+    const tipo = this.t.etiqueta(c.type);
+    return c.supertype ? `${tipo} · ${this.t.etiqueta(c.supertype)}` : tipo;
+  });
+  protected readonly dominios = computed(() =>
+    (this.card()?.domains ?? []).map((d) => this.t.etiqueta(d)).join(', '),
+  );
   /** Ordenados por precio, como hace el mapeo: así se ve de un vistazo cuál es cuál. */
   protected readonly candidatos = computed(() => {
     const ref = (id: number) => {
