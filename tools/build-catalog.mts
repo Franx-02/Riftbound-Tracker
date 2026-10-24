@@ -216,96 +216,150 @@ function resolverExpansiones(
 
 // ------------------------------------------------------- mapeo
 
-function mapear(
-  carta: Carta,
-  productosPorNombre: Map<string, Producto[]>,
+/**
+ * Que version de la carta es, de la mas barata a la mas cara: normal, alt art,
+ * Showcase y Signature. Ordenar por numero de coleccion **no vale**: las cartas
+ * especiales llevan su propia numeracion y empiezan otra vez por 1 (en Radiance,
+ * `RAD-SP2` es la Showcase de Akali y `RAD-015` la Rare normal, mucho mas barata).
+ * La Signature es la mas cara con diferencia: la Kai'Sa de Origins vale 0,32 EUR
+ * de unidad, 95 EUR de leyenda y 1.100 EUR firmada.
+ */
+function ordenVariante(carta: Carta): number {
+  const suf = sufijo(carta.cardId).toUpperCase();
+  if (suf === '*' || carta.signature) return 3;
+  if (carta.rarity === 'Showcase') return 2;
+  if (/^[A-Z]$/.test(suf) || carta.alt) return 1;
+  return 0;
+}
+
+/**
+ * Mapea todas las cartas que comparten nombre dentro de un set de una vez.
+ *
+ * No se puede decidir carta a carta: en un set puede haber **varias cartas distintas
+ * con el mismo nombre** (en Origins, Kai'Sa es la unidad 247, la leyenda 299 y la
+ * leyenda firmada 299*), y Cardmarket tiene un producto por cada una, todos con el
+ * mismo nombre exacto. La unica senal es el precio, asi que se ordenan las cartas del
+ * grupo por numero y variante, se ordenan los productos por precio, y se emparejan en
+ * ese orden. Si las dos listas miden lo mismo, el emparejamiento es de fiar.
+ */
+function mapearGrupo(
+  grupo: Carta[],
+  cands: Producto[],
   expansiones: Map<string, Set<number>>,
   precios: ReturnType<typeof hacerPrecios>,
-): Mapeo {
-  const cands = productosPorNombre.get(normalizar(carta.name)) ?? [];
+): Map<string, Mapeo> {
+  const salida = new Map<string, Mapeo>();
   const candidatos = cands.map((p) => p.idProduct);
-  const sinMapear = (motivo: string): Mapeo => ({
-    idProduct: null,
-    confianza: 'sin-mapear',
-    motivo,
-    candidatos,
-  });
+  const asignar = (
+    cardId: string,
+    idProduct: number | null,
+    confianza: Confianza,
+    motivo: string,
+  ) => salida.set(cardId, { idProduct, confianza, motivo, candidatos });
 
   if (cands.length === 0) {
-    return sinMapear('No existe como single en Cardmarket (token o carta no vendida suelta)');
+    for (const c of grupo) {
+      asignar(
+        c.cardId,
+        null,
+        'sin-mapear',
+        'No existe como single en Cardmarket (token o carta no vendida suelta)',
+      );
+    }
+    return salida;
   }
 
-  const delSet = expansiones.get(carta.set) ?? new Set<number>();
-  const principal = cands
+  const delSet = expansiones.get(grupo[0].set) ?? new Set<number>();
+  const productos = cands
     .filter((p) => delSet.has(p.idExpansion))
     .map((p) => p.idProduct)
     .sort((a, b) => precios.referencia(a) - precios.referencia(b));
 
-  const suf = sufijo(carta.cardId).toUpperCase();
-
-  if (suf === '-P' || /promo/i.test(carta.name)) {
-    if (principal.length === 1) {
-      return {
-        idProduct: principal[0],
-        confianza: 'media',
-        motivo: 'Promo: unico candidato en su expansion',
-        candidatos,
-      };
-    }
-    if (principal.length > 1) {
-      return {
-        idProduct: principal[0],
-        confianza: 'baja',
-        motivo: 'Promo con ' + principal.length + ' candidatos: la mas barata',
-        candidatos,
-      };
-    }
-    return sinMapear('Promo sin candidato en las expansiones del set');
+  // Las promos de un set normal (la `SFD-R03B` de Nexus Night, por ejemplo) no se
+  // venden en la expansion del set, sino en las de promos, y no forman parte de la
+  // serie de variantes. En los sets que son de promos enteros (OPP, PR, JDG) no hay
+  // nada que separar: ahi la promo es la carta normal y se empareja como las demas.
+  const esPromo = (c: Carta) =>
+    sufijo(c.cardId).toUpperCase() === '-P' || /promo/i.test(c.name) || c.rarity === 'Promo';
+  let promos = grupo.filter(esPromo);
+  let resto = grupo.filter((c) => !esPromo(c));
+  if (resto.length === 0) {
+    resto = promos;
+    promos = [];
   }
 
-  if (suf === 'A' || suf === 'B' || carta.alt) {
-    if (principal.length >= 2) {
-      return {
-        idProduct: principal[1],
-        confianza: 'media',
-        motivo: 'Variante: segunda mas barata del set (alt art)',
-        candidatos,
-      };
+  const fuera = cands
+    .filter((p) => !delSet.has(p.idExpansion))
+    .map((p) => p.idProduct)
+    .sort((a, b) => precios.referencia(a) - precios.referencia(b));
+  for (const c of promos) {
+    if (fuera.length === 1) {
+      asignar(c.cardId, fuera[0], 'media', 'Promo: unico candidato fuera de la expansion del set');
+    } else if (fuera.length > 1) {
+      asignar(
+        c.cardId,
+        fuera[0],
+        'baja',
+        'Promo con ' + fuera.length + ' candidatos: la mas barata',
+      );
+    } else {
+      asignar(c.cardId, null, 'sin-mapear', 'Promo sin candidato en las expansiones de promos');
     }
-    return sinMapear('Variante sin un segundo producto en el set');
   }
 
-  if (suf === '') {
-    if (principal.length === 1) {
-      return {
-        idProduct: principal[0],
-        confianza: 'alta',
-        motivo: 'Unico producto con ese nombre en el set',
-        candidatos,
-      };
+  const cartas = resto.sort(
+    (a, b) =>
+      ordenVariante(a) - ordenVariante(b) || a.num - b.num || a.cardId.localeCompare(b.cardId),
+  );
+  if (cartas.length === 0) return salida;
+
+  if (productos.length === 0) {
+    if (cartas.length === 1 && cands.length === 1) {
+      asignar(
+        cartas[0].cardId,
+        cands[0].idProduct,
+        'media',
+        'Unico producto, pero en otra expansion',
+      );
+    } else {
+      for (const c of cartas) {
+        asignar(c.cardId, null, 'sin-mapear', 'Sin producto en las expansiones del set');
+      }
     }
-    if (principal.length > 1) {
-      const a = precios.referencia(principal[0]);
-      const b = precios.referencia(principal[1]);
-      return {
-        idProduct: principal[0],
-        confianza: b >= 3 * a ? 'alta' : 'baja',
-        motivo: principal.length + ' variantes en el set: la mas barata es la base',
-        candidatos,
-      };
-    }
-    if (cands.length === 1) {
-      return {
-        idProduct: cands[0].idProduct,
-        confianza: 'media',
-        motivo: 'Unico producto, pero en otra expansion',
-        candidatos,
-      };
-    }
-    return sinMapear('Sin producto en las expansiones del set');
+    return salida;
   }
 
-  return sinMapear('Sufijo desconocido: ' + suf);
+  if (cartas.length === productos.length) {
+    // Separadas = cada escalon de precio multiplica por 3 o mas al anterior. Con esa
+    // distancia, un error de emparejamiento no pasaria desapercibido.
+    const separadas = productos.every((id, i) => {
+      if (i === 0) return true;
+      const previo = precios.referencia(productos[i - 1]);
+      const actual = precios.referencia(id);
+      return Number.isFinite(previo) && Number.isFinite(actual) && actual >= 3 * previo;
+    });
+    const unica = cartas.length === 1;
+    const confianza: Confianza = unica || separadas ? 'alta' : 'media';
+    const motivo = unica
+      ? 'Unico producto con ese nombre en el set'
+      : cartas.length +
+        ' cartas con ese nombre y ' +
+        productos.length +
+        ' productos: emparejadas por precio' +
+        (separadas ? ' (precios bien separados)' : ' (precios parecidos)');
+    cartas.forEach((c, i) => asignar(c.cardId, productos[i], confianza, motivo));
+    return salida;
+  }
+
+  // Las listas no cuadran: empareja lo que se puede y deja el resto sin mapear.
+  const motivo =
+    cartas.length + ' cartas con ese nombre pero ' + productos.length + ' productos en el set';
+  cartas.forEach((c, i) =>
+    i < productos.length
+      ? asignar(c.cardId, productos[i], 'baja', motivo)
+      : asignar(c.cardId, null, 'sin-mapear', motivo),
+  );
+  return salida;
 }
 
 // ------------------------------------------------------- validacion
@@ -441,9 +495,24 @@ async function main(): Promise<void> {
     });
   }
 
-  const mapeos = new Map<string, Mapeo>();
+  // Agrupa por set y nombre normalizado: ese grupo se mapea en bloque (ver mapearGrupo).
+  const grupos = new Map<string, Carta[]>();
   for (const carta of cartasPorId.values()) {
-    mapeos.set(carta.cardId, mapear(carta, productosPorNombre, expansiones, precios));
+    const clave = carta.set + '|' + normalizar(carta.name);
+    let g = grupos.get(clave);
+    if (!g) {
+      g = [];
+      grupos.set(clave, g);
+    }
+    g.push(carta);
+  }
+
+  const mapeos = new Map<string, Mapeo>();
+  for (const grupo of grupos.values()) {
+    const cands = productosPorNombre.get(normalizar(grupo[0].name)) ?? [];
+    for (const [cardId, m] of mapearGrupo(grupo, cands, expansiones, precios)) {
+      mapeos.set(cardId, m);
+    }
   }
 
   const resumen: Record<string, number> = {};
