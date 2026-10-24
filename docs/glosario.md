@@ -4,7 +4,8 @@ Riftbound no tiene edición oficial en español: Riot ha anunciado primero el fr
 fija cómo se traduce cada término para que las ~1.200 cartas digan lo mismo de la misma forma.
 **Se revisa antes de traducir**: cambiarlo después obliga a rehacer las traducciones afectadas.
 
-Las decisiones abiertas están marcadas con ⚠️ y llevan mi recomendación.
+Decisiones cerradas por el usuario el 24/10/2026: keywords en inglés con el recordatorio
+traducido, kill → matar y Signature → Firma.
 
 ## Reglas generales
 
@@ -20,18 +21,18 @@ Las decisiones abiertas están marcadas con ⚠️ y llevan mi recomendación.
   "equipo", "hechizo", "campo de batalla" son masculinos.
 - Imperativo de tú: "Roba 1 carta", "Elige una unidad".
 
-## ⚠️ Decisión 1: las keywords
+## Decisión 1: las keywords (cerrada: opción A)
 
 Las keywords son lo que va entre corchetes: `[Accelerate]`, `[Deflect]`, `[Ambush]`, `[Tank]`…
 (39 distintas). En las cartas casi siempre llevan detrás un texto recordatorio entre paréntesis
 que explica qué hacen.
 
-- **A (recomendado): se quedan en inglés, y el texto recordatorio se traduce.**
+- **A (elegida): se quedan en inglés, y el texto recordatorio se traduce.**
   `[Accelerate] (Puedes pagar :rb_energy_1::rb_rune_fury: como coste adicional para que entre preparada.)`
   Es como juega la comunidad hispanohablante mientras no haya edición en español, coincide con las
   búsquedas en Riftbound.gg y Cardmarket, y no inventa nombres que una edición oficial futura
   podría contradecir. El significado no se pierde porque el recordatorio está en español.
-- **B: se traducen** (`[Acelerar]`, `[Desviar]`, `[Emboscada]`, `[Tanque]`…). Más fácil de leer para
+- B (descartada): se traducen (`[Acelerar]`, `[Desviar]`, `[Emboscada]`, `[Tanque]`…). Más fácil de leer para
   quien no sabe inglés, pero son nombres inventados por nosotros.
 
 Con A, las palabras que también son keyword se quedan en inglés aunque aparezcan sin corchetes
@@ -50,7 +51,7 @@ cuando funcionan como keyword ("Spend my buff", "Disempower a unit"): `buff`, `E
 | Battlefield | Campo de batalla |
 | Champion | Campeón |
 | Basic | Básica |
-| Signature | ⚠️ Firma (la carta exclusiva de un campeón; alternativa: "Exclusiva") |
+| Signature | Firma |
 | Token | Ficha |
 | Fury · Calm · Mind · Body · Chaos · Order | Furia · Calma · Mente · Cuerpo · Caos · Orden |
 | Colorless | Incolora |
@@ -70,7 +71,7 @@ cuando funcionan como keyword ("Spend my buff", "Disempower a unit"): `buff`, `E
 | draw | robar | "Draw 1" → "Roba 1" |
 | deal N (damage) | infligir N (de daño) | "Deal 3 to a unit" → "Inflige 3 a una unidad" |
 | damage / combat damage / bonus damage | daño / daño de combate / daño adicional | |
-| ⚠️ kill / die | matar / morir | "Kill a unit" → "Mata a una unidad"; "When I die" → "Cuando muera". Se elige matar y no "destruir" para que case con "die", que Riftbound usa mucho (`[Deathknell]`). |
+| kill / die | matar / morir | "Kill a unit" → "Mata a una unidad"; "When I die" → "Cuando muera". Se elige matar y no "destruir" para que case con "die", que Riftbound usa mucho (`[Deathknell]`). |
 | ready (adj.) / ready (verbo) | preparada / preparar | "enter ready" → "entrar preparada" |
 | exhausted / exhaust | agotada / agotar | |
 | give | dar | "Give a unit +2 :rb_might:" → "Da +2 :rb_might: a una unidad" |

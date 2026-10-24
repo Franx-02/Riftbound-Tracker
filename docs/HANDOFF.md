@@ -354,7 +354,7 @@ Hecho (24/10/2026):
 - **Volumen**: 1.164 textos de reglas y 773 de ambientación distintos. Hecha una muestra de 17
   (`000-muestra.json`) con la opción A del glosario, para que el usuario la revise.
 
-Pendiente: que el usuario apruebe el glosario, y traducir el resto por lotes.
+Glosario aprobado por el usuario el 24/10/2026 (opción A). Pendiente: traducir el resto por lotes.
 
 ### F5 — Lista de deseos
 Cartas que faltan, coste total en Cardmarket y **quién del grupo tiene copias** de cada una.
