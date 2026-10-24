@@ -188,8 +188,21 @@ describe('UsersService (modo demo)', () => {
     expect(users.profile('demo')).toEqual({
       uid: 'demo',
       displayName: 'Fran (demo)',
-      email: 'demo@localhost',
     });
     expect(users.error()).toBeNull();
+  });
+
+  // Con registro abierto el perfil lo lee cualquiera: el email no puede acabar ahí.
+  it('nunca publica el email, ni siquiera como sustituto del nombre', async () => {
+    localStorage.clear();
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({});
+    const users = TestBed.inject(UsersService);
+
+    await users.ensureProfile({ uid: 'x', email: 'secreto@example.com', displayName: null });
+    await users.loadProfiles();
+
+    expect(users.profile('x')).toEqual({ uid: 'x', displayName: 'Sin nombre' });
+    expect(localStorage.getItem('riftbound-demo-profiles')).not.toContain('secreto@example.com');
   });
 });

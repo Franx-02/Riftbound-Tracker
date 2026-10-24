@@ -4,7 +4,7 @@ App para gestionar colecciones de Riftbound con precios de Cardmarket. Angular (
 
 ## Estado: F2 terminada en código, pendiente de desplegar
 
-- Login con Google, acceso solo por invitación.
+- Registro y login con Google: entra cualquiera y la primera vez se crea su colección.
 - Catálogo de todas las cartas (10 sets, Radiance incluido) con búsqueda y filtros.
 - Ficha de carta con precio de Cardmarket, aviso cuando el precio es aproximado y botón para corregir el producto.
 - Mi colección: copias normales y foil con +/−, valor total y aviso de las cartas que aún no tienen precio.
@@ -15,10 +15,9 @@ App para gestionar colecciones de Riftbound con precios de Cardmarket. Angular (
 ### 1. Firebase
 1. Crea un proyecto en https://console.firebase.google.com (sin Google Analytics; el plan gratuito Spark basta).
 2. **Authentication → Sign-in method → Google**: actívalo.
-3. **Firestore Database → Crear base de datos** → modo producción → región `europe-west`.
-4. **Firestore → Reglas**: pega el contenido de `firestore.rules` y publica.
-5. **Firestore → Datos**: crea la colección `allowed` con un documento por invitado. El **ID del documento es el email en minúsculas** (p. ej. `tuemail@gmail.com`); el contenido da igual (pon un campo `nombre`). Uno para ti, otro para Sans y otro para Estela.
-6. **Configuración del proyecto → Tus apps → Web (`</>`)**: registra una app y copia el objeto `firebaseConfig` en `src/environments/firebase.config.ts`.
+3. **Firestore Database → Crear base de datos** → modo producción → región `europe-west1`. La región no se puede cambiar después.
+4. **Firestore → Reglas**: pega el contenido de `firestore.rules` y publica. **Repite este paso cada vez que cambie ese fichero**: Netlify no publica las reglas.
+5. **Configuración del proyecto → Tus apps → Web (`</>`)**: registra una app y copia el objeto `firebaseConfig` en `src/environments/firebase.config.ts`.
 
 ### 2. GitHub
 ```bash
@@ -45,8 +44,8 @@ npm test            # tests
 ```
 `localhost` ya está autorizado en Firebase por defecto.
 
-## Dar acceso a alguien nuevo
-Añade un documento en `allowed` con su email. No hace falta redesplegar.
+## Usuarios
+El registro es abierto: cualquiera con cuenta de Google entra y se le crea su colección. Los demás usuarios ven su nombre y su colección en solo lectura; el email no se guarda en ningún sitio visible.
 
 ## Problemas conocidos
 - **iPhone con la app instalada en la pantalla de inicio:** el popup de Google puede no abrirse dentro de la PWA. Si pasa, entra una vez desde Safari normal; la sesión se comparte. Si persiste, se cambia a login por redirección (requiere configurar el dominio de auth).

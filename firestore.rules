@@ -1,9 +1,12 @@
 rules_version = '2';
 
-// Modelo de acceso:
-// - Solo entran los emails con un documento en /allowed/{email} (se añaden desde la consola de Firebase).
-// - Un invitado puede LEER los datos de cualquier otro invitado (colecciones visibles para el grupo).
-// - Un invitado solo puede ESCRIBIR bajo su propio uid.
+// Modelo de acceso: registro abierto.
+// - Entra cualquier cuenta de Google (email verificado, que en Google siempre lo está).
+// - Cualquier usuario puede LEER la colección y el nombre de los demás (en solo lectura).
+// - Cada usuario solo puede ESCRIBIR bajo su propio uid.
+// - Como escribe cualquiera, se valida la forma de cada documento: así nadie guarda basura
+//   ni documentos enormes que gasten la cuota gratuita.
+// Todo dato nuevo necesita su regla aquí: lo que no aparece, se deniega.
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -11,26 +14,50 @@ service cloud.firestore {
       return request.auth != null && request.auth.token.email_verified == true;
     }
 
-    function invited() {
-      return signedIn()
-        && exists(/databases/$(database)/documents/allowed/$(request.auth.token.email.lower()));
+    function owner(uid) {
+      return signedIn() && request.auth.uid == uid;
     }
 
-    // Lista de invitados: cada uno puede comprobar su propia invitación. Nadie la modifica desde la app.
-    match /allowed/{email} {
-      allow read: if signedIn() && email == request.auth.token.email.lower();
-      allow write: if false;
+    function shortString(v, max) {
+      return v is string && v.size() > 0 && v.size() <= max;
     }
 
-    // Perfil público mínimo (nombre para mostrar a los demás) y todos los datos del usuario.
-    match /users/{uid}/{document=**} {
-      allow read: if invited();
-      allow write: if invited() && request.auth.uid == uid;
+    function copies(v) {
+      return v is int && v >= 0 && v <= 9999;
     }
 
-    // Correcciones de mapeo compartidas (F2+): cualquier invitado lee y corrige.
+    // Perfil público: solo el nombre para mostrar. El email NO se guarda aquí, porque con
+    // registro abierto lo leería cualquier desconocido.
+    match /users/{uid} {
+      allow read: if signedIn();
+      allow write: if owner(uid)
+        && request.resource.data.keys().hasOnly(['displayName'])
+        && shortString(request.resource.data.displayName, 80);
+    }
+
+    // Colección: users/{uid}/collection/{cardId} = { normal, foil }.
+    match /users/{uid}/collection/{cardId} {
+      allow read: if signedIn();
+      allow delete: if owner(uid);
+      allow create, update: if owner(uid)
+        && cardId.size() <= 20
+        && request.resource.data.keys().hasOnly(['normal', 'foil'])
+        && copies(request.resource.data.normal)
+        && copies(request.resource.data.foil);
+    }
+
+    // Correcciones de mapeo compartidas: cualquiera lee y corrige, y vale para todos.
+    // Las reglas no pueden comprobar que `by` sea de verdad el nombre de quien escribe,
+    // pero sí que el documento tenga solo estos campos y con tamaños razonables.
     match /mappingOverrides/{cardId} {
-      allow read, write: if invited();
+      allow read: if signedIn();
+      allow delete: if signedIn();
+      allow create, update: if signedIn()
+        && cardId.size() <= 20
+        && request.resource.data.keys().hasOnly(['idProduct', 'by', 'at'])
+        && request.resource.data.idProduct is int
+        && shortString(request.resource.data.by, 80)
+        && shortString(request.resource.data.at, 40);
     }
   }
 }

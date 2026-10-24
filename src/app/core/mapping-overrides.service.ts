@@ -11,7 +11,7 @@ import { db } from './firebase';
  */
 export interface MappingOverride {
   idProduct: number;
-  /** Nombre o email de quien la hizo, para que el resto sepa de dónde sale. */
+  /** Nombre de quien la hizo, para que el resto sepa de dónde sale. */
   by: string;
   /** ISO 8601. */
   at: string;
@@ -59,7 +59,8 @@ export class MappingOverridesService {
     const user = this.auth.user();
     const valor: MappingOverride = {
       idProduct,
-      by: user?.displayName ?? user?.email ?? 'desconocido',
+      // Solo el nombre: lo lee cualquiera, y el email no se publica.
+      by: (user?.displayName?.trim() || 'Alguien').slice(0, 80),
       at: new Date().toISOString(),
     };
     await this.cambiar(cardId.toUpperCase(), valor);

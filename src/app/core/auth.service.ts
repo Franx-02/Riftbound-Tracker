@@ -6,15 +6,16 @@ import {
   signInWithPopup,
   signOut,
 } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
 import { DEMO } from './demo';
-import { auth, db } from './firebase';
+import { auth } from './firebase';
 import { UsersService } from './users.service';
 
-export type AccessState = 'loading' | 'signed-out' | 'not-invited' | 'allowed';
+/** Registro abierto: cualquier cuenta de Google entra. No hay estado de "no invitado". */
+export type AccessState = 'loading' | 'signed-out' | 'signed-in';
 
 export interface AppUser {
   uid: string;
+  /** Solo para la sesión propia. Nunca se guarda en Firestore: lo leerían los demás. */
   email: string | null;
   displayName: string | null;
 }
@@ -36,63 +37,47 @@ export class AuthService {
   constructor() {
     if (DEMO) {
       const signedIn = sessionStorage.getItem(DEMO_KEY) === '1';
-      this.aplicar(signedIn ? DEMO_USER : null, signedIn ? 'allowed' : 'signed-out');
+      this.aplicar(signedIn ? DEMO_USER : null);
       this.ready = Promise.resolve();
       return;
     }
     this.ready = new Promise((resolve) => {
-      onAuthStateChanged(auth, async (user) => {
-        const appUser = user ? toAppUser(user) : null;
-        this.aplicar(appUser, await this.resolveAccess(user));
+      onAuthStateChanged(auth, (user) => {
+        this.aplicar(user ? toAppUser(user) : null);
         resolve();
       });
     });
   }
 
-  /** Abre el popup de Google y devuelve si la cuenta está invitada. */
-  async signIn(): Promise<AccessState> {
+  /** Abre el popup de Google. La primera vez que entras, esto es el registro. */
+  async signIn(): Promise<void> {
     if (DEMO) {
       sessionStorage.setItem(DEMO_KEY, '1');
-      this.aplicar(DEMO_USER, 'allowed');
-      return 'allowed';
+      this.aplicar(DEMO_USER);
+      return;
     }
     const { user } = await signInWithPopup(auth, new GoogleAuthProvider());
-    const access = await this.resolveAccess(user);
-    this.aplicar(toAppUser(user), access);
-    return access;
-  }
-
-  /**
-   * Único sitio donde se fija el estado de sesión. En cuanto hay acceso se crea o
-   * refresca `users/{uid}`, que es lo que hace que los demás te vean en el grupo.
-   * No se espera a que termine: si falla, la app sigue y el error queda en UsersService.
-   */
-  private aplicar(user: AppUser | null, access: AccessState): void {
-    this.user.set(user);
-    this.access.set(access);
-    if (user && access === 'allowed') void this.users.ensureProfile(user);
+    this.aplicar(toAppUser(user));
   }
 
   async signOut(): Promise<void> {
     if (DEMO) {
       sessionStorage.removeItem(DEMO_KEY);
-      this.user.set(null);
-      this.access.set('signed-out');
+      this.aplicar(null);
       return;
     }
     await signOut(auth);
   }
 
-  /** Un usuario entra solo si existe allowed/{email}. Las reglas de Firestore aplican lo mismo en servidor. */
-  private async resolveAccess(user: User | null): Promise<AccessState> {
-    if (!user?.email) return 'signed-out';
-    try {
-      const snap = await getDoc(doc(db, 'allowed', user.email.toLowerCase()));
-      return snap.exists() ? 'allowed' : 'not-invited';
-    } catch {
-      // Las reglas deniegan la lectura a quien no está invitado.
-      return 'not-invited';
-    }
+  /**
+   * Único sitio donde se fija el estado de sesión. En cuanto hay sesión se crea o
+   * refresca `users/{uid}`, que es lo que hace que los demás te vean.
+   * No se espera a que termine: si falla, la app sigue y el error queda en UsersService.
+   */
+  private aplicar(user: AppUser | null): void {
+    this.user.set(user);
+    this.access.set(user ? 'signed-in' : 'signed-out');
+    if (user) void this.users.ensureProfile(user);
   }
 }
 

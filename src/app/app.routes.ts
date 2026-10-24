@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { allowedGuard, loginGuard } from './core/guards';
+import { signedInGuard, loginGuard } from './core/guards';
 
 export const routes: Routes = [
   {
@@ -9,7 +9,7 @@ export const routes: Routes = [
   },
   {
     path: '',
-    canActivate: [allowedGuard],
+    canActivate: [signedInGuard],
     loadComponent: () => import('./pages/shell.component').then((m) => m.ShellComponent),
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'coleccion' },

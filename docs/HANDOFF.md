@@ -9,8 +9,9 @@ Este documento recoge todo lo decidido y descubierto hasta ahora. Las secciones 
 
 App web y móvil (PWA) para gestionar colecciones de cartas de **Riftbound** (TCG de League of Legends), con precios de Cardmarket.
 
-- **Usuarios:** 3 al inicio (Fran, Sans, Estela). Puede crecer. Acceso **solo por invitación**.
-- **Cada usuario tiene su colección**, editable solo por él y **visible en solo lectura para el resto del grupo**.
+- **Usuarios:** 3 al inicio (Fran, Sans, Estela). **Registro abierto** desde el 24/10/2026, por decisión del usuario: entra cualquier cuenta de Google y la primera vez se crea su colección. Antes era solo por invitación (`allowed/{email}`); eso ya no existe.
+- **Cada usuario tiene su colección**, editable solo por él y **visible en solo lectura para cualquier otro usuario**.
+- Consecuencias aceptadas del registro abierto: cualquiera ve el nombre y la colección de los demás (el email no se publica); cualquiera puede cambiar las correcciones de precio compartidas; y la cuota gratuita de Firebase la comparte todo el que entre. **Pendiente del usuario:** revisar los términos de Cardmarket sobre sus datos y la política de contenido de fans de Riot, que el traspaso pedía revisar antes de abrir la app a gente de fuera del grupo.
 - **Catálogo:** todas las cartas de todos los sets, en inglés.
 - **Por carta:** cantidad normal y foil, precio de Cardmarket, imagen y texto traducido al español.
 - **Entrada de cartas:** buscador, importar/exportar CSV (formato DotGG) y escáner con cámara.
@@ -38,8 +39,8 @@ Descartados y por qué:
 
 ```
 src/app/core/firebase.ts        initializeApp, auth, db
-src/app/core/auth.service.ts    login Google, comprobación de invitación, MODO DEMO
-src/app/core/guards.ts          allowedGuard, loginGuard
+src/app/core/auth.service.ts    login (y registro) con Google, MODO DEMO
+src/app/core/guards.ts          signedInGuard, loginGuard
 src/app/core/prices.service.ts  carga /api/prices en un signal
 src/app/pages/login.page.ts     pantalla de login
 src/app/core/catalog.service.ts F2 paso 2: catálogo en memoria, búsqueda y filtros
@@ -84,25 +85,26 @@ Verificado:
 `auth.service.ts` activa un modo demo **solo si** `firebaseConfig.apiKey === 'REEMPLAZAR'` **y** el host es `localhost`/`127.0.0.1`. En ese modo el login entra sin cuenta con un usuario `demo`. Fuera de localhost nunca se activa. Mantener esta condición doble al tocar el servicio. **Cuidado:** en modo demo no hay Firestore real, así que F2 necesitará un almacén falso (en memoria o `localStorage`) detrás de la misma interfaz, o el emulador de Firestore.
 
 ### Pendiente del usuario para cerrar F1
-Lo describe paso a paso el README y la guía PDF: crear proyecto Firebase, activar Google, Firestore en `europe-west1`, publicar `firestore.rules`, crear `allowed/{email}` para los tres, rellenar `firebase.config.ts`, push a GitHub, importar en Netlify y **añadir el dominio de Netlify a los dominios autorizados de Firebase**.
+Lo describe paso a paso el README y la guía PDF: crear proyecto Firebase, activar Google, Firestore en `europe-west1`, publicar `firestore.rules`, rellenar `firebase.config.ts`, push a GitHub, importar en Netlify y **añadir el dominio de Netlify a los dominios autorizados de Firebase**.
 
 ## 4. Modelo de datos
 
 ### Firestore
 ```
-allowed/{email-en-minúsculas}          { nombre }                 ← lista de invitados, solo se edita desde la consola
-users/{uid}                            { displayName, email }     ← perfil público mínimo (crear al primer login, F2)
+users/{uid}                            { displayName }            ← perfil público: SOLO el nombre (lo lee cualquiera)
 users/{uid}/collection/{cardId}        { normal, foil }
 users/{uid}/wishlist/{cardId}          { qty, nota }
 users/{uid}/decks/{deckId}             { nombre, leyenda, cartas: { [cardId]: qty } }
 mappingOverrides/{cardId}              { idProduct, by, at }      ← correcciones de mapeo compartidas
 ```
 
-Reglas (`firestore.rules`, ya escritas):
-- `invited()` = sesión con email verificado y existe `allowed/{email.lower()}`.
-- `allowed/{email}`: cada uno lee solo el suyo; nadie escribe desde la app.
-- `users/{uid}/**`: leer si `invited()`; escribir si `invited()` y `uid == request.auth.uid`.
-- `mappingOverrides/*`: leer y escribir si `invited()`.
+Reglas (`firestore.rules`):
+- `signedIn()` = sesión con email verificado (las cuentas de Google lo están siempre).
+- `users/{uid}`: leer si `signedIn()`; escribir solo el dueño, y solo el campo `displayName` (texto de 1 a 80).
+- `users/{uid}/collection/{cardId}`: leer si `signedIn()`; escribir solo el dueño, solo `normal` y `foil`, enteros de 0 a 9999.
+- `mappingOverrides/{cardId}`: leer y escribir si `signedIn()`; solo `idProduct` (entero), `by` y `at` (textos cortos).
+- **Lo que no aparece en las reglas se deniega.** `wishlist` y `decks` necesitarán su regla en F5 y F6.
+- Las reglas validan la forma de los documentos porque escribe cualquiera: así nadie guarda basura ni documentos enormes que gasten la cuota gratuita.
 
 Decisiones abiertas del modelo:
 - **Un documento por carta** en `collection` es lo correcto para editar (+1/−1 sin reescribir todo), pero leer la colección de otro usuario cuesta 1 lectura por carta. Con 3 usuarios y ~400 cartas, el plan Spark (50.000 lecturas/día) sobra; si el grupo crece mucho, valorar un documento resumen por usuario.
@@ -279,14 +281,14 @@ Cada fase termina desplegada y usable. No empezar la siguiente sin cumplir el cr
 Mapeo validado contra el CSV real.
 
 ### F1 — Esqueleto y despliegue (código ✅, despliegue pendiente del usuario)
-**Salida:** URL de Netlify, los tres entran con Google, un email no invitado se queda fuera, `/api/prices` responde.
+**Salida:** URL de Netlify, cualquiera entra con Google y se le crea su colección, `/api/prices` responde.
 
 ### F2 — Catálogo, buscador y colección (código ✅, salida pendiente del despliegue)
 1. ✅ `tools/build-catalog.mts`: RiftHunt + Cardmarket → `public/data/catalog.json` (1.638 cartas, 10 sets) + `mapping.json`. `npm run build:catalog -- --check` valida contra `collection1.csv` y da 371 altas, igual que F0.
 2. ✅ `src/app/core/catalog.service.ts`: carga los dos JSON una sola vez, índice por `cardId` (siempre en mayúsculas), `search()` por nombre o código con orden de relevancia, `filter()` por set, rareza, dominio y tipo, y signals `rarities/types/domains` sacados del propio catálogo para montar los filtros sin listas a mano. El service worker ya cachea `/data/*.json`.
 3. ✅ `CollectionService`: interfaz `CollectionStore` con dos implementaciones (Firestore y localStorage en demo). +/− optimista: pinta antes de guardar y deshace si falla. Escrituras en cola por carta, así que varios clics seguidos acaban en el último valor. Una carta a 0/0 borra su documento. Todo se vacía al cambiar de sesión.
    - **`cards` es siempre la colección propia**, la que pintan y editan el catálogo, la ficha y los +/−. Las ajenas van aparte: `loadOther(uid)` las lee en solo lectura y las cachea para la sesión, y `other(uid)` las devuelve. Así mirar la de otro no cambia lo que ves en el resto de la app, y F5 (quién del grupo tiene cada carta) puede leer varias a la vez.
-4. ✅ `UsersService.ensureProfile`: `AuthService` la llama en cuanto hay acceso (en cada arranque, no solo el primero: refresca el nombre si cambió en Google y solo escribe si hay diferencia). `loadProfiles()` lista el grupo; las reglas actuales ya permiten ese `list` a invitados.
+4. ✅ `UsersService.ensureProfile`: `AuthService` la llama en cuanto hay acceso (en cada arranque, no solo el primero: refresca el nombre si cambió en Google y solo escribe si hay diferencia). `loadProfiles()` lista a todos los usuarios. El perfil guarda solo el nombre: con registro abierto el email lo leería cualquiera. Se escribe sin `merge`, así que borra el email que guardaban las versiones anteriores.
    - **Sin verificar contra Firestore real**: los tests corren sobre el almacén demo. Cuando exista el proyecto de Firebase, falta probarlo con el emulador o en el despliegue.
 5. ✅ Pantallas, probadas en el navegador (escritorio y móvil) con las 390 cartas de collection1.csv cargadas en el almacén demo. Valor total 309,71 €, igual que el generador.
    - **Catálogo**: búsqueda, filtros por set, rareza, dominio y tipo, "solo las que tengo", carga de 60 en 60 al hacer scroll. El set más reciente sale primero. Los filtros, las cartas pintadas y el scroll se conservan al volver de una ficha.

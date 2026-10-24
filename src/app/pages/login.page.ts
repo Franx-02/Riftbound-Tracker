@@ -12,15 +12,8 @@ import { AuthService } from '../core/auth.service';
         @case ('loading') {
           <p class="muted">Cargando…</p>
         }
-        @case ('not-invited') {
-          <p>
-            <strong>{{ auth.user()?.email }}</strong> no está invitado. Pide a quien administra la
-            app que añada tu email.
-          </p>
-          <button class="secondary" (click)="auth.signOut()">Usar otra cuenta</button>
-        }
         @default {
-          <p class="muted">Acceso solo por invitación.</p>
+          <p class="muted">Entra con tu cuenta de Google. La primera vez se crea tu colección.</p>
           @if (auth.demo) {
             <p class="demo">Modo demo: Firebase aún sin configurar. El botón entra sin cuenta.</p>
           }
@@ -44,9 +37,20 @@ export class LoginPage {
     this.busy.set(true);
     this.error.set(null);
     try {
-      if ((await this.auth.signIn()) === 'allowed') await this.router.navigateByUrl('/');
+      await this.auth.signIn();
+      await this.router.navigateByUrl('/');
     } catch (e) {
-      this.error.set(e instanceof Error ? e.message : String(e));
+      const codigo = (e as { code?: string }).code;
+      // Cerrar el popup sin elegir cuenta no es un error que haya que enseñar.
+      if (codigo === 'auth/popup-closed-by-user' || codigo === 'auth/cancelled-popup-request')
+        return;
+      this.error.set(
+        codigo === 'auth/popup-blocked'
+          ? 'El navegador ha bloqueado la ventana de Google. Permite las ventanas emergentes para este sitio.'
+          : e instanceof Error
+            ? e.message
+            : String(e),
+      );
     } finally {
       this.busy.set(false);
     }

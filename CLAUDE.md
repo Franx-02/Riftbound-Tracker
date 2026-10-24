@@ -1,6 +1,6 @@
 # Riftbound Collection
 
-App PWA (Angular 22 + Netlify + Firebase) para colecciones de cartas de Riftbound con precios de Cardmarket. Uso privado de un grupo de amigos, por invitación, coste 0 €.
+App PWA (Angular 22 + Netlify + Firebase) para colecciones de cartas de Riftbound con precios de Cardmarket. Registro abierto con Google (cualquiera entra), coste 0 €.
 
 **Lee `docs/HANDOFF.md` antes de empezar cualquier tarea.** Contiene las decisiones, los datos externos, el algoritmo de mapeo y el plan por fases. F2 tiene el código terminado; su criterio de salida, igual que el de F1, espera al despliegue en Firebase y Netlify. La siguiente fase de código es **F3** (importar y exportar CSV).
 
@@ -14,7 +14,8 @@ App PWA (Angular 22 + Netlify + Firebase) para colecciones de cartas de Riftboun
 
 ## Reglas del proyecto
 - Angular moderno: componentes standalone, signals, control flow `@if/@for`, `inject()`.
-- La seguridad está en `firestore.rules`, no en el front. Todo dato nuevo en Firestore necesita su regla.
+- La seguridad está en `firestore.rules`, no en el front. Todo dato nuevo en Firestore necesita su regla, que valide la forma del documento: escribe cualquiera. Tras cambiar el fichero, el usuario tiene que publicarlo en la consola de Firebase.
+- Nunca guardar el email ni otros datos personales en documentos que lean otros usuarios.
 - Mantener el **modo demo**: solo con `firebaseConfig.apiKey === 'REEMPLAZAR'` y host localhost. Cada servicio que use Firestore necesita su equivalente en modo demo. El flag vive solo en `src/app/core/demo.ts`.
 - Cardmarket usa `0` para "sin datos": nunca valorar una carta a 0 € sin indicarlo.
 - Catálogo: usar **RiftHunt** (`api.rifthunt.com/bulk/cards`), no Riftcodex: Riftcodex no tiene Radiance.
