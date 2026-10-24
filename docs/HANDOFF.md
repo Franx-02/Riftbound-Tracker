@@ -393,34 +393,41 @@ Hecho (25/10/2026):
 ### F6 — Mazos
 Crear mazos; validación básica (leyenda, 40 cartas en el mazo principal, runas, 3 campos de batalla; comprobar reglas oficiales antes de codificarlas); qué falta respecto a tu colección, cuánto cuesta completarlo y enviar lo que falta a la lista de deseos.
 
-### F7 — Escáner (el último y más arriesgado) ← HECHO (falta probarlo con cartas físicas)
-OCR en el navegador (p. ej. Tesseract.js) del código impreso abajo a la izquierda de la carta, con formato `SFD • 198/221`. Riesgos: foils, reflejos, letra muy pequeña. Si no es fiable, limitarlo a sugerir candidatos. El buscador cubre lo mismo.
+### F7 — Escáner ← HECHO (falta probarlo con cartas físicas)
+Plan original: OCR del código impreso abajo a la izquierda (`SFD • 198/221`). Se hizo así el
+25/10/2026 con Tesseract.js, pero el usuario pidió reconocer la carta **por la imagen**, y además
+en producción el OCR fallaba al cargar ("e is not a function", por cómo el build empaqueta
+Tesseract). Se quitó el OCR y la dependencia. Lo que hay ahora:
 
-Se hizo antes que F6 a petición del usuario (25/10/2026):
-- Pantalla `/escanear` (enlace "Escanear" en la barra), con tres entradas:
-  - **Cámara** trasera con una franja guía: lee esa franja cada ~0,7 s hasta encontrar un código,
-    vibra y se para ("Escanear otra" sigue). La guía se traduce a píxeles del fotograma teniendo
-    en cuenta el `object-fit: cover` del vídeo.
-  - **Foto** (`<input type=file capture>`, sirve también en iOS si la cámara web falla): prueba la
-    esquina de abajo a la izquierda, la franja de abajo y la foto entera, y se queda con la primera
-    lectura que traiga `/total` (sin total puede ser ruido de la ilustración).
-  - **A mano**: `SFD 198`, `sfd198`, `RAD-020A`.
-- Los resultados enseñan las cartas con ese código y sus +/− para sumarlas a la colección. Las alt
-  art y firmadas comparten número con la normal, así que salen todas y el usuario elige. Las
-  **promos** llevan impreso el código de la carta original seguido de `• P` (`RAD • 015/167 • P`
-  es OPP-015): se añaden las promos con el mismo nombre (sin el paréntesis final) y, si se leyó la
-  P, van delante.
-- `src/app/core/scanner.ts`: `parseCodigos` (corrige confusiones del OCR: O↔0, I↔1, S↔5…, y
-  descarta sets inexistentes y números que no caben en el total) y `cartasDelCodigo` (compara con
-  el código de la carta, no con `num`: las runas `RAD-R01` y showcase `RAD-SP1` tienen `num` 1).
-- `src/app/core/ocr.service.ts`: Tesseract.js 7 (`tesseract.js@7.0.0`, Apache-2.0) cargado bajo
-  demanda; el motor y el idioma inglés se descargan de su CDN (jsdelivr) la primera vez y quedan en
-  el navegador. Preprocesado: recorte ampliado, grises, texto oscuro sobre claro y umbral de Otsu.
-- Medido con las imágenes oficiales del catálogo usadas como "foto": **35 de 40** aciertos, ~0,7 s
-  por foto. Los fallos son imágenes del CDN de baja resolución (500–700 px). La cámara se probó
-  con un vídeo simulado; **falta probarla con cartas físicas** en el móvil, sobre todo foils.
-- No lee las runas (llevan otro formato de código). En consola salen mensajes de Tesseract como
-  "Estimating resolution as…": son avisos suyos, no errores.
+- **Huella visual** (`src/app/core/huella.ts`, código puro que comparten la app y la herramienta):
+  de la ilustración de la carta (`ZONA_ILUSTRACION`) se saca un pHash de 64 bits de la luminancia
+  (forma) y una rejilla de color 4×4 en cromaticidad (aguanta cambios de luz). La distancia suma
+  las dos con el mismo peso (`PESO_COLOR`).
+- **`public/data/huellas.json`** (156 KB, 74 KB comprimido; solo se baja en el escáner):
+  `npm run build:huellas` (`tools/build-huellas.mts`) baja las imágenes reducidas del CDN de Riot
+  (cacheadas en `tools/.cache`, ignorado por git) y calcula la huella de cada carta con sharp.
+  **Hay que volver a ejecutarlo cada vez que se regenere el catálogo** (set nuevo).
+- `npm run build:huellas -- --medir` simula 300 fotos (encuadre desplazado y escalado hasta un 6 %,
+  giro de hasta 4°, otra luz y saturación, desenfoque, JPEG) y mide: **95 % aciertos a la primera,
+  98 % entre las 5 primeras**. Cuenta como acierto una carta con la misma ilustración (firmadas y
+  promos reimpresas son indistinguibles por la imagen; salen juntas en la lista).
+- **`ReconocimientoService`**: compara en dos pasos. Primero una huella por encuadre posible (muchos
+  tamaños y desplazamientos con forma de carta, `encuadresAlrededor`) para quedarse con los dos
+  mejores, y en esos la búsqueda fina (`huellasConMargen`, 27 variantes). "Segura" = distancia
+  ≤ 0,14 y margen ≥ 0,03 con la siguiente carta de otra ilustración (umbrales medidos con --medir).
+- **Pantalla `/escanear`**:
+  - Cámara con un recuadro guía con forma de carta. Captura la guía con un 20 % de margen, reconoce
+    cada ~350 ms y se para sola cuando la misma carta sale segura dos veces seguidas (vibra).
+    "Es esta, buscar ya" fuerza el resultado. ~85 ms por fotograma en escritorio.
+  - Foto: prueba recortes centrados de varios tamaños; sirve aunque la carta no llene la foto.
+  - A mano: el código impreso (`SFD 198`), con `parseCodigos`/`cartasDelCodigo` de
+    `src/app/core/scanner.ts` (las promos con la misma ilustración salen también).
+  - Enseña las 5 más parecidas con la primera marcada, cada una con sus +/− de colección.
+- Probado en la app con imágenes oficiales: fotos 19/20 a la primera (con y sin fondo, el fallo
+  es una gemela), cámara simulada con la carta torcida 6/6 bloqueadas solas en ~1,3 s.
+  **Falta probarlo con cartas físicas en el móvil** (reflejos de las foils, luz real, perspectiva).
+- Las huellas son de la imagen oficial: una carta con otra ilustración que no esté en el
+  catálogo (o los campos de batalla, que son apaisados) se reconocerá peor.
 
 ## 9. Riesgos y avisos
 

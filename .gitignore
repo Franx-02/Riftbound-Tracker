@@ -45,3 +45,4 @@ Thumbs.db
 
 # Netlify
 .netlify
+/tools/.cache

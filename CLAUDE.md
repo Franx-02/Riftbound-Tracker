@@ -14,6 +14,7 @@ App PWA (Angular 22 + Netlify + Firebase) para colecciones de cartas de Riftboun
 - `npm run start:demo` → `netlify dev` en modo demo, para probar en local sin tocar el Firestore real
 - `npm run check:import` → ida y vuelta de tools/collection1.csv (criterio de salida de F3)
 - `npm run traducir -- pendientes|aplicar` → flujo de traducción de F4 (ver docs/glosario.md antes de traducir)
+- `npm run build:huellas [-- --medir]` → regenera public/data/huellas.json para el escáner por imagen. **Después de cada `build:catalog`**.
 
 ## Reglas del proyecto
 - Angular moderno: componentes standalone, signals, control flow `@if/@for`, `inject()`.

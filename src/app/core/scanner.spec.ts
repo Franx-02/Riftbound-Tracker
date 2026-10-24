@@ -1,5 +1,4 @@
 import { CatalogCard } from './catalog.service';
-import { otsu } from './ocr.service';
 import { cartasDelCodigo, parseCodigos } from './scanner';
 
 const SETS = new Set(['OGN', 'SFD', 'RAD', 'UNL', 'VEN', 'OPP', 'PR']);
@@ -78,16 +77,5 @@ describe('cartasDelCodigo', () => {
       'SFD-198',
       'SFD-198A',
     ]);
-  });
-});
-
-describe('otsu', () => {
-  it('separa dos grupos de grises claramente distintos', () => {
-    const h = new Array<number>(256).fill(0);
-    h[20] = 100;
-    h[230] = 100;
-    const u = otsu(h, 200);
-    expect(u).toBeGreaterThan(20);
-    expect(u).toBeLessThanOrEqual(230);
   });
 });

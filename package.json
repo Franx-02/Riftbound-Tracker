@@ -11,7 +11,8 @@
     "check:tools": "tsc -p tsconfig.tools.json",
     "check:import": "tsx tools/check-import.mts",
     "start:demo": "netlify dev --command \"npx ng serve --port 4200 --configuration demo\"",
-    "traducir": "tsx tools/traducir.mts"
+    "traducir": "tsx tools/traducir.mts",
+    "build:huellas": "tsx tools/build-huellas.mts"
   },
   "private": true,
   "packageManager": "npm@10.9.9",
@@ -25,7 +26,6 @@
     "@angular/service-worker": "^22.2.0",
     "firebase": "^13.1.0",
     "rxjs": "~7.8.0",
-    "tesseract.js": "7.0.0",
     "tslib": "^2.3.0"
   },
   "devDependencies": {
@@ -36,6 +36,7 @@
     "@types/node": "^26.6.5",
     "jsdom": "^30.1.3",
     "prettier": "^3.8.1",
+    "sharp": "0.35.4",
     "tsx": "^4.23.15",
     "typescript": "~6.0.2",
     "vitest": "^5.0.5"
