@@ -1,6 +1,7 @@
 import { DatePipe } from '@angular/common';
 import {
   Component,
+  Injectable,
   OnInit,
   computed,
   effect,
@@ -18,9 +19,37 @@ import { UsersService } from '../core/users.service';
 import { CardPricing, ValuationService } from '../core/valuation.service';
 import { ConfidenceBadgeComponent } from '../ui/confidence-badge.component';
 import { EurPipe, ThumbPipe } from '../ui/pipes';
+import { CardTileComponent } from '../ui/card-tile.component';
+import { LoadMoreComponent } from '../ui/load-more.component';
 import { QtyControlComponent } from '../ui/qty-control.component';
 
 type Orden = 'valor' | 'nombre' | 'set';
+type Vista = 'carpeta' | 'lista';
+type Mostrar = 'todas' | 'tengo' | 'faltan';
+
+const POR_PAGINA = 60;
+
+/**
+ * Estado de la vista fuera del componente: al abrir una ficha y volver, la carpeta
+ * sigue con la misma vista, filtros y cartas pintadas (y el scroll se recupera).
+ */
+@Injectable({ providedIn: 'root' })
+export class CollectionViewState {
+  readonly vista = signal<Vista>('carpeta');
+  readonly texto = signal('');
+  readonly set = signal('');
+  readonly mostrar = signal<Mostrar>('todas');
+  readonly limite = signal(POR_PAGINA);
+  private ultimaColeccion: string | null | undefined = undefined;
+
+  /** Al entrar en una colección distinta de la última, la búsqueda y la tanda empiezan de cero. */
+  entrar(uid: string | null): void {
+    if (uid === this.ultimaColeccion) return;
+    this.ultimaColeccion = uid;
+    this.texto.set('');
+    this.limite.set(POR_PAGINA);
+  }
+}
 
 interface Fila {
   card: CatalogCard;
@@ -42,6 +71,8 @@ interface Fila {
     ThumbPipe,
     QtyControlComponent,
     ConfidenceBadgeComponent,
+    CardTileComponent,
+    LoadMoreComponent,
   ],
   template: `
     <main class="pagina">
@@ -141,26 +172,45 @@ interface Fila {
             @if (propia()) {
               <h2>Aún no tienes cartas</h2>
               <p class="muted">
-                Búscalas en el catálogo y añádelas con el botón +, o importa la que tengas en
-                Riftbound.gg o Riftatlas.
+                Añádelas con el botón + de cada carta, aquí abajo o en el catálogo, o importa la
+                colección que tengas en Riftbound.gg o Riftatlas.
               </p>
               <div class="botones-vacio">
-                <a class="boton" routerLink="/catalogo">Ir al catálogo</a>
-                <a class="boton secundario" routerLink="/importar">Importar CSV</a>
+                <a class="boton" routerLink="/importar">Importar CSV</a>
               </div>
             } @else {
               <h2>{{ nombreDueno() }} aún no tiene cartas</h2>
             }
           </section>
-        } @else {
-          <section class="controles">
-            <input
-              type="search"
-              placeholder="Buscar en esta colección"
-              aria-label="Buscar en esta colección"
-              [value]="texto()"
-              (input)="texto.set($any($event.target).value)"
-            />
+        }
+
+        <section class="controles" [class.lista-activa]="v.vista() === 'lista'">
+          <input
+            type="search"
+            placeholder="Buscar por nombre o código"
+            aria-label="Buscar en esta colección"
+            [value]="v.texto()"
+            (input)="cambiar(v.texto, $event)"
+          />
+          @if (v.vista() === 'carpeta') {
+            <select aria-label="Set" [value]="v.set()" (change)="cambiar(v.set, $event)">
+              <option value="">Todos los sets</option>
+              @for (s of catalog.sets(); track s.id) {
+                <option [value]="s.id" [selected]="s.id === v.set()">{{ s.name }}</option>
+              }
+            </select>
+            <select
+              aria-label="Mostrar"
+              [value]="v.mostrar()"
+              (change)="cambiar(v.mostrar, $event)"
+            >
+              <option value="todas">Todas las cartas</option>
+              <option value="tengo">{{ propia() ? 'Las que tengo' : 'Las que tiene' }}</option>
+              <option value="faltan">
+                {{ propia() ? 'Las que me faltan' : 'Las que le faltan' }}
+              </option>
+            </select>
+          } @else {
             <select
               aria-label="Ordenar"
               [value]="orden()"
@@ -170,8 +220,61 @@ interface Fila {
               <option value="nombre">Por nombre</option>
               <option value="set">Por set y número</option>
             </select>
-          </section>
+          }
+          <div class="vistas" role="group" aria-label="Vista">
+            <button
+              type="button"
+              [class.activa]="v.vista() === 'carpeta'"
+              [attr.aria-pressed]="v.vista() === 'carpeta'"
+              (click)="v.vista.set('carpeta')"
+            >
+              Carpeta
+            </button>
+            <button
+              type="button"
+              [class.activa]="v.vista() === 'lista'"
+              [attr.aria-pressed]="v.vista() === 'lista'"
+              (click)="v.vista.set('lista')"
+            >
+              Lista
+            </button>
+          </div>
+        </section>
 
+        @if (v.vista() === 'carpeta') {
+          @if (completado(); as c) {
+            <div class="completado" [attr.aria-label]="'Completado del set: ' + c.porcentaje + '%'">
+              <span>
+                <strong>{{ c.tengo }}</strong> de {{ c.total }} cartas de {{ c.nombre }} ·
+                <strong>{{ c.porcentaje }}&nbsp;%</strong>
+              </span>
+              <span class="barra-progreso"><span [style.width.%]="c.porcentaje"></span></span>
+            </div>
+          }
+          <p class="muted cuenta">
+            {{ carpeta().length }} {{ carpeta().length === 1 ? 'carta' : 'cartas' }}
+          </p>
+          <ul class="rejilla">
+            @for (c of carpetaVisible(); track c.cardId) {
+              <li>
+                <app-card-tile
+                  [card]="c"
+                  [owned]="fuente()!.get(c.cardId) ?? vacio"
+                  [readonly]="!propia()"
+                  [dim]="true"
+                />
+              </li>
+            } @empty {
+              <li class="muted sin-resultados">Ninguna carta coincide con el filtro.</li>
+            }
+          </ul>
+          @if (carpetaVisible().length < carpeta().length) {
+            <app-load-more
+              [remaining]="carpeta().length - carpetaVisible().length"
+              (more)="v.limite.update((n) => n + porPagina)"
+            />
+          }
+        } @else {
           <ul class="lista">
             @for (f of filas(); track f.card.cardId) {
               <li class="fila">
@@ -208,7 +311,13 @@ interface Fila {
                 </div>
               </li>
             } @empty {
-              <li class="muted">Ninguna carta de esta colección coincide con «{{ texto() }}».</li>
+              <li class="muted">
+                @if (totales().cards === 0) {
+                  No hay cartas en esta colección.
+                } @else {
+                  Ninguna carta de esta colección coincide con «{{ v.texto() }}».
+                }
+              </li>
             }
           </ul>
         }
@@ -237,9 +346,12 @@ interface Fila {
   styles: `
     .pagina {
       padding: 12px 16px 48px;
-      max-width: 900px;
+      max-width: 1400px;
       margin: 0 auto;
       display: grid;
+      /* Sin esto la columna implícita no encoge por debajo del contenido de sus hijos
+         y en móvil la página se salía por la derecha. */
+      grid-template-columns: minmax(0, 1fr);
       gap: 16px;
     }
     .cabecera {
@@ -346,9 +458,70 @@ interface Fila {
       text-decoration: none;
     }
     .controles {
-      display: grid;
-      grid-template-columns: 1fr auto;
+      display: flex;
+      flex-wrap: wrap;
       gap: 8px;
+      align-items: center;
+    }
+    .controles input {
+      flex: 1 1 220px;
+    }
+    .vistas {
+      display: flex;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .vistas button {
+      border: 0;
+      border-radius: 0;
+      padding: 8px 14px;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .vistas button.activa {
+      background: var(--surface-2);
+      color: var(--text);
+    }
+    .completado {
+      display: grid;
+      gap: 6px;
+      font-size: 0.9rem;
+    }
+    .barra-progreso {
+      display: block;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--surface-2);
+      overflow: hidden;
+    }
+    .barra-progreso > span {
+      display: block;
+      height: 100%;
+      background: var(--accent);
+    }
+    .cuenta {
+      margin: 0;
+      font-size: 0.9rem;
+    }
+    .rejilla {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
+    }
+    .rejilla > li {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      min-width: 0;
+    }
+    .sin-resultados {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 32px;
     }
     .lista {
       list-style: none;
@@ -356,6 +529,9 @@ interface Fila {
       padding: 0;
       display: grid;
       gap: 8px;
+      /* Filas tan anchas como la carpeta se leerían mal: la lista se queda a 900. */
+      width: 100%;
+      max-width: 900px;
     }
     .fila {
       display: grid;
@@ -397,8 +573,12 @@ interface Fila {
     }
 
     @media (max-width: 640px) {
-      .controles {
-        grid-template-columns: 1fr;
+      .controles select {
+        flex: 1 1 140px;
+      }
+      .rejilla {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
       }
       .resumen {
         grid-template-columns: 1fr 1fr;
@@ -440,10 +620,13 @@ export class CollectionPage implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
+  protected readonly v = inject(CollectionViewState);
+  protected readonly vacio: CardQty = { normal: 0, foil: 0 };
+  protected readonly porPagina = POR_PAGINA;
+
   /** De la ruta `/coleccion/:uid`. Sin él, o si es el tuyo, es tu colección. */
   readonly uid = input<string>();
 
-  protected readonly texto = signal('');
   protected readonly orden = signal<Orden>('valor');
 
   protected readonly propia = computed(() => {
@@ -469,18 +652,68 @@ export class CollectionPage implements OnInit {
   protected readonly totales = computed(() => totalsOf(this.fuente() ?? new Map()));
   protected readonly valor = computed(() => this.valuation.value(this.fuente() ?? new Map()));
 
+  /**
+   * Vista de carpeta: todas las cartas del catálogo que pasan el filtro, tenga o no
+   * copias. Las que faltan se pintan oscurecidas.
+   */
+  protected readonly carpeta = computed(() => {
+    const fuente = this.fuente() ?? new Map<string, CardQty>();
+    const tiene = (id: string) => {
+      const q = fuente.get(id);
+      return !!q && q.normal + q.foil > 0;
+    };
+    const cartas = this.catalog.filter({
+      texto: this.v.texto(),
+      sets: this.v.set() ? [this.v.set()] : [],
+    });
+    switch (this.v.mostrar()) {
+      case 'tengo':
+        return cartas.filter((c) => tiene(c.cardId));
+      case 'faltan':
+        return cartas.filter((c) => !tiene(c.cardId));
+      default:
+        return cartas;
+    }
+  });
+
+  protected readonly carpetaVisible = computed(() => this.carpeta().slice(0, this.v.limite()));
+
+  /** Con un set elegido: cuántas cartas distintas de ese set hay en la colección. */
+  protected readonly completado = computed(() => {
+    const set = this.v.set();
+    if (!set) return null;
+    const fuente = this.fuente() ?? new Map<string, CardQty>();
+    const delSet = this.catalog.filter({ sets: [set] });
+    const tengo = delSet.filter((c) => {
+      const q = fuente.get(c.cardId);
+      return !!q && q.normal + q.foil > 0;
+    }).length;
+    return {
+      nombre: this.catalog.setName(set),
+      tengo,
+      total: delSet.length,
+      porcentaje: delSet.length ? Math.floor((tengo / delSet.length) * 100) : 0,
+    };
+  });
+
   constructor() {
     // Al cambiar de miembro en el selector cambia :uid sin destruir la página.
     // Solo depende de :uid. loadOther lee signals antes de su primer await; sin untracked
-    // el efecto se volvería a lanzar al llegar los datos y borraría la búsqueda.
+    // el efecto se volvería a lanzar al llegar los datos.
     effect(() => {
       const uid = this.uid();
       const ajena = !this.propia();
       untracked(() => {
         if (uid && ajena) void this.col.loadOther(uid);
-        this.texto.set('');
+        // La búsqueda se conserva al volver de una ficha, pero no al cambiar de colección.
+        this.v.entrar(uid ?? null);
       });
     });
+  }
+
+  protected cambiar(destino: { set(v: never): void }, ev: Event): void {
+    destino.set((ev.target as HTMLInputElement | HTMLSelectElement).value as never);
+    this.v.limite.set(POR_PAGINA);
   }
 
   ngOnInit(): void {
@@ -518,7 +751,7 @@ export class CollectionPage implements OnInit {
   protected readonly huerfanas = computed(() => this.valor().fueraDeCatalogo);
 
   protected readonly filas = computed(() => {
-    const q = this.texto().trim().toLowerCase();
+    const q = this.v.texto().trim().toLowerCase();
     const filtradas = q
       ? this.todas().filter(
           (f) => f.card.name.toLowerCase().includes(q) || f.card.cardId.toLowerCase().includes(q),

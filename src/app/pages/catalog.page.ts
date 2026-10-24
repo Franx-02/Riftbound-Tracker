@@ -1,21 +1,8 @@
-import {
-  Component,
-  ElementRef,
-  Injectable,
-  OnDestroy,
-  computed,
-  effect,
-  inject,
-  signal,
-  viewChild,
-} from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Component, Injectable, computed, inject, signal } from '@angular/core';
 import { CatalogService } from '../core/catalog.service';
 import { CollectionService } from '../core/collection.service';
-import { ValuationService } from '../core/valuation.service';
-import { ConfidenceBadgeComponent } from '../ui/confidence-badge.component';
-import { EurPipe, ThumbPipe } from '../ui/pipes';
-import { QtyControlComponent } from '../ui/qty-control.component';
+import { CardTileComponent } from '../ui/card-tile.component';
+import { LoadMoreComponent } from '../ui/load-more.component';
 
 const POR_PAGINA = 60;
 
@@ -46,7 +33,7 @@ export class CatalogFiltersState {
 
 @Component({
   selector: 'app-catalog-page',
-  imports: [RouterLink, QtyControlComponent, ConfidenceBadgeComponent, EurPipe, ThumbPipe],
+  imports: [CardTileComponent, LoadMoreComponent],
   template: `
     <main class="pagina">
       <section class="filtros" aria-label="Filtros">
@@ -102,45 +89,15 @@ export class CatalogFiltersState {
 
         <ul class="rejilla">
           @for (c of visibles(); track c.cardId) {
-            @let p = valuation.pricing(c.cardId);
-            <li class="carta" [class.tengo]="col.has(c.cardId)">
-              <a [routerLink]="['/carta', c.cardId]" class="enlace-carta">
-                <img
-                  [src]="c.imgUrl | thumb: 300"
-                  [alt]="c.name"
-                  [class.horizontal]="c.orientation === 'landscape'"
-                  loading="lazy"
-                  decoding="async"
-                  width="240"
-                  height="335"
-                />
-                <span class="nombre">{{ c.name }}</span>
-                <span class="meta">
-                  <span class="codigo">{{ c.cardId }}</span>
-                  <!-- Si no hay precio normal pero sí foil, se dice: si no, parecería el de la normal. -->
-                  <span class="precio">
-                    @if (p.normal !== null) {
-                      {{ p.normal | eur }}
-                    } @else if (p.foil !== null) {
-                      <span class="muted">foil</span> {{ p.foil | eur }}
-                    } @else {
-                      —
-                    }
-                  </span>
-                </span>
-                <app-confidence-badge [pricing]="p" />
-              </a>
-              <app-qty-control [cardId]="c.cardId" />
-            </li>
+            <li><app-card-tile [card]="c" [owned]="col.qty(c.cardId)" /></li>
           }
         </ul>
 
         @if (visibles().length < resultados().length) {
-          <div #centinela class="mas">
-            <button class="secondary" type="button" (click)="mostrarMas()">
-              Mostrar más ({{ resultados().length - visibles().length }} restantes)
-            </button>
-          </div>
+          <app-load-more
+            [remaining]="resultados().length - visibles().length"
+            (more)="mostrarMas()"
+          />
         } @else if (resultados().length === 0) {
           <p class="muted vacio">Ninguna carta coincide con la búsqueda.</p>
         }
@@ -193,54 +150,10 @@ export class CatalogFiltersState {
       grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
       gap: 12px;
     }
-    .carta {
+    .rejilla > li {
       display: grid;
-      gap: 8px;
-      align-content: start;
-      padding: 8px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-    }
-    .carta.tengo {
-      border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
-    }
-    .enlace-carta {
-      display: grid;
-      gap: 4px;
-      color: inherit;
-      text-decoration: none;
-    }
-    img {
-      width: 100%;
-      height: auto;
-      aspect-ratio: 744 / 1039;
-      object-fit: contain;
-      border-radius: 6px;
-      background: var(--surface-2);
-    }
-    .nombre {
-      font-weight: 600;
-      font-size: 0.9rem;
-      line-height: 1.25;
-    }
-    .meta {
-      display: flex;
-      justify-content: space-between;
-      gap: 8px;
-      font-size: 0.8rem;
-    }
-    .codigo {
-      color: var(--muted);
-      font-variant-numeric: tabular-nums;
-    }
-    .precio {
-      font-variant-numeric: tabular-nums;
-    }
-    .mas {
-      display: grid;
-      place-items: center;
-      padding: 24px;
+      grid-template-columns: minmax(0, 1fr);
+      min-width: 0;
     }
     .vacio {
       text-align: center;
@@ -260,28 +173,13 @@ export class CatalogFiltersState {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 8px;
       }
-      .carta {
-        padding: 6px;
-      }
     }
   `,
 })
-export class CatalogPage implements OnDestroy {
+export class CatalogPage {
   protected readonly catalog = inject(CatalogService);
   protected readonly col = inject(CollectionService);
-  protected readonly valuation = inject(ValuationService);
   protected readonly f = inject(CatalogFiltersState);
-
-  private readonly centinela = viewChild<ElementRef<HTMLElement>>('centinela');
-  private readonly observador =
-    typeof IntersectionObserver === 'undefined'
-      ? null
-      : new IntersectionObserver(
-          (entradas) => {
-            if (entradas.some((e) => e.isIntersecting)) this.mostrarMas();
-          },
-          { rootMargin: '600px' },
-        );
 
   protected readonly hayFiltros = computed(
     () =>
@@ -304,22 +202,6 @@ export class CatalogPage implements OnDestroy {
   });
 
   protected readonly visibles = computed(() => this.resultados().slice(0, this.f.limite()));
-
-  constructor() {
-    // Carga más cartas al acercarse al final, sin tener que pulsar el botón (que se
-    // queda para teclado y lectores de pantalla). El centinela se vuelve a pintar
-    // debajo de cada tanda nueva, así que hay que observar siempre el actual.
-    effect(() => {
-      const el = this.centinela()?.nativeElement;
-      this.visibles();
-      this.observador?.disconnect();
-      if (el) this.observador?.observe(el);
-    });
-  }
-
-  ngOnDestroy(): void {
-    this.observador?.disconnect();
-  }
 
   protected cambiar(destino: { set(v: string): void }, ev: Event): void {
     destino.set((ev.target as HTMLInputElement | HTMLSelectElement).value);

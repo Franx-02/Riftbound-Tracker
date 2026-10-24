@@ -238,6 +238,8 @@ const MUESTRA = 20;
       max-width: 760px;
       margin: 0 auto;
       display: grid;
+      /* Que las columnas encojan por debajo del contenido: si no, en móvil se sale. */
+      grid-template-columns: minmax(0, 1fr);
       gap: 16px;
     }
     h1 {
@@ -250,6 +252,7 @@ const MUESTRA = 20;
       border-radius: 12px;
       padding: 16px;
       display: grid;
+      grid-template-columns: minmax(0, 1fr);
       gap: 12px;
       justify-items: start;
     }
@@ -258,6 +261,11 @@ const MUESTRA = 20;
     }
     code {
       font-size: 0.85em;
+      overflow-wrap: anywhere;
+    }
+    .subir,
+    .subir input {
+      max-width: 100%;
     }
     textarea {
       width: 100%;

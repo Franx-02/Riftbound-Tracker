@@ -48,6 +48,9 @@ import { CardQty, CollectionService, Finish } from '../core/collection.service';
     }
     .etiqueta {
       flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
       font-size: 0.8rem;
       color: var(--muted);
     }
@@ -71,6 +74,16 @@ import { CardQty, CollectionService, Finish } from '../core/collection.service';
       background: var(--surface-2);
       color: var(--text);
       border-color: var(--border);
+    }
+    /* En las tarjetas de dos columnas del móvil no caben botones de 32 px. */
+    @media (max-width: 420px) {
+      .fila {
+        gap: 4px;
+      }
+      .paso {
+        width: 28px;
+        height: 28px;
+      }
     }
     .paso:not(:disabled):hover {
       border-color: var(--accent);

@@ -57,6 +57,9 @@ import { PricesService } from '../core/prices.service';
       display: flex;
       gap: 4px;
       flex: 1;
+      min-width: 0;
+      overflow-x: auto;
+      scrollbar-width: none;
     }
     nav a {
       color: var(--muted);
@@ -70,6 +73,7 @@ import { PricesService } from '../core/prices.service';
       background: var(--surface-2);
     }
     .usuario {
+      flex-shrink: 0;
       display: flex;
       align-items: center;
       gap: 8px;
@@ -93,6 +97,9 @@ import { PricesService } from '../core/prices.service';
       .marca,
       .nombre {
         display: none;
+      }
+      nav a {
+        padding: 6px 8px;
       }
     }
   `,
