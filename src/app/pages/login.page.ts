@@ -14,8 +14,8 @@ import { AuthService } from '../core/auth.service';
         }
         @case ('not-invited') {
           <p>
-            <strong>{{ auth.user()?.email }}</strong> no está invitado.
-            Pide a quien administra la app que añada tu email.
+            <strong>{{ auth.user()?.email }}</strong> no está invitado. Pide a quien administra la
+            app que añada tu email.
           </p>
           <button class="secondary" (click)="auth.signOut()">Usar otra cuenta</button>
         }

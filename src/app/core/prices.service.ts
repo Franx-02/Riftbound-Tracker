@@ -19,13 +19,22 @@ export class PricesService {
   readonly data = signal<PricesResponse | null>(null);
   readonly error = signal<string | null>(null);
 
-  async load(): Promise<void> {
+  private carga: Promise<void> | null = null;
+
+  /** Carga una vez por sesión: los precios solo cambian una vez al día. */
+  load(): Promise<void> {
+    this.carga ??= this.cargar();
+    return this.carga;
+  }
+
+  private async cargar(): Promise<void> {
     try {
       const res = await fetch('/api/prices');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       this.data.set(await res.json());
       this.error.set(null);
     } catch (e) {
+      this.carga = null;
       this.error.set(e instanceof Error ? e.message : String(e));
     }
   }

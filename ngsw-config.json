@@ -32,5 +32,16 @@
         "files": ["/data/*.json"]
       }
     }
+  ],
+  "dataGroups": [
+    {
+      "name": "imagenes-cartas",
+      "urls": ["https://cmsassets.rgpub.io/**"],
+      "cacheConfig": {
+        "strategy": "performance",
+        "maxSize": 2000,
+        "maxAge": "30d"
+      }
+    }
   ]
 }

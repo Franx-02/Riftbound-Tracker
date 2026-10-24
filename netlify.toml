@@ -5,6 +5,14 @@
 [build.environment]
   NODE_VERSION = "22"
 
+# netlify dev: Angular en 4200 y Netlify delante en 8888, con /api/* servido por las funciones.
+# Puertos explícitos para que no dependan de la variable PORT del entorno.
+[dev]
+  command = "npx ng serve --port 4200"
+  targetPort = 4200
+  port = 8888
+  framework = "#custom"
+
 [functions]
   directory = "netlify/functions"
 

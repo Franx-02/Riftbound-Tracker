@@ -1,6 +1,7 @@
 :root {
   --bg: #12141a;
   --surface: #1c1f27;
+  --surface-2: #252935;
   --border: #2c303b;
   --text: #e8e9ed;
   --muted: #9097a6;
@@ -10,19 +11,33 @@
   color-scheme: dark;
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
 body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
   line-height: 1.5;
 }
 
-h1, h2 { margin: 0 0 12px; }
-h1 { font-size: 1.6rem; }
-h2 { font-size: 1.1rem; }
+h1,
+h2 {
+  margin: 0 0 12px;
+}
+h1 {
+  font-size: 1.6rem;
+}
+h2 {
+  font-size: 1.1rem;
+}
 
 button {
   font: inherit;
@@ -34,8 +49,15 @@ button {
   font-weight: 600;
   cursor: pointer;
 }
-button.secondary { background: transparent; color: var(--text); border-color: var(--border); }
-button:disabled { opacity: 0.5; cursor: default; }
+button.secondary {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--border);
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
 
 .center {
   min-height: 100dvh;
@@ -55,17 +77,72 @@ button:disabled { opacity: 0.5; cursor: default; }
   border-bottom: 1px solid var(--border);
 }
 
-.stack { display: grid; gap: 16px; padding: 16px; max-width: 900px; margin: 0 auto; }
-.card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
-.card ul { margin: 0; padding-left: 18px; }
+.stack {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+.card ul {
+  margin: 0;
+  padding-left: 18px;
+}
 
-.muted { color: var(--muted); }
-.ok { color: var(--ok); }
-.error { color: var(--error); }
+.muted {
+  color: var(--muted);
+}
+.ok {
+  color: var(--ok);
+}
+.error {
+  color: var(--error);
+}
 .demo {
   font-size: 0.85rem;
   color: var(--accent);
   border: 1px dashed var(--accent);
   border-radius: 8px;
   padding: 6px 10px;
+}
+
+a {
+  color: var(--accent);
+}
+
+input,
+select {
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  min-width: 0;
+}
+input:focus-visible,
+select:focus-visible,
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.badge-demo {
+  font-size: 0.75rem;
+  color: var(--accent);
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }

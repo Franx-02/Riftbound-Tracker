@@ -47,7 +47,13 @@ src/app/core/demo.ts            flag DEMO (condición doble, único sitio) y hel
 src/app/core/collection.service.ts  F2 paso 3: colección con almacén Firestore o demo, +/− optimista
 src/app/core/users.service.ts   F2 paso 4: perfil users/{uid} y lista del grupo
 src/app/core/collection.service.spec.ts  tests (vitest + jsdom, `npm test`)
-src/app/pages/home.page.ts      pantalla de COMPROBACIÓN (sustituir en F2)
+src/app/core/mapping-overrides.service.ts  correcciones de mapeo compartidas (mappingOverrides/{cardId})
+src/app/core/valuation.service.ts  une catálogo, mapeo, correcciones y precios; valora una colección
+src/app/pages/shell.component.ts   barra, navegación y carga de datos compartidos
+src/app/pages/collection.page.ts   Mi colección (ruta /coleccion, la de inicio)
+src/app/pages/catalog.page.ts      catálogo con filtros (/catalogo)
+src/app/pages/card.page.ts         ficha de carta (/carta/:cardId)
+src/app/ui/                        pipes eur/thumb, +/−, aviso de confianza, texto de reglas
 src/environments/firebase.config.ts   config web de Firebase (aún con REEMPLAZAR)
 netlify/functions/prices.mts    GET /api/prices
 netlify.toml                    build, publish, redirect SPA
@@ -64,6 +70,8 @@ public/data/mapping.json        cardId → idProduct, confianza, motivo y candid
 **Node 22 o superior es obligatorio en local.** El CLI de Angular 22 rechaza Node 20 y
 `npm run build` ni `npm test` arrancan. `netlify.toml` ya fija `NODE_VERSION = "22"` para el despliegue.
 `npm run build:catalog` sí funciona con Node 20.
+
+`netlify.toml` tiene un bloque `[dev]` con los puertos fijos (Angular 4200, Netlify 8888). Hace falta: Angular antepone la variable de entorno `PORT` a `--port`, y si `PORT` está definida `ng serve` ocupa el puerto de Netlify y `/api/prices` deja de existir en local.
 
 Verificado:
 - `ng build` compila sin errores (≈205 KB transferidos, sobre todo Firebase).
@@ -279,7 +287,13 @@ Mapeo validado contra el CSV real.
 3. ✅ `CollectionService`: interfaz `CollectionStore` con dos implementaciones (Firestore y localStorage en demo). +/− optimista: pinta antes de guardar y deshace si falla. Escrituras en cola por carta, así que varios clics seguidos acaban en el último valor. Una carta a 0/0 borra su documento. Caché por uid que se vacía al cambiar de sesión. `view(uid)` muestra la colección de otro en solo lectura (base del paso 6).
 4. ✅ `UsersService.ensureProfile`: `AuthService` la llama en cuanto hay acceso (en cada arranque, no solo el primero: refresca el nombre si cambió en Google y solo escribe si hay diferencia). `loadProfiles()` lista el grupo; las reglas actuales ya permiten ese `list` a invitados.
    - **Sin verificar contra Firestore real**: los tests corren sobre el almacén demo. Cuando exista el proyecto de Firebase, falta probarlo con el emulador o en el despliegue.
-5. Pantallas: catálogo con imágenes y filtros (set, rareza, dominio, tipo) · ficha de carta con precio normal/foil, confianza del mapeo y botón de corregir · "Mi colección" con valor total y aviso de cartas sin precio · +/− normal y foil con guardado inmediato y optimista.
+5. ✅ Pantallas, probadas en el navegador (escritorio y móvil) con las 390 cartas de collection1.csv cargadas en el almacén demo. Valor total 309,71 €, igual que el generador.
+   - **Catálogo**: búsqueda, filtros por set, rareza, dominio y tipo, "solo las que tengo", carga de 60 en 60 al hacer scroll. El set más reciente sale primero. Los filtros, las cartas pintadas y el scroll se conservan al volver de una ficha.
+   - **Ficha**: precio normal y foil (tendencia, mínimo, media 7 días), aviso de confianza, motivo del mapeo, +/− y texto de reglas con los símbolos dibujados. **Corregir precio**: lista los candidatos con su set y sus precios, ordenados por precio; la elección se guarda en `mappingOverrides/{cardId}` para todo el grupo y se puede deshacer.
+   - **Mi colección**: valor total, cartas y copias, aviso desplegable de copias sin precio (no suman, el texto dice que el valor real es mayor), búsqueda y orden. Las cartas guardadas que no están en el catálogo (los 5 ids de DotGG de la sección 5) se listan aparte.
+   - Solo se marca la confianza **baja** ("precio aproximado"), sin producto y corregido. La media no se marca: casi siempre son alt arts bien emparejados.
+   - Imágenes pedidas al CDN de Riot con `&w=…&fm=webp`: 14 KB por carta en vez de 780 KB. El service worker las cachea 30 días.
+   - Si una carta no tiene precio normal pero sí foil, la tarjeta del catálogo lo dice ("foil 1,23 €"); si no, parecería el de la normal.
 6. Selector "ver colección de…" para Sans y Estela, en solo lectura.
 **Salida:** Fran gestiona su colección entera desde el móvil.
 

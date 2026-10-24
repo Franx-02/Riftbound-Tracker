@@ -2,12 +2,13 @@
 
 App para gestionar colecciones de Riftbound con precios de Cardmarket. Angular (PWA) en Netlify, login y datos en Firebase. Coste: 0 €.
 
-## Estado: F1 — esqueleto desplegable
+## Estado: F2 en curso
 
 - Login con Google, acceso solo por invitación.
-- Reglas de Firestore: cada invitado lee las colecciones de todos y escribe solo la suya.
-- `/api/prices`: función de Netlify que sirve el price guide de Cardmarket (Riftbound, juego 22) con caché.
-- La pantalla principal es de comprobación: confirma que login y precios funcionan en producción.
+- Catálogo de todas las cartas (10 sets, Radiance incluido) con búsqueda y filtros.
+- Ficha de carta con precio de Cardmarket, aviso cuando el precio es aproximado y botón para corregir el producto.
+- Mi colección: copias normales y foil con +/−, valor total y aviso de las cartas que aún no tienen precio.
+- Pendiente de F2: ver la colección de otro miembro del grupo.
 
 ## Puesta en marcha (una sola vez, ~20 min)
 
@@ -32,14 +33,15 @@ git push -u origin main
 3. En Firebase: **Authentication → Settings → Authorized domains → Add domain** → pega ese dominio (sin `https://`). Sin este paso, el login falla.
 
 ### 4. Comprobar
-Abre la URL, entra con Google. Deberías ver "Login e invitación: correctos" y el número de productos de Cardmarket. En el móvil, "Añadir a pantalla de inicio" instala la PWA.
+Abre la URL y entra con Google. Deberías llegar a "Mi colección" con el valor a 0,00 € y la fecha de los precios de Cardmarket debajo; si los precios fallan, sale un aviso rojo arriba. Añade una carta desde el catálogo, recarga y comprueba que sigue ahí: eso confirma que Firestore guarda. En el móvil, "Añadir a pantalla de inicio" instala la PWA.
 
 ## Desarrollo local
 Mientras `firebase.config.ts` siga con `REEMPLAZAR` y abras la app en localhost, arranca en **modo demo**: el login entra sin cuenta. Fuera de localhost nunca se activa.
 
 ```bash
-npm install
+npm install         # necesita Node 22 o superior
 npx netlify dev     # Angular + funciones en http://localhost:8888
+npm test            # tests
 ```
 `localhost` ya está autorizado en Firebase por defecto.
 
@@ -51,9 +53,11 @@ Añade un documento en `allowed` con su email. No hace falta redesplegar.
 
 ## Estructura
 ```
-src/app/core/        firebase, auth, guards, precios
-src/app/pages/       login, inicio
+src/app/core/        servicios: auth, catálogo, colección, precios, valoración, correcciones
+src/app/pages/       login, marco, mi colección, catálogo, ficha
+src/app/ui/          piezas compartidas de interfaz
+public/data/         catálogo y mapeo generados (npm run build:catalog)
 netlify/functions/   prices.mts
 firestore.rules      reglas de seguridad
-tools/               mapeo Cardmarket (F0): script y resultado
+tools/               generador del catálogo y del mapeo
 ```
