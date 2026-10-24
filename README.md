@@ -2,13 +2,13 @@
 
 App para gestionar colecciones de Riftbound con precios de Cardmarket. Angular (PWA) en Netlify, login y datos en Firebase. Coste: 0 €.
 
-## Estado: F2 en curso
+## Estado: F2 terminada en código, pendiente de desplegar
 
 - Login con Google, acceso solo por invitación.
 - Catálogo de todas las cartas (10 sets, Radiance incluido) con búsqueda y filtros.
 - Ficha de carta con precio de Cardmarket, aviso cuando el precio es aproximado y botón para corregir el producto.
 - Mi colección: copias normales y foil con +/−, valor total y aviso de las cartas que aún no tienen precio.
-- Pendiente de F2: ver la colección de otro miembro del grupo.
+- Colección de los demás miembros del grupo, en solo lectura, desde el selector "Ver".
 
 ## Puesta en marcha (una sola vez, ~20 min)
 

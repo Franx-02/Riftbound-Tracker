@@ -94,27 +94,79 @@ describe('CollectionService (modo demo)', () => {
     expect(col2.qty('OGN-001').normal).toBe(7);
   });
 
-  it('la colección de otro es de solo lectura', async () => {
-    await col.view('otro-uid');
+  describe('colección de otro miembro', () => {
+    beforeEach(() => {
+      // Lo que Sans tendría guardado.
+      localStorage.setItem(
+        'riftbound-demo-collection-sans',
+        JSON.stringify({ 'RAD-114': { normal: 2, foil: 1 } }),
+      );
+    });
 
-    expect(col.uid()).toBe('otro-uid');
-    expect(col.editable()).toBe(false);
+    it('se lee aparte y no cambia la propia', async () => {
+      col.adjust('OGN-089', 'normal', 1);
+      await col.flush();
 
-    col.adjust('OGN-089', 'normal', 1);
-    expect(col.error()).toBe('Esta colección es de solo lectura');
-    expect(col.cards().size).toBe(0);
+      await col.loadOther('sans');
+
+      expect(col.other('sans')?.get('RAD-114')).toEqual({ normal: 2, foil: 1 });
+      // La propia sigue siendo la que ven el catálogo y la ficha, y se sigue editando.
+      expect(col.uid()).toBe('demo');
+      expect(col.editable()).toBe(true);
+      expect(col.qty('OGN-089').normal).toBe(1);
+      expect(col.qty('RAD-114').normal).toBe(0);
+    });
+
+    it('tus +/− nunca escriben en la colección del otro', async () => {
+      await col.loadOther('sans');
+      col.adjust('RAD-114', 'normal', 5);
+      await col.flush();
+
+      expect(col.qty('RAD-114').normal).toBe(5);
+      expect(col.other('sans')?.get('RAD-114')).toEqual({ normal: 2, foil: 1 });
+      const guardadoSans = JSON.parse(localStorage.getItem('riftbound-demo-collection-sans')!);
+      expect(guardadoSans['RAD-114']).toEqual({ normal: 2, foil: 1 });
+    });
+
+    it('queda cacheada y se puede forzar la relectura', async () => {
+      await col.loadOther('sans');
+      localStorage.setItem(
+        'riftbound-demo-collection-sans',
+        JSON.stringify({ 'RAD-114': { normal: 9, foil: 0 } }),
+      );
+
+      await col.loadOther('sans');
+      expect(col.other('sans')?.get('RAD-114')?.normal).toBe(2);
+
+      await col.loadOther('sans', true);
+      expect(col.other('sans')?.get('RAD-114')?.normal).toBe(9);
+    });
+
+    it('pedir la propia como si fuera ajena devuelve la propia', async () => {
+      col.adjust('OGN-089', 'foil', 1);
+      await col.flush();
+      await col.loadOther('demo');
+      expect(col.other('demo')).toBe(col.cards());
+    });
   });
 
   it('al cambiar de sesión no quedan datos del anterior', async () => {
+    localStorage.setItem(
+      'riftbound-demo-collection-sans',
+      JSON.stringify({ 'RAD-114': { normal: 2, foil: 0 } }),
+    );
     col.adjust('OGN-089', 'normal', 1);
     await col.flush();
+    await col.loadOther('sans');
     expect(col.totals().cards).toBe(1);
 
     await auth.signOut();
     expect(auth.user()).toBeNull();
+    await col.loadMine();
 
-    await col.view('otro-uid');
     expect(col.cards().size).toBe(0);
+    expect(col.uid()).toBeNull();
+    expect(col.other('sans')).toBeUndefined();
   });
 });
 

@@ -1,6 +1,6 @@
 # Riftbound Collection — Informe de traspaso
 
-Fecha: 24/10/2026. Estado: **F0 cerrada, F1 con código terminado y sin desplegar, F2 empezada (paso 1 hecho).**
+Fecha: 24/10/2026. Estado: **F0 cerrada. F1 y F2 con el código terminado, probado en local en modo demo y sin desplegar.** El criterio de salida de las dos depende de que el usuario cree el proyecto de Firebase y despliegue en Netlify (sección 3).
 Este documento recoge todo lo decidido y descubierto hasta ahora. Las secciones marcadas **[NO VERIFICADO]** son suposiciones que hay que comprobar antes de construir encima.
 
 ---
@@ -281,10 +281,11 @@ Mapeo validado contra el CSV real.
 ### F1 — Esqueleto y despliegue (código ✅, despliegue pendiente del usuario)
 **Salida:** URL de Netlify, los tres entran con Google, un email no invitado se queda fuera, `/api/prices` responde.
 
-### F2 — Catálogo, buscador y colección ← SIGUIENTE
+### F2 — Catálogo, buscador y colección (código ✅, salida pendiente del despliegue)
 1. ✅ `tools/build-catalog.mts`: RiftHunt + Cardmarket → `public/data/catalog.json` (1.638 cartas, 10 sets) + `mapping.json`. `npm run build:catalog -- --check` valida contra `collection1.csv` y da 371 altas, igual que F0.
 2. ✅ `src/app/core/catalog.service.ts`: carga los dos JSON una sola vez, índice por `cardId` (siempre en mayúsculas), `search()` por nombre o código con orden de relevancia, `filter()` por set, rareza, dominio y tipo, y signals `rarities/types/domains` sacados del propio catálogo para montar los filtros sin listas a mano. El service worker ya cachea `/data/*.json`.
-3. ✅ `CollectionService`: interfaz `CollectionStore` con dos implementaciones (Firestore y localStorage en demo). +/− optimista: pinta antes de guardar y deshace si falla. Escrituras en cola por carta, así que varios clics seguidos acaban en el último valor. Una carta a 0/0 borra su documento. Caché por uid que se vacía al cambiar de sesión. `view(uid)` muestra la colección de otro en solo lectura (base del paso 6).
+3. ✅ `CollectionService`: interfaz `CollectionStore` con dos implementaciones (Firestore y localStorage en demo). +/− optimista: pinta antes de guardar y deshace si falla. Escrituras en cola por carta, así que varios clics seguidos acaban en el último valor. Una carta a 0/0 borra su documento. Todo se vacía al cambiar de sesión.
+   - **`cards` es siempre la colección propia**, la que pintan y editan el catálogo, la ficha y los +/−. Las ajenas van aparte: `loadOther(uid)` las lee en solo lectura y las cachea para la sesión, y `other(uid)` las devuelve. Así mirar la de otro no cambia lo que ves en el resto de la app, y F5 (quién del grupo tiene cada carta) puede leer varias a la vez.
 4. ✅ `UsersService.ensureProfile`: `AuthService` la llama en cuanto hay acceso (en cada arranque, no solo el primero: refresca el nombre si cambió en Google y solo escribe si hay diferencia). `loadProfiles()` lista el grupo; las reglas actuales ya permiten ese `list` a invitados.
    - **Sin verificar contra Firestore real**: los tests corren sobre el almacén demo. Cuando exista el proyecto de Firebase, falta probarlo con el emulador o en el despliegue.
 5. ✅ Pantallas, probadas en el navegador (escritorio y móvil) con las 390 cartas de collection1.csv cargadas en el almacén demo. Valor total 309,71 €, igual que el generador.
@@ -294,8 +295,9 @@ Mapeo validado contra el CSV real.
    - Solo se marca la confianza **baja** ("precio aproximado"), sin producto y corregido. La media no se marca: casi siempre son alt arts bien emparejados.
    - Imágenes pedidas al CDN de Riot con `&w=…&fm=webp`: 14 KB por carta en vez de 780 KB. El service worker las cachea 30 días.
    - Si una carta no tiene precio normal pero sí foil, la tarjeta del catálogo lo dice ("foil 1,23 €"); si no, parecería el de la normal.
-6. Selector "ver colección de…" para Sans y Estela, en solo lectura.
-**Salida:** Fran gestiona su colección entera desde el móvil.
+6. ✅ Ruta `/coleccion/:uid` y selector "Ver" en la cabecera de Mi colección, con los miembros de `users/*` (se oculta si solo estás tú). La colección ajena muestra valor, totales y lista igual que la propia, con las copias como números sin botones y una etiqueta "solo lectura". Probado en el navegador con un segundo perfil creado a mano en el almacén demo: valores, selector, solo lectura, y que al volver al catálogo se ven y editan las copias propias.
+   - Leer la colección de otro cuesta una lectura de Firestore por carta. Se cachea por sesión; con 3 usuarios y ~400 cartas sobra el plan Spark (sección 4).
+**Salida:** Fran gestiona su colección entera desde el móvil. **Pendiente:** necesita el despliegue de F1.
 
 ### F3 — Importar / exportar
 Import DotGG (y Collectr y Legacy si es barato), con informe de filas no reconocidas. Export DotGG. **Salida:** importar `collection1.csv` y exportarlo da el mismo contenido.

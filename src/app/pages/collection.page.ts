@@ -1,9 +1,20 @@
 import { DatePipe } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import {
+  Component,
+  OnInit,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+  untracked,
+} from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
+import { AuthService } from '../core/auth.service';
 import { CatalogCard, CatalogService } from '../core/catalog.service';
-import { CollectionService } from '../core/collection.service';
+import { CardQty, CollectionMap, CollectionService, totalsOf } from '../core/collection.service';
 import { PricesService } from '../core/prices.service';
+import { UsersService } from '../core/users.service';
 import { CardPricing, ValuationService } from '../core/valuation.service';
 import { ConfidenceBadgeComponent } from '../ui/confidence-badge.component';
 import { EurPipe, ThumbPipe } from '../ui/pipes';
@@ -14,8 +25,8 @@ type Orden = 'valor' | 'nombre' | 'set';
 interface Fila {
   card: CatalogCard;
   pricing: CardPricing;
-  normal: number;
-  foil: number;
+  /** El objeto de la colección tal cual: estable entre renders, para el input de +/−. */
+  qty: CardQty;
   /** null = alguna copia no tiene precio y no se puede valorar la línea entera. */
   valor: number | null;
   /** Suma de las copias que sí tienen precio, aunque falten otras. */
@@ -34,8 +45,34 @@ interface Fila {
   ],
   template: `
     <main class="pagina">
-      @if (!catalog.loaded() || col.loading()) {
-        <p class="muted">Cargando tu colección…</p>
+      <header class="cabecera">
+        <h1>
+          @if (propia()) {
+            Mi colección
+          } @else {
+            Colección de {{ nombreDueno() }}
+          }
+        </h1>
+        @if (!propia()) {
+          <span class="solo-lectura">solo lectura</span>
+        }
+        @if (otros().length) {
+          <label class="selector">
+            <span class="muted">Ver</span>
+            <!-- [selected] por opción y no [value] en el select: los perfiles llegan después
+                 y un [value] aplicado antes de que exista la opción se pierde. -->
+            <select aria-label="Ver la colección de" (change)="cambiarDueno($event)">
+              <option value="" [selected]="propia()">Mi colección</option>
+              @for (p of otros(); track p.uid) {
+                <option [value]="p.uid" [selected]="p.uid === uid()">{{ p.displayName }}</option>
+              }
+            </select>
+          </label>
+        }
+      </header>
+
+      @if (!catalog.loaded() || !fuente()) {
+        <p class="muted">Cargando {{ propia() ? 'tu colección' : 'la colección' }}…</p>
       } @else {
         <section class="resumen" aria-label="Resumen">
           <div class="cifra principal">
@@ -57,13 +94,13 @@ interface Fila {
           </div>
           <div class="cifra">
             <span class="etiqueta">Cartas distintas</span>
-            <span class="numero">{{ col.totals().cards }}</span>
+            <span class="numero">{{ totales().cards }}</span>
           </div>
           <div class="cifra">
             <span class="etiqueta">Copias</span>
-            <span class="numero">{{ col.totals().copies }}</span>
+            <span class="numero">{{ totales().copies }}</span>
             <span class="muted pie"
-              >{{ col.totals().normal }} normales · {{ col.totals().foil }} foil</span
+              >{{ totales().normal }} normales · {{ totales().foil }} foil</span
             >
           </div>
         </section>
@@ -94,18 +131,22 @@ interface Fila {
           </details>
         }
 
-        @if (col.totals().cards === 0) {
+        @if (totales().cards === 0) {
           <section class="vacio">
-            <h2>Aún no tienes cartas</h2>
-            <p class="muted">Búscalas en el catálogo y añádelas con el botón +.</p>
-            <a class="boton" routerLink="/catalogo">Ir al catálogo</a>
+            @if (propia()) {
+              <h2>Aún no tienes cartas</h2>
+              <p class="muted">Búscalas en el catálogo y añádelas con el botón +.</p>
+              <a class="boton" routerLink="/catalogo">Ir al catálogo</a>
+            } @else {
+              <h2>{{ nombreDueno() }} aún no tiene cartas</h2>
+            }
           </section>
         } @else {
           <section class="controles">
             <input
               type="search"
-              placeholder="Buscar en mi colección"
-              aria-label="Buscar en mi colección"
+              placeholder="Buscar en esta colección"
+              aria-label="Buscar en esta colección"
               [value]="texto()"
               (input)="texto.set($any($event.target).value)"
             />
@@ -138,7 +179,11 @@ interface Fila {
                   <span class="muted meta">{{ f.card.cardId }} · {{ f.card.setName }}</span>
                   <app-confidence-badge [pricing]="f.pricing" />
                 </div>
-                <app-qty-control class="qty" [cardId]="f.card.cardId" />
+                <app-qty-control
+                  class="qty"
+                  [cardId]="f.card.cardId"
+                  [fixed]="propia() ? null : f.qty"
+                />
                 <div class="valor">
                   @if (f.valor !== null) {
                     {{ f.valor | eur }}
@@ -152,7 +197,7 @@ interface Fila {
                 </div>
               </li>
             } @empty {
-              <li class="muted">Ninguna carta de tu colección coincide con «{{ texto() }}».</li>
+              <li class="muted">Ninguna carta de esta colección coincide con «{{ texto() }}».</li>
             }
           </ul>
         }
@@ -169,10 +214,12 @@ interface Fila {
             {{ huerfanas().join(', ') }}.
           </p>
         }
+      }
 
-        @if (col.error()) {
-          <p class="error" role="alert">No se pudo guardar: {{ col.error() }}</p>
-        }
+      @if (col.error()) {
+        <p class="error" role="alert">
+          {{ propia() ? 'No se pudo guardar' : 'No se pudo leer la colección' }}: {{ col.error() }}
+        </p>
       }
     </main>
   `,
@@ -183,6 +230,30 @@ interface Fila {
       margin: 0 auto;
       display: grid;
       gap: 16px;
+    }
+    .cabecera {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px 12px;
+    }
+    .cabecera h1 {
+      margin: 0;
+      font-size: 1.3rem;
+    }
+    .solo-lectura {
+      font-size: 0.75rem;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 1px 8px;
+    }
+    .selector {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
     }
     .resumen {
       display: grid;
@@ -329,20 +400,70 @@ interface Fila {
     }
   `,
 })
-export class CollectionPage {
+export class CollectionPage implements OnInit {
   protected readonly catalog = inject(CatalogService);
   protected readonly col = inject(CollectionService);
   protected readonly prices = inject(PricesService);
   private readonly valuation = inject(ValuationService);
+  private readonly users = inject(UsersService);
+  private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
+
+  /** De la ruta `/coleccion/:uid`. Sin él, o si es el tuyo, es tu colección. */
+  readonly uid = input<string>();
 
   protected readonly texto = signal('');
   protected readonly orden = signal<Orden>('valor');
 
-  protected readonly valor = computed(() => this.valuation.value(this.col.cards()));
+  protected readonly propia = computed(() => {
+    const uid = this.uid();
+    return !uid || uid === this.auth.user()?.uid;
+  });
+
+  /** La colección que se pinta. null mientras se lee. */
+  protected readonly fuente = computed<CollectionMap | null>(() => {
+    if (this.propia()) return this.col.uid() ? this.col.cards() : null;
+    return this.col.other(this.uid()!) ?? null;
+  });
+
+  /** Los demás miembros del grupo, para el selector. */
+  protected readonly otros = computed(() =>
+    this.users.profiles().filter((p) => p.uid !== this.auth.user()?.uid),
+  );
+
+  protected readonly nombreDueno = computed(
+    () => this.users.profile(this.uid() ?? '')?.displayName ?? 'otro miembro',
+  );
+
+  protected readonly totales = computed(() => totalsOf(this.fuente() ?? new Map()));
+  protected readonly valor = computed(() => this.valuation.value(this.fuente() ?? new Map()));
+
+  constructor() {
+    // Al cambiar de miembro en el selector cambia :uid sin destruir la página.
+    // Solo depende de :uid. loadOther lee signals antes de su primer await; sin untracked
+    // el efecto se volvería a lanzar al llegar los datos y borraría la búsqueda.
+    effect(() => {
+      const uid = this.uid();
+      const ajena = !this.propia();
+      untracked(() => {
+        if (uid && ajena) void this.col.loadOther(uid);
+        this.texto.set('');
+      });
+    });
+  }
+
+  ngOnInit(): void {
+    void this.users.loadProfiles();
+  }
+
+  protected cambiarDueno(ev: Event): void {
+    const uid = (ev.target as HTMLSelectElement).value;
+    void this.router.navigate(uid ? ['/coleccion', uid] : ['/coleccion']);
+  }
 
   private readonly todas = computed<Fila[]>(() => {
     const filas: Fila[] = [];
-    for (const [cardId, q] of this.col.cards()) {
+    for (const [cardId, q] of this.fuente() ?? new Map<string, CardQty>()) {
       const card = this.catalog.card(cardId);
       // Una carta guardada que ya no está en el catálogo (o un id mal importado) no se pierde de vista.
       if (!card) continue;
@@ -354,8 +475,7 @@ export class CollectionPage {
       filas.push({
         card,
         pricing,
-        normal: q.normal,
-        foil: q.foil,
+        qty: q,
         valor: vn === null || vf === null ? null : vn + vf,
         valorParcial: (vn ?? 0) + (vf ?? 0),
       });

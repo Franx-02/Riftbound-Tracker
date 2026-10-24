@@ -2,7 +2,7 @@
 
 App PWA (Angular 22 + Netlify + Firebase) para colecciones de cartas de Riftbound con precios de Cardmarket. Uso privado de un grupo de amigos, por invitación, coste 0 €.
 
-**Lee `docs/HANDOFF.md` antes de empezar cualquier tarea.** Contiene las decisiones, los datos externos, el algoritmo de mapeo y el plan por fases. La siguiente fase es **F2**, con los pasos 1 a 5 hechos. Falta el 6: ver la colección de otro miembro del grupo.
+**Lee `docs/HANDOFF.md` antes de empezar cualquier tarea.** Contiene las decisiones, los datos externos, el algoritmo de mapeo y el plan por fases. F2 tiene el código terminado; su criterio de salida, igual que el de F1, espera al despliegue en Firebase y Netlify. La siguiente fase de código es **F3** (importar y exportar CSV).
 
 ## Comandos
 - `npm install`

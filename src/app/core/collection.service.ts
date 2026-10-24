@@ -56,30 +56,29 @@ export class CollectionService {
   private readonly auth = inject(AuthService);
   private readonly store: CollectionStore = DEMO ? new DemoStore() : new FirestoreStore();
 
-  /** Colección que se está mostrando. Puede ser la de otro miembro del grupo. */
+  /**
+   * La colección propia, siempre. Es la que pintan el catálogo, la ficha y los +/−.
+   * Las de los demás van aparte (`other`) para que mirar la de otro no cambie lo que
+   * ves y editas en el resto de la app.
+   */
   readonly cards = signal<CollectionMap>(new Map());
-  /** De quién es la colección de `cards`. */
+  /** uid de la colección propia, en cuanto está cargada. */
   readonly uid = signal<string | null>(null);
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
 
-  /** Solo se puede editar la propia. Las reglas de Firestore aplican lo mismo en servidor. */
+  /** Solo se edita la propia. Las reglas de Firestore aplican lo mismo en servidor. */
   readonly editable = computed(() => !!this.uid() && this.uid() === this.auth.user()?.uid);
 
-  readonly totals = computed(() => {
-    let normal = 0;
-    let foil = 0;
-    for (const q of this.cards().values()) {
-      normal += q.normal;
-      foil += q.foil;
-    }
-    return { cards: this.cards().size, normal, foil, copies: normal + foil };
-  });
+  readonly totals = computed(() => totalsOf(this.cards()));
 
-  /** Una colección leída por uid: evita releer 400 documentos al cambiar de pestaña. */
-  private cache = new Map<string, Map<string, CardQty>>();
+  /** Colecciones ajenas ya leídas, en solo lectura. Leer una cuesta 1 lectura por carta. */
+  private readonly ajenas = signal<ReadonlyMap<string, CollectionMap>>(new Map());
+  readonly loadingOther = signal(false);
+
   /** Una cadena de escrituras por carta, para que varios clics seguidos no se pisen. */
   private cola = new Map<string, Promise<unknown>>();
+  private cargaPropia: Promise<void> | null = null;
 
   /** Sesión a la que pertenece lo cacheado. Ver `comprobarSesion`. */
   private sesion: string | null = null;
@@ -94,44 +93,69 @@ export class CollectionService {
     const uid = this.auth.user()?.uid ?? null;
     if (uid === this.sesion) return;
     this.sesion = uid;
-    this.cache.clear();
     this.cola.clear();
+    this.cargaPropia = null;
     this.cards.set(new Map());
     this.uid.set(null);
+    this.ajenas.set(new Map());
     this.error.set(null);
   }
 
-  /** Carga la colección propia y la deja como la que se está mostrando. */
-  async loadMine(): Promise<void> {
+  /** Carga la colección propia una vez por sesión, aunque la pidan varias pantallas. */
+  loadMine(): Promise<void> {
+    this.comprobarSesion();
+    this.cargaPropia ??= this.cargarPropia();
+    return this.cargaPropia;
+  }
+
+  private async cargarPropia(): Promise<void> {
     const uid = this.auth.user()?.uid;
     if (!uid) {
       this.error.set('No hay sesión');
-      return;
-    }
-    await this.view(uid);
-  }
-
-  /** Carga la colección de `uid`. Si no es la propia, queda en solo lectura. */
-  async view(uid: string, recargar = false): Promise<void> {
-    this.comprobarSesion();
-    this.uid.set(uid);
-    const enCache = this.cache.get(uid);
-    if (enCache && !recargar) {
-      this.cards.set(new Map(enCache));
+      this.cargaPropia = null;
       return;
     }
     this.loading.set(true);
     try {
       const datos = await this.store.read(uid);
-      this.cache.set(uid, datos);
-      // Otra pantalla puede haber cambiado de colección mientras se leía esta.
-      if (this.uid() === uid) this.cards.set(new Map(datos));
+      if (this.sesion !== uid) return; // la sesión cambió mientras se leía
+      this.cards.set(datos);
+      this.uid.set(uid);
       this.error.set(null);
     } catch (e) {
+      this.cargaPropia = null;
       this.error.set(e instanceof Error ? e.message : String(e));
     } finally {
       this.loading.set(false);
     }
+  }
+
+  /**
+   * Lee la colección de otro miembro, en solo lectura. Queda cacheada para la sesión:
+   * `recargar` fuerza otra lectura (por ejemplo, para ver lo que acaba de añadir).
+   */
+  async loadOther(uid: string, recargar = false): Promise<void> {
+    this.comprobarSesion();
+    if (uid === this.auth.user()?.uid) return this.loadMine();
+    if (this.ajenas().has(uid) && !recargar) return;
+    this.loadingOther.set(true);
+    try {
+      const datos = await this.store.read(uid);
+      const copia = new Map(this.ajenas());
+      copia.set(uid, datos);
+      this.ajenas.set(copia);
+      this.error.set(null);
+    } catch (e) {
+      this.error.set(e instanceof Error ? e.message : String(e));
+    } finally {
+      this.loadingOther.set(false);
+    }
+  }
+
+  /** Colección de `uid` si ya está leída. Para el uid propio devuelve la propia. */
+  other(uid: string): CollectionMap | undefined {
+    if (uid === this.uid()) return this.cards();
+    return this.ajenas().get(uid);
   }
 
   qty(cardId: string): CardQty {
@@ -158,7 +182,7 @@ export class CollectionService {
     const id = cardId.toUpperCase();
     const uid = this.uid();
     if (!uid || !this.editable()) {
-      this.error.set('Esta colección es de solo lectura');
+      this.error.set('Tu colección aún no se ha cargado');
       return;
     }
     const limpio: CardQty = { normal: Math.max(0, qty.normal), foil: Math.max(0, qty.foil) };
@@ -185,12 +209,24 @@ export class CollectionService {
   }
 
   private aplicar(uid: string, cardId: string, qty: CardQty | null): void {
-    const cache = this.cache.get(uid) ?? new Map<string, CardQty>();
-    if (qty && (qty.normal || qty.foil)) cache.set(cardId, qty);
-    else cache.delete(cardId);
-    this.cache.set(uid, cache);
-    if (this.uid() === uid) this.cards.set(new Map(cache));
+    // Una escritura que vuelve tras cerrar sesión no debe pintar en la del siguiente.
+    if (this.uid() !== uid) return;
+    const copia = new Map(this.cards());
+    if (qty && (qty.normal || qty.foil)) copia.set(cardId, qty);
+    else copia.delete(cardId);
+    this.cards.set(copia);
   }
+}
+
+/** Cartas distintas, copias normales, foil y total de una colección cualquiera. */
+export function totalsOf(cards: CollectionMap) {
+  let normal = 0;
+  let foil = 0;
+  for (const q of cards.values()) {
+    normal += q.normal;
+    foil += q.foil;
+  }
+  return { cards: cards.size, normal, foil, copies: normal + foil };
 }
 
 /** Un documento escrito a mano o de una versión anterior podría traer basura. */

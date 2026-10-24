@@ -1,14 +1,17 @@
 import { Component, computed, inject, input } from '@angular/core';
-import { CollectionService, Finish } from '../core/collection.service';
+import { CardQty, CollectionService, Finish } from '../core/collection.service';
 
-/** Copias normales y foil de una carta, con +/−. En solo lectura enseña los números sin botones. */
+/**
+ * Copias normales y foil de una carta, con +/−. Con `fixed` enseña esas cifras sin
+ * botones: es como se pinta la colección de otro miembro del grupo.
+ */
 @Component({
   selector: 'app-qty-control',
   template: `
     @for (f of finishes; track f.id) {
       <div class="fila" [class.tiene]="qty()[f.id] > 0">
         <span class="etiqueta">{{ f.label }}</span>
-        @if (col.editable()) {
+        @if (editable()) {
           <button
             type="button"
             class="paso"
@@ -20,7 +23,7 @@ import { CollectionService, Finish } from '../core/collection.service';
           </button>
         }
         <span class="n" aria-live="polite">{{ qty()[f.id] }}</span>
-        @if (col.editable()) {
+        @if (editable()) {
           <button
             type="button"
             class="paso"
@@ -77,7 +80,10 @@ import { CollectionService, Finish } from '../core/collection.service';
 export class QtyControlComponent {
   protected readonly col = inject(CollectionService);
   readonly cardId = input.required<string>();
-  protected readonly qty = computed(() => this.col.qty(this.cardId()));
+  /** Cifras ajenas, en solo lectura. Sin él se usan y se editan las de tu colección. */
+  readonly fixed = input<CardQty | null>(null);
+  protected readonly qty = computed(() => this.fixed() ?? this.col.qty(this.cardId()));
+  protected readonly editable = computed(() => !this.fixed() && this.col.editable());
   protected readonly finishes: { id: Finish; label: string }[] = [
     { id: 'normal', label: 'Normal' },
     { id: 'foil', label: 'Foil' },
