@@ -8,29 +8,43 @@ import { EurPipe, ThumbPipe } from './pipes';
 import { QtyControlComponent } from './qty-control.component';
 
 /**
- * Una carta en cuadrícula: imagen, nombre, código, precio y +/−. La usan el catálogo
- * y la vista de carpeta de Mi colección.
+ * Una carta en cuadrícula. El +/− de normal y foil va encima de la imagen: en
+ * escritorio aparece al pasar el ratón (o al llegar con el tabulador) y en pantallas
+ * táctiles, donde no hay "pasar el ratón", se ve siempre. La usan el catálogo y la
+ * vista de carpeta de Mi colección.
  */
 @Component({
   selector: 'app-card-tile',
   imports: [RouterLink, QtyControlComponent, ConfidenceBadgeComponent, EurPipe, ThumbPipe],
   template: `
-    <a [routerLink]="['/carta', card().cardId]" class="enlace-carta">
-      <span class="marco">
+    <div class="marco">
+      <!-- Los botones no pueden ir dentro de un enlace (HTML inválido, y el teclado se
+           lía): la imagen es un enlace y el panel, un hermano posicionado encima.
+           Fuera del tabulador porque el nombre de abajo lleva al mismo sitio. -->
+      <a [routerLink]="['/carta', card().cardId]" class="imagen" tabindex="-1" aria-hidden="true">
         <img
           [src]="card().imgUrl | thumb: 300"
-          [alt]="card().name"
+          alt=""
           loading="lazy"
           decoding="async"
           width="240"
           height="335"
         />
-        @if (copias() > 0) {
-          <span class="etiqueta tengo" [title]="detalleCopias()">×{{ copias() }}</span>
-        } @else if (dim()) {
-          <span class="etiqueta falta">falta</span>
-        }
-      </span>
+      </a>
+      @if (copias() > 0) {
+        <span class="etiqueta tengo" [title]="detalleCopias()">×{{ copias() }}</span>
+      } @else if (dim()) {
+        <span class="etiqueta falta">falta</span>
+      }
+      <div class="panel">
+        <app-qty-control
+          [cardId]="card().cardId"
+          [fixed]="readonly() ? owned() : null"
+          [overlay]="true"
+        />
+      </div>
+    </div>
+    <a [routerLink]="['/carta', card().cardId]" class="enlace-carta">
       <span class="nombre">{{ card().name }}</span>
       <span class="meta">
         <span class="codigo">{{ card().cardId }}</span>
@@ -47,7 +61,6 @@ import { QtyControlComponent } from './qty-control.component';
       </span>
       <app-confidence-badge [pricing]="pricing()" />
     </a>
-    <app-qty-control [cardId]="card().cardId" [fixed]="readonly() ? owned() : null" />
   `,
   styles: `
     :host {
@@ -59,6 +72,10 @@ import { QtyControlComponent } from './qty-control.component';
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 12px;
+      transition:
+        transform 0.15s ease,
+        box-shadow 0.15s ease,
+        border-color 0.15s ease;
     }
     :host(.tengo) {
       border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
@@ -69,8 +86,15 @@ import { QtyControlComponent } from './qty-control.component';
       color: inherit;
       text-decoration: none;
     }
+    .enlace-carta:hover .nombre {
+      color: var(--accent);
+    }
     .marco {
       position: relative;
+      overflow: hidden;
+      border-radius: 6px;
+    }
+    .imagen {
       display: block;
     }
     img {
@@ -79,22 +103,74 @@ import { QtyControlComponent } from './qty-control.component';
       height: auto;
       aspect-ratio: 744 / 1039;
       object-fit: contain;
-      border-radius: 6px;
       background: var(--surface-2);
-      transition: filter 0.15s ease;
+      transition:
+        filter 0.15s ease,
+        transform 0.25s ease;
     }
     /* La que no tienes se ve apagada, como un hueco en la carpeta, pero reconocible. */
     :host(.apagada) img {
       filter: grayscale(0.85) brightness(0.4);
     }
-    :host(.apagada) .enlace-carta:hover img,
-    :host(.apagada) .enlace-carta:focus-visible img {
-      filter: grayscale(0.4) brightness(0.75);
+
+    /* El panel del +/−: degradado oscuro sobre la parte de abajo de la imagen. */
+    .panel {
+      position: absolute;
+      inset: auto 0 0 0;
+      padding: 28px 8px 8px;
+      background: linear-gradient(to bottom, transparent, rgb(0 0 0 / 0.85) 40%);
+      transition:
+        opacity 0.15s ease,
+        transform 0.15s ease;
+    }
+
+    /* Con ratón: el panel aparece al pasar por encima o al llegar con el tabulador,
+       y la carta se levanta un poco. */
+    @media (hover: hover) {
+      .panel {
+        opacity: 0;
+        transform: translateY(8px);
+        pointer-events: none;
+      }
+      :host(:hover) .panel,
+      :host(:focus-within) .panel {
+        opacity: 1;
+        transform: none;
+        pointer-events: auto;
+      }
+      :host(:hover) {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 28px rgb(0 0 0 / 0.5);
+        border-color: var(--accent);
+      }
+      :host(:hover) img {
+        transform: scale(1.03);
+      }
+      :host(.apagada:hover) img,
+      :host(.apagada:focus-within) img {
+        filter: grayscale(0.3) brightness(0.8);
+      }
+    }
+    :host(:focus-within) {
+      border-color: var(--accent);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      :host,
+      img,
+      .panel {
+        transition: none;
+      }
+      :host(:hover),
+      :host(:hover) img {
+        transform: none;
+      }
     }
     .etiqueta {
       position: absolute;
       top: 6px;
       left: 6px;
+      z-index: 1;
+      pointer-events: none;
       padding: 1px 7px;
       border-radius: 6px;
       font-size: 0.72rem;

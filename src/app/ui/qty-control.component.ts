@@ -9,7 +9,7 @@ import { CardQty, CollectionService, Finish } from '../core/collection.service';
   selector: 'app-qty-control',
   template: `
     @for (f of finishes; track f.id) {
-      <div class="fila" [class.tiene]="qty()[f.id] > 0">
+      <div class="fila" [class.tiene]="qty()[f.id] > 0" [class.foil]="f.id === 'foil'">
         <span class="etiqueta">{{ f.label }}</span>
         @if (editable()) {
           <button
@@ -85,16 +85,72 @@ import { CardQty, CollectionService, Finish } from '../core/collection.service';
         height: 28px;
       }
     }
-    .paso:not(:disabled):hover {
+    @media (hover: hover) {
+      .paso:not(:disabled):hover {
+        border-color: var(--accent);
+      }
+    }
+
+    /* Variante para ir encima de la imagen de la carta (ver card-tile). */
+    :host(.overlay) {
+      gap: 3px;
+      color: #fff;
+    }
+    :host(.overlay) .etiqueta {
+      color: rgb(255 255 255 / 0.7);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    :host(.overlay) .tiene .etiqueta {
+      color: #fff;
+    }
+    :host(.overlay) .tiene.foil .etiqueta {
+      background: linear-gradient(90deg, #f6d365, #fda085, #a1c4fd, #c2e9fb);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    :host(.overlay) .n {
+      text-shadow: 0 1px 2px rgb(0 0 0 / 0.8);
+    }
+    :host(.overlay) .paso {
+      width: 28px;
+      height: 28px;
+      background: rgb(0 0 0 / 0.55);
+      border-color: rgb(255 255 255 / 0.25);
+      color: #fff;
+      backdrop-filter: blur(2px);
+    }
+    :host(.overlay) .paso:focus-visible {
+      background: var(--accent);
       border-color: var(--accent);
+      color: #15120a;
+    }
+    /* Solo con ratón: en táctil el :hover se queda "pegado" al botón tras tocarlo. */
+    @media (hover: hover) {
+      :host(.overlay) .paso:not(:disabled):hover {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #15120a;
+      }
+    }
+    :host(.overlay) .paso:disabled {
+      opacity: 0.35;
     }
   `,
+  host: {
+    '[class.overlay]': 'overlay()',
+  },
 })
 export class QtyControlComponent {
   protected readonly col = inject(CollectionService);
   readonly cardId = input.required<string>();
   /** Cifras ajenas, en solo lectura. Sin él se usan y se editan las de tu colección. */
   readonly fixed = input<CardQty | null>(null);
+  /** Estilo para ir encima de la imagen de la carta. */
+  readonly overlay = input(false);
   protected readonly qty = computed(() => this.fixed() ?? this.col.qty(this.cardId()));
   protected readonly editable = computed(() => !this.fixed() && this.col.editable());
   protected readonly finishes: { id: Finish; label: string }[] = [
