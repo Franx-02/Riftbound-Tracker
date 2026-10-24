@@ -331,7 +331,7 @@ exportación: 390 filas de 390 iguales en código, normales y foils.
 - `npm run start:demo` arranca `netlify dev` en modo demo aunque la config de Firebase esté rellena:
   sirve para probar en local sin tocar el Firestore real (es lo que se usó para probar F3).
 
-### F4 — Traducción al español ← EN CURSO
+### F4 — Traducción al español ← HECHA (falta la revisión del usuario)
 Primero un glosario fijo de términos del juego (keywords, tipos, dominios), luego todos los textos usando el glosario, revisados. `catalog_es.json`. Selector EN/ES. No hay edición oficial en español; Riot ha anunciado primero el francés.
 
 Hecho (24/10/2026):
@@ -351,10 +351,20 @@ Hecho (24/10/2026):
   y viñetas) y regenera `public/data/catalog_es.json`. Lo que no pasa no entra.
 - La clave es un hash del texto inglés: las alt arts comparten traducción y, si Riot corrige un
   texto, esa carta vuelve al inglés con aviso en vez de enseñar una traducción desfasada.
-- **Volumen**: 1.164 textos de reglas y 773 de ambientación distintos. Hecha una muestra de 17
-  (`000-muestra.json`) con la opción A del glosario, para que el usuario la revise.
+- **Volumen**: 1.164 textos de reglas y 773 de ambientación distintos.
 
-Glosario aprobado por el usuario el 24/10/2026 (opción A). Pendiente: traducir el resto por lotes.
+Glosario aprobado por el usuario el 24/10/2026 (opción A: keywords en inglés con el recordatorio
+traducido). Traducción terminada el mismo día:
+- **Reglas: 1.164/1.164**, lotes `001`–`017`. Todas pasan el validador.
+- **Ambientación: 755/773**, lotes `100`–`104`. Las 18 que faltan son **letras de canciones** (las
+  cartas de la banda de Radiance, OPP-015, OPP-038 y el poema en seis partes de UNL-220 a UNL-225):
+  se dejan en inglés a propósito, por derechos de autor. La ficha las enseña en inglés, como
+  cualquier texto sin traducir. `npm run traducir -- pendientes --tipo ambientacion` las seguirá
+  listando: es lo esperado.
+- Pendiente: que el usuario revise en la app las cartas que más juega y corrija lo que no le suene
+  natural (editar el lote y `npm run traducir -- aplicar`).
+- Detalle visto al revisar: la ambientación se pinta sin saltos de línea (también en inglés), así
+  que las citas con la atribución en otra línea salen seguidas. Es cosmético.
 
 ### F5 — Lista de deseos
 Cartas que faltan, coste total en Cardmarket y **quién del grupo tiene copias** de cada una.
