@@ -43,6 +43,10 @@ src/app/core/guards.ts          allowedGuard, loginGuard
 src/app/core/prices.service.ts  carga /api/prices en un signal
 src/app/pages/login.page.ts     pantalla de login
 src/app/core/catalog.service.ts F2 paso 2: catálogo en memoria, búsqueda y filtros
+src/app/core/demo.ts            flag DEMO (condición doble, único sitio) y helpers de localStorage
+src/app/core/collection.service.ts  F2 paso 3: colección con almacén Firestore o demo, +/− optimista
+src/app/core/users.service.ts   F2 paso 4: perfil users/{uid} y lista del grupo
+src/app/core/collection.service.spec.ts  tests (vitest + jsdom, `npm test`)
 src/app/pages/home.page.ts      pantalla de COMPROBACIÓN (sustituir en F2)
 src/environments/firebase.config.ts   config web de Firebase (aún con REEMPLAZAR)
 netlify/functions/prices.mts    GET /api/prices
@@ -58,7 +62,7 @@ public/data/mapping.json        cardId → idProduct, confianza, motivo y candid
 ```
 
 **Node 22 o superior es obligatorio en local.** El CLI de Angular 22 rechaza Node 20 y
-`npm run build` ni arranca. `netlify.toml` ya fija `NODE_VERSION = "22"` para el despliegue.
+`npm run build` ni `npm test` arrancan. `netlify.toml` ya fija `NODE_VERSION = "22"` para el despliegue.
 `npm run build:catalog` sí funciona con Node 20.
 
 Verificado:
@@ -272,8 +276,9 @@ Mapeo validado contra el CSV real.
 ### F2 — Catálogo, buscador y colección ← SIGUIENTE
 1. ✅ `tools/build-catalog.mts`: RiftHunt + Cardmarket → `public/data/catalog.json` (1.638 cartas, 10 sets) + `mapping.json`. `npm run build:catalog -- --check` valida contra `collection1.csv` y da 371 altas, igual que F0.
 2. ✅ `src/app/core/catalog.service.ts`: carga los dos JSON una sola vez, índice por `cardId` (siempre en mayúsculas), `search()` por nombre o código con orden de relevancia, `filter()` por set, rareza, dominio y tipo, y signals `rarities/types/domains` sacados del propio catálogo para montar los filtros sin listas a mano. El service worker ya cachea `/data/*.json`.
-3. Servicio de colección sobre Firestore (y almacén falso en modo demo), con la misma interfaz.
-4. Al primer login, crear `users/{uid}` con nombre y email.
+3. ✅ `CollectionService`: interfaz `CollectionStore` con dos implementaciones (Firestore y localStorage en demo). +/− optimista: pinta antes de guardar y deshace si falla. Escrituras en cola por carta, así que varios clics seguidos acaban en el último valor. Una carta a 0/0 borra su documento. Caché por uid que se vacía al cambiar de sesión. `view(uid)` muestra la colección de otro en solo lectura (base del paso 6).
+4. ✅ `UsersService.ensureProfile`: `AuthService` la llama en cuanto hay acceso (en cada arranque, no solo el primero: refresca el nombre si cambió en Google y solo escribe si hay diferencia). `loadProfiles()` lista el grupo; las reglas actuales ya permiten ese `list` a invitados.
+   - **Sin verificar contra Firestore real**: los tests corren sobre el almacén demo. Cuando exista el proyecto de Firebase, falta probarlo con el emulador o en el despliegue.
 5. Pantallas: catálogo con imágenes y filtros (set, rareza, dominio, tipo) · ficha de carta con precio normal/foil, confianza del mapeo y botón de corregir · "Mi colección" con valor total y aviso de cartas sin precio · +/− normal y foil con guardado inmediato y optimista.
 6. Selector "ver colección de…" para Sans y Estela, en solo lectura.
 **Salida:** Fran gestiona su colección entera desde el móvil.

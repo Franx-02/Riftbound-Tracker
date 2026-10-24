@@ -1,8 +1,15 @@
-import { Injectable, computed, signal } from '@angular/core';
-import { GoogleAuthProvider, User, onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import {
+  GoogleAuthProvider,
+  User,
+  onAuthStateChanged,
+  signInWithPopup,
+  signOut,
+} from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
-import { firebaseConfig } from '../../environments/firebase.config';
+import { DEMO } from './demo';
 import { auth, db } from './firebase';
+import { UsersService } from './users.service';
 
 export type AccessState = 'loading' | 'signed-out' | 'not-invited' | 'allowed';
 
@@ -12,19 +19,12 @@ export interface AppUser {
   displayName: string | null;
 }
 
-/**
- * Modo demo: solo en localhost y solo mientras firebase.config.ts siga sin rellenar.
- * Permite probar la interfaz sin Firebase. En un despliegue real nunca se activa:
- * fuera de localhost, una config sin rellenar simplemente no deja entrar a nadie.
- */
-const DEMO =
-  firebaseConfig.apiKey === 'REEMPLAZAR' &&
-  ['localhost', '127.0.0.1'].includes(globalThis.location?.hostname ?? '');
 const DEMO_KEY = 'riftbound-demo-user';
 const DEMO_USER: AppUser = { uid: 'demo', email: 'demo@localhost', displayName: 'Fran (demo)' };
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
+  private readonly users = inject(UsersService);
   readonly user = signal<AppUser | null>(null);
   readonly access = signal<AccessState>('loading');
   readonly displayName = computed(() => this.user()?.displayName ?? this.user()?.email ?? '');
@@ -36,15 +36,14 @@ export class AuthService {
   constructor() {
     if (DEMO) {
       const signedIn = sessionStorage.getItem(DEMO_KEY) === '1';
-      this.user.set(signedIn ? DEMO_USER : null);
-      this.access.set(signedIn ? 'allowed' : 'signed-out');
+      this.aplicar(signedIn ? DEMO_USER : null, signedIn ? 'allowed' : 'signed-out');
       this.ready = Promise.resolve();
       return;
     }
     this.ready = new Promise((resolve) => {
       onAuthStateChanged(auth, async (user) => {
-        this.user.set(user ? toAppUser(user) : null);
-        this.access.set(await this.resolveAccess(user));
+        const appUser = user ? toAppUser(user) : null;
+        this.aplicar(appUser, await this.resolveAccess(user));
         resolve();
       });
     });
@@ -54,15 +53,24 @@ export class AuthService {
   async signIn(): Promise<AccessState> {
     if (DEMO) {
       sessionStorage.setItem(DEMO_KEY, '1');
-      this.user.set(DEMO_USER);
-      this.access.set('allowed');
+      this.aplicar(DEMO_USER, 'allowed');
       return 'allowed';
     }
     const { user } = await signInWithPopup(auth, new GoogleAuthProvider());
     const access = await this.resolveAccess(user);
-    this.user.set(toAppUser(user));
-    this.access.set(access);
+    this.aplicar(toAppUser(user), access);
     return access;
+  }
+
+  /**
+   * Único sitio donde se fija el estado de sesión. En cuanto hay acceso se crea o
+   * refresca `users/{uid}`, que es lo que hace que los demás te vean en el grupo.
+   * No se espera a que termine: si falla, la app sigue y el error queda en UsersService.
+   */
+  private aplicar(user: AppUser | null, access: AccessState): void {
+    this.user.set(user);
+    this.access.set(access);
+    if (user && access === 'allowed') void this.users.ensureProfile(user);
   }
 
   async signOut(): Promise<void> {
