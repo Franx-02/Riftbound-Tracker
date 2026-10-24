@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Poro estilizado, dibujo original para el icono de la app (no es arte de Riot).
+       Todo el dibujo cabe en el círculo central del 80 %: la "zona segura" de los
+       iconos maskable, para que Android pueda recortarlo sin comerse los cuernos. -->
+  <defs>
+    <radialGradient id="fondo" cx="50%" cy="42%" r="70%">
+      <stop offset="0" stop-color="#2c3550"/>
+      <stop offset="1" stop-color="#12141a"/>
+    </radialGradient>
+    <!-- Un único sombreado para todo el pelo (userSpaceOnUse): así los mechones se
+         funden en una sola bola en vez de verse como bolitas sueltas. -->
+    <radialGradient id="pelo" gradientUnits="userSpaceOnUse" cx="230" cy="220" r="230">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.6" stop-color="#f1f6fc"/>
+      <stop offset="1" stop-color="#b9cfe6"/>
+    </radialGradient>
+    <linearGradient id="cuerno" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f3d39a"/>
+      <stop offset="1" stop-color="#c9a13b"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" fill="url(#fondo)"/>
+  <circle cx="256" cy="262" r="196" fill="none" stroke="#c9a13b" stroke-opacity="0.35" stroke-width="6"/>
+
+  <!-- Cuernos -->
+  <path d="M182 186 C 152 160, 146 118, 170 96 C 172 126, 190 146, 214 164 Z" fill="url(#cuerno)" stroke="#a9832c" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M330 186 C 360 160, 366 118, 342 96 C 340 126, 322 146, 298 164 Z" fill="url(#cuerno)" stroke="#a9832c" stroke-width="5" stroke-linejoin="round"/>
+
+  <!-- Bola de pelo: cuerpo y mechones muy solapados, con el mismo sombreado -->
+  <g fill="url(#pelo)">
+    <ellipse cx="256" cy="284" rx="138" ry="126"/>
+    <circle cx="256" cy="166" r="26"/>
+    <circle cx="298" cy="172" r="26"/>
+    <circle cx="336" cy="192" r="26"/>
+    <circle cx="364" cy="226" r="26"/>
+    <circle cx="378" cy="266" r="26"/>
+    <circle cx="374" cy="308" r="26"/>
+    <circle cx="354" cy="346" r="26"/>
+    <circle cx="320" cy="376" r="26"/>
+    <circle cx="278" cy="392" r="26"/>
+    <circle cx="234" cy="392" r="26"/>
+    <circle cx="192" cy="376" r="26"/>
+    <circle cx="158" cy="346" r="26"/>
+    <circle cx="138" cy="308" r="26"/>
+    <circle cx="134" cy="266" r="26"/>
+    <circle cx="148" cy="226" r="26"/>
+    <circle cx="176" cy="192" r="26"/>
+    <circle cx="214" cy="172" r="26"/>
+  </g>
+  <!-- Unas pocas líneas de pelo para dar textura -->
+  <g fill="none" stroke="#c8d9ec" stroke-width="4" stroke-linecap="round">
+    <path d="M150 300 q 10 -6 18 2"/>
+    <path d="M344 300 q 10 -6 18 2"/>
+    <path d="M236 372 q 10 -6 18 2"/>
+    <path d="M262 186 q 8 -8 18 -2"/>
+  </g>
+
+  <!-- Coloretes -->
+  <ellipse cx="182" cy="314" rx="24" ry="13" fill="#f59ab0" opacity="0.55"/>
+  <ellipse cx="330" cy="314" rx="24" ry="13" fill="#f59ab0" opacity="0.55"/>
+
+  <!-- Ojos -->
+  <ellipse cx="208" cy="270" rx="27" ry="33" fill="#1c2335"/>
+  <ellipse cx="304" cy="270" rx="27" ry="33" fill="#1c2335"/>
+  <circle cx="217" cy="257" r="10" fill="#ffffff"/>
+  <circle cx="313" cy="257" r="10" fill="#ffffff"/>
+  <circle cx="200" cy="284" r="4.5" fill="#ffffff" opacity="0.8"/>
+  <circle cx="296" cy="284" r="4.5" fill="#ffffff" opacity="0.8"/>
+
+  <!-- Nariz, boca y lengua fuera -->
+  <ellipse cx="256" cy="302" rx="10" ry="7" fill="#2a2f3d"/>
+  <path d="M232 318 Q 244 330 256 318 Q 268 330 280 318" fill="none" stroke="#2a2f3d" stroke-width="5" stroke-linecap="round"/>
+  <path d="M246 324 C 246 354, 268 358, 270 332 C 270 328, 262 326, 256 324 Z" fill="#f0728a" stroke="#c9566c" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M258 328 L 259 345" stroke="#c9566c" stroke-width="2.5" stroke-linecap="round"/>
+</svg>
