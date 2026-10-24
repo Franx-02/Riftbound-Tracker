@@ -21,3 +21,10 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+# Netlify sirve .webmanifest como application/octet-stream; con el tipo correcto
+# el navegador ofrece instalar la PWA sin avisos.
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Content-Type = "application/manifest+json"
