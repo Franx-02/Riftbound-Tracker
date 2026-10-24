@@ -393,8 +393,34 @@ Hecho (25/10/2026):
 ### F6 — Mazos
 Crear mazos; validación básica (leyenda, 40 cartas en el mazo principal, runas, 3 campos de batalla; comprobar reglas oficiales antes de codificarlas); qué falta respecto a tu colección, cuánto cuesta completarlo y enviar lo que falta a la lista de deseos.
 
-### F7 — Escáner (el último y más arriesgado)
+### F7 — Escáner (el último y más arriesgado) ← HECHO (falta probarlo con cartas físicas)
 OCR en el navegador (p. ej. Tesseract.js) del código impreso abajo a la izquierda de la carta, con formato `SFD • 198/221`. Riesgos: foils, reflejos, letra muy pequeña. Si no es fiable, limitarlo a sugerir candidatos. El buscador cubre lo mismo.
+
+Se hizo antes que F6 a petición del usuario (25/10/2026):
+- Pantalla `/escanear` (enlace "Escanear" en la barra), con tres entradas:
+  - **Cámara** trasera con una franja guía: lee esa franja cada ~0,7 s hasta encontrar un código,
+    vibra y se para ("Escanear otra" sigue). La guía se traduce a píxeles del fotograma teniendo
+    en cuenta el `object-fit: cover` del vídeo.
+  - **Foto** (`<input type=file capture>`, sirve también en iOS si la cámara web falla): prueba la
+    esquina de abajo a la izquierda, la franja de abajo y la foto entera, y se queda con la primera
+    lectura que traiga `/total` (sin total puede ser ruido de la ilustración).
+  - **A mano**: `SFD 198`, `sfd198`, `RAD-020A`.
+- Los resultados enseñan las cartas con ese código y sus +/− para sumarlas a la colección. Las alt
+  art y firmadas comparten número con la normal, así que salen todas y el usuario elige. Las
+  **promos** llevan impreso el código de la carta original seguido de `• P` (`RAD • 015/167 • P`
+  es OPP-015): se añaden las promos con el mismo nombre (sin el paréntesis final) y, si se leyó la
+  P, van delante.
+- `src/app/core/scanner.ts`: `parseCodigos` (corrige confusiones del OCR: O↔0, I↔1, S↔5…, y
+  descarta sets inexistentes y números que no caben en el total) y `cartasDelCodigo` (compara con
+  el código de la carta, no con `num`: las runas `RAD-R01` y showcase `RAD-SP1` tienen `num` 1).
+- `src/app/core/ocr.service.ts`: Tesseract.js 7 (`tesseract.js@7.0.0`, Apache-2.0) cargado bajo
+  demanda; el motor y el idioma inglés se descargan de su CDN (jsdelivr) la primera vez y quedan en
+  el navegador. Preprocesado: recorte ampliado, grises, texto oscuro sobre claro y umbral de Otsu.
+- Medido con las imágenes oficiales del catálogo usadas como "foto": **35 de 40** aciertos, ~0,7 s
+  por foto. Los fallos son imágenes del CDN de baja resolución (500–700 px). La cámara se probó
+  con un vídeo simulado; **falta probarla con cartas físicas** en el móvil, sobre todo foils.
+- No lee las runas (llevan otro formato de código). En consola salen mensajes de Tesseract como
+  "Estimating resolution as…": son avisos suyos, no errores.
 
 ## 9. Riesgos y avisos
 

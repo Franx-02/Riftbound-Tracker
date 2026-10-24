@@ -18,6 +18,7 @@ import { TraduccionService } from '../core/traduccion.service';
         <a routerLink="/coleccion" routerLinkActive="activo">Mi colección</a>
         <a routerLink="/catalogo" routerLinkActive="activo">Catálogo</a>
         <a routerLink="/deseos" routerLinkActive="activo">Deseos</a>
+        <a routerLink="/escanear" routerLinkActive="activo">Escanear</a>
       </nav>
       <div class="usuario">
         @if (auth.demo) {
