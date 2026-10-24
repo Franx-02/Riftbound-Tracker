@@ -537,12 +537,29 @@ async function main(): Promise<void> {
       cards: cartas,
     }),
   );
+  // Para el boton de corregir de la ficha: de cada candidato, su expansion, y de cada
+  // expansion, que sets del catalogo viven en ella. Sin esto el usuario solo veria
+  // numeros de producto, y "Mind Rune" tiene 17 candidatos repartidos por 10 sets.
+  const expansionDe = new Map(singles.products.map((p) => [p.idProduct, p.idExpansion]));
+  const productos: Record<number, number> = {};
+  for (const m of mapeos.values()) {
+    for (const id of m.candidatos) productos[id] = expansionDe.get(id)!;
+  }
+  // El set "propio" de una expansion es el que vive solo en ella. Los de promos estan
+  // repartidos entre varias y no son propios de ninguna: esas quedan a null.
+  const setsDeExpansion: Record<number, string | null> = {};
+  for (const id of Object.values(productos)) setsDeExpansion[id] ??= null;
+  for (const [set, exps] of expansiones) {
+    if (exps.size === 1) setsDeExpansion[[...exps][0]] = set;
+  }
   writeFileSync(
     join(SALIDA, 'mapping.json'),
     JSON.stringify({
       generado: new Date().toISOString(),
       cardmarketCreatedAt: singles.createdAt,
       mapping: Object.fromEntries([...mapeos].sort((a, b) => a[0].localeCompare(b[0]))),
+      productos,
+      expansiones: setsDeExpansion,
     }),
   );
   console.log('escritos public/data/catalog.json (' + cartas.length + ') y mapping.json');

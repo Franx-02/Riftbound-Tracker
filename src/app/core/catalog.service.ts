@@ -60,6 +60,18 @@ interface MappingFile {
   generado: string;
   cardmarketCreatedAt: string;
   mapping: Record<string, CardMapping>;
+  /** idProduct → idExpansion, para cada candidato. */
+  productos: Record<string, number>;
+  /** idExpansion → set del catálogo que vive en ella, o null si es de promos. */
+  expansiones: Record<string, string | null>;
+}
+
+/** Un producto de Cardmarket que podría ser esta carta, para el botón de corregir. */
+export interface Candidate {
+  idProduct: number;
+  idExpansion: number;
+  /** Set del catálogo al que pertenece la expansión. null = expansión de promos. */
+  set: string | null;
 }
 
 /** Filtros de la pantalla de catálogo. Un array vacío significa "no filtrar por esto". */
@@ -91,10 +103,19 @@ export class CatalogService {
   readonly types = computed(() => unicos(this.cards().map((c) => c.type)));
   readonly domains = computed(() => unicos(this.cards().flatMap((c) => c.domains)));
 
-  private porCardId = new Map<string, CatalogCard>();
-  private mapeo: Record<string, CardMapping> = {};
+  private readonly mapeo = signal<MappingFile | null>(null);
+
+  // Todo lo derivado es computed y no un campo normal: así, quien lea card(), mapping()
+  // o filter() dentro de un computed o una plantilla se recalcula cuando llegan los datos.
+  private readonly porCardId = computed(() => new Map(this.cards().map((c) => [c.cardId, c])));
   /** Nombre y código normalizados por carta, para no recalcularlos en cada búsqueda. */
-  private indice: { card: CatalogCard; nombre: string; codigo: string }[] = [];
+  private readonly indice = computed(() =>
+    this.cards().map((card) => ({
+      card,
+      nombre: normalizar(card.name),
+      codigo: normalizar(card.cardId),
+    })),
+  );
   private carga: Promise<void> | null = null;
 
   /** Carga los dos JSON una sola vez, aunque la llamen varias pantallas a la vez. */
@@ -109,16 +130,17 @@ export class CatalogService {
         bajar<CatalogFile>('/data/catalog.json'),
         bajar<MappingFile>('/data/mapping.json'),
       ]);
-      this.porCardId = new Map(catalogo.cards.map((c) => [c.cardId, c]));
-      this.indice = catalogo.cards.map((card) => ({
-        card,
-        nombre: normalizar(card.name),
-        codigo: normalizar(card.cardId),
-      }));
-      this.mapeo = mapeo.mapping;
-      this.sets.set([...catalogo.sets].sort((a, b) => b.released.localeCompare(a.released)));
+      this.mapeo.set(mapeo);
+      const sets = [...catalogo.sets].sort((a, b) => b.released.localeCompare(a.released));
+      // El set más reciente primero: es el que se está abriendo ahora.
+      const orden = new Map(sets.map((s, i) => [s.id, i]));
+      const cartas = [...catalogo.cards].sort(
+        (a, b) =>
+          (orden.get(a.set) ?? 99) - (orden.get(b.set) ?? 99) || a.cardId.localeCompare(b.cardId),
+      );
+      this.sets.set(sets);
       this.generado.set(catalogo.generado);
-      this.cards.set(catalogo.cards);
+      this.cards.set(cartas);
       this.error.set(null);
     } catch (e) {
       // Que falle la carga deja la app sin catálogo: hay que enseñarlo, no tragárselo.
@@ -128,11 +150,24 @@ export class CatalogService {
   }
 
   card(cardId: string): CatalogCard | undefined {
-    return this.porCardId.get(cardId.toUpperCase());
+    return this.porCardId().get(cardId.toUpperCase());
   }
 
   mapping(cardId: string): CardMapping {
-    return this.mapeo[cardId.toUpperCase()] ?? SIN_MAPEAR;
+    return this.mapeo()?.mapping[cardId.toUpperCase()] ?? SIN_MAPEAR;
+  }
+
+  candidates(cardId: string): Candidate[] {
+    const datos = this.mapeo();
+    return this.mapping(cardId).candidatos.map((idProduct) => {
+      const idExpansion = datos?.productos?.[idProduct] ?? 0;
+      return { idProduct, idExpansion, set: datos?.expansiones?.[idExpansion] ?? null };
+    });
+  }
+
+  setName(setId: string | null): string {
+    if (!setId) return 'Promos y extras';
+    return this.sets().find((s) => s.id === setId)?.name ?? setId;
   }
 
   /**
@@ -144,7 +179,7 @@ export class CatalogService {
     if (!q) return [];
     const palabras = q.split(' ');
     const encontrados: { card: CatalogCard; peso: number }[] = [];
-    for (const { card, nombre, codigo } of this.indice) {
+    for (const { card, nombre, codigo } of this.indice()) {
       const peso = this.peso(q, palabras, nombre, codigo);
       if (peso > 0) encontrados.push({ card, peso });
     }
@@ -152,11 +187,11 @@ export class CatalogService {
     return encontrados.slice(0, limite).map((e) => e.card);
   }
 
-  /** Catálogo filtrado, en el orden en que viene (por set y número). */
+  /** Catálogo filtrado: del set más reciente al más antiguo, y por código dentro de cada set. */
   filter(filtros: CatalogFilters): CatalogCard[] {
     const q = normalizar(filtros.texto ?? '');
     const palabras = q ? q.split(' ') : [];
-    return this.indice
+    return this.indice()
       .filter(({ card, nombre, codigo }) => {
         if (filtros.sets?.length && !filtros.sets.includes(card.set)) return false;
         if (filtros.rarities?.length && !filtros.rarities.includes(card.rarity)) return false;
