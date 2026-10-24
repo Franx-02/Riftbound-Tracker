@@ -1,0 +1,15 @@
+[build]
+  command = "npm run build"
+  publish = "dist/riftbound-app/browser"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+[functions]
+  directory = "netlify/functions"
+
+# SPA: cualquier ruta que no sea un fichero ni /api la sirve Angular.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

@@ -1,0 +1,391 @@
+CardId,Name,Set,Normal,Foil,idProduct,confianza,motivo,trend,trend_foil,valor,candidatos
+OGN-089b,Mind Rune (Origins Nexus Night Promo),Origins,1,0,,sin mapear,Promo con 3 candidatos,,,,847213;847214;856121;871895;872480;874109;885240;888472;891438;898156;898181;898189;904316;917123;917450;917451;917610
+OGN-273,Recruit // Buff (ZN),Origins,6,0,,sin mapear,No existe como single en Cardmarket (token),,,,
+SFD-T01,Mech // Buff,Spiritforged,2,0,,sin mapear,No existe como single en Cardmarket (token),,,,
+SFD-T02,Sand Soldier // Buff,Spiritforged,2,0,,sin mapear,No existe como single en Cardmarket (token),,,,
+SFD-T03,Gold // Buff,Spiritforged,7,0,,sin mapear,No existe como single en Cardmarket (token),,,,
+OGN-089,Mind Rune,Origins,10,0,847213,baja,2 variantes en el set: la más barata es la base,0.11,3.95,1.1,847213;847214;856121;871895;872480;874109;885240;888472;891438;898156;898181;898189;904316;917123;917450;917451;917610
+RAD-021,Ekko - Revolutionary,Radiance,0,1,917227,baja,3 variantes en el set: la más barata es la base,,3.52,3.52,917227;917228;917445;917812
+RAD-068,Orianna - Mechanical Marvel,Radiance,1,0,917271,baja,2 variantes en el set: la más barata es la base,,2.72,0.0,917271;917272
+SFD-088,Renata Glasc - Mastermind,Spiritforged,0,1,866820,baja,2 variantes en el set: la más barata es la base,1.71,1.23,1.23,866820;866821
+SFD-177,Azir - Sovereign,Spiritforged,1,0,866922,baja,2 variantes en el set: la más barata es la base,6.37,7.96,6.37,866922;866923
+VEN-023,Zed - From the Shadows,Vendetta,0,1,897960,baja,3 variantes en el set: la más barata es la base,1.36,1.37,1.37,897960;897961;898123
+OGN-089a,Mind Rune,Origins,1,0,847214,media,Variante a/A: segunda más barata del set (alt art),6.01,3.82,6.01,847213;847214;856121;871895;872480;874109;885240;888472;891438;898156;898181;898189;904316;917123;917450;917451;917610
+OGS-004-P,Master Yi - Meditative (Spiritforged Nexus Night Promo),Proving Grounds,2,0,874122,media,Promo: único candidato en expansión de promos,5,3.69,10.0,847526;874122
+RAD-114A,Riven - Deserter,Radiance,0,1,917317,media,Variante a/A: segunda más barata del set (alt art),,12.19,12.19,917316;917317
+SFD-110A,Fiora - Peerless,Spiritforged,0,1,866846,media,Variante a/A: segunda más barata del set (alt art),3.33,2.49,2.49,866845;866846
+SFD-141A,Irelia - Graceful,Spiritforged,0,1,866881,media,Variante a/A: segunda más barata del set (alt art),2.45,1.64,1.64,866880;866881
+SFD-R03a,Mind Rune,Spiritforged,0,1,871895,media,Variante a/A: segunda más barata del set (alt art),4.75,4.5,4.5,847213;847214;856121;871895;872480;874109;885240;888472;891438;898156;898181;898189;904316;917123;917450;917451;917610
+VEN-037-P,Tomb-Raider Barbara (Vendetta Nexus Night Promo),Vendetta,1,0,898194,media,Promo: único candidato en expansión de promos,0.55,0.35,0.55,897975;898194
+VEN-R03a,Mind Rune,Vendetta,0,1,898181,media,Variante a/A: segunda más barata del set (alt art),6.7,5.37,5.37,847213;847214;856121;871895;872480;874109;885240;888472;891438;898156;898181;898189;904316;917123;917450;917451;917610
+OGN-005,Disintegrate,Origins,3,0,845884,alta,Único producto con ese nombre en el set,0.07,0.19,0.21,845884
+OGN-007,Fury Rune,Origins,10,0,845886,alta,2 variantes en el set: la más barata es la base,0.05,1.25,0.5,845886;845887;856120;871893;872478;874107;885238;888470;891436;898154;898178;898187;904314;917119;917446;917447;917608
+OGN-013,Pouty Poro,Origins,2,0,845893,alta,Único producto con ese nombre en el set,0.07,0.22,0.14,845893;856109;884212
+OGN-026,Brynhir Thundersong,Origins,1,0,847141,alta,Único producto con ese nombre en el set,1.69,1.53,1.69,847141
+OGN-029,Falling Star,Origins,1,0,847145,alta,Único producto con ese nombre en el set,10.81,7.39,10.81,847145
+OGN-042,Calm Rune,Origins,10,0,847161,alta,2 variantes en el set: la más barata es la base,0.08,0.15,0.8,847161;847162;856118;871894;872479;874108;885239;888471;891437;898155;898180;898188;904315;917120;917448;917449;917609
+OGN-043,Charm,Origins,2,0,847163,alta,Único producto con ese nombre en el set,0.23,2.58,0.46,847163
+OGN-045,Defy,Origins,3,0,847165,alta,Único producto con ese nombre en el set,1.14,4.31,3.42,847165
+OGN-046,En Garde,Origins,3,0,847166,alta,Único producto con ese nombre en el set,0.08,0.34,0.24,847166
+OGN-048,Meditation,Origins,3,0,847168,alta,Único producto con ese nombre en el set,0.05,0.25,0.15,847168
+OGN-049,Playful Phantom,Origins,3,0,847169,alta,Único producto con ese nombre en el set,0.02,0.15,0.06,847169
+OGN-052,Stalwart Poro,Origins,3,0,847172,alta,Único producto con ese nombre en el set,0.11,0.18,0.33,847172;856105
+OGN-055,Wielder of Water,Origins,3,0,847175,alta,Único producto con ese nombre en el set,0.03,0.08,0.09,847175;856098
+OGN-058,Discipline,Origins,3,0,847178,alta,Único producto con ese nombre en el set,1.03,1.67,3.09,847178;856112
+OGN-084,Eager Apprentice,Origins,2,0,847208,alta,Único producto con ese nombre en el set,0.04,0.13,0.08,847208
+OGN-085,Falling Comet,Origins,3,0,847209,alta,Único producto con ese nombre en el set,0.06,0.17,0.18,847209
+OGN-087,Lecturing Yordle,Origins,3,0,847211,alta,Único producto con ese nombre en el set,0.09,0.32,0.27,847211
+OGN-088,Mega-Mech,Origins,2,0,847212,alta,Único producto con ese nombre en el set,0.02,0.11,0.04,847212
+OGN-095,Stupefy,Origins,3,0,847220,alta,Único producto con ese nombre en el set,0.1,0.62,0.3,847220
+OGN-103,Ravenbloom Student,Origins,3,0,847228,alta,Único producto con ese nombre en el set,0.11,0.58,0.33,847228;856108
+OGN-105,Singularity,Origins,3,0,847230,alta,Único producto con ese nombre en el set,0.66,4.52,1.98,847230
+OGN-126,Body Rune,Origins,10,0,847277,alta,2 variantes en el set: la más barata es la base,0.06,,0.6,847277;847279;856117;871896;872481;874110;885241;888473;891439;898157;898182;898190;904317;917140;917452;917453;917611
+OGN-127,Cannon Barrage,Origins,4,0,847281,alta,Único producto con ese nombre en el set,0.02,0.14,0.08,847281
+OGN-129,Confront,Origins,5,0,847284,alta,Único producto con ese nombre en el set,0.03,0.12,0.15,847284
+OGN-130,Crackshot Corsair,Origins,3,0,847286,alta,Único producto con ese nombre en el set,0.02,0.08,0.06,847286
+OGN-131,Dune Drake,Origins,2,0,847287,alta,Único producto con ese nombre en el set,0.02,0.23,0.04,847287
+OGN-132,First Mate,Origins,3,0,847289,alta,Único producto con ese nombre en el set,0.1,0.81,0.3,847289
+OGN-134,Mobilize,Origins,3,0,847291,alta,Único producto con ese nombre en el set,0.05,0.4,0.15,847291
+OGN-137,Stormclaw Ursine,Origins,3,0,847294,alta,Único producto con ese nombre en el set,0.05,0.08,0.15,847294;856103
+OGN-139,Cithria of Cloudfield,Origins,1,0,847296,alta,Único producto con ese nombre en el set,0.05,0.15,0.05,847296
+OGN-142,Mountain Drake,Origins,2,0,847299,alta,Único producto con ese nombre en el set,0.03,0.6,0.06,847299
+OGN-166,Chaos Rune,Origins,10,0,847332,alta,2 variantes en el set: la más barata es la base,0.08,0.2,0.8,847332;847333;856119;871897;872482;874111;885242;888474;891440;898158;898183;898191;904318;917141;917454;917455;917612
+OGN-169,Gust,Origins,3,0,847336,alta,Único producto con ese nombre en el set,0.11,0.4,0.33,847336
+OGN-170,Morbid Return,Origins,3,0,847337,alta,Único producto con ese nombre en el set,0.07,0.15,0.21,847337
+OGN-171,Mystic Poro,Origins,3,0,847338,alta,Único producto con ese nombre en el set,0.03,0.16,0.09,847338;856111;884216
+OGN-174,Sai Scout,Origins,3,0,847341,alta,Único producto con ese nombre en el set,0.02,0.1,0.06,847341
+OGN-176,Sneaky Deckhand,Origins,3,0,847343,alta,Único producto con ese nombre en el set,0.08,0.45,0.24,847343
+OGN-185,Traveling Merchant,Origins,5,0,847352,alta,Único producto con ese nombre en el set,0.14,1.02,0.7,847352
+OGN-191,Maddened Marauder,Origins,3,0,847358,alta,Único producto con ese nombre en el set,0.08,0.11,0.24,847358
+OGN-204,Seal of Discord,Origins,1,0,847374,alta,Único producto con ese nombre en el set,33.78,28.42,33.78,847374;866981
+OGN-206,Back to Back,Origins,6,0,847377,alta,Único producto con ese nombre en el set,0.04,0.11,0.24,847377
+OGN-210,Daring Poro,Origins,6,0,847381,alta,Único producto con ese nombre en el set,0.05,0.12,0.3,847381;856113;884217
+OGN-211,Faithful Manufactor,Origins,3,0,847382,alta,Único producto con ese nombre en el set,0.07,0.23,0.21,847382
+OGN-213,Hidden Blade,Origins,3,0,847384,alta,Único producto con ese nombre en el set,0.32,1.74,0.96,847384
+OGN-214,Order Rune,Origins,10,0,847385,alta,2 variantes en el set: la más barata es la base,0.11,0.09,1.1,847385;847386;856122;871898;872483;874112;885243;888475;891441;898159;898184;898192;904319;917151;917456;917457;917613
+OGN-215,Petty Officer,Origins,2,0,847387,alta,Único producto con ese nombre en el set,0.03,0.09,0.06,847387
+OGN-219,Vanguard Sergeant,Origins,6,0,847391,alta,Único producto con ese nombre en el set,0.02,0.08,0.12,847391
+OGN-222,Noxian Drummer,Origins,3,0,847396,alta,Único producto con ese nombre en el set,0.05,0.34,0.15,847396
+OGN-241,Shen - Kinkou,Origins,0,1,847424,alta,Único producto con ese nombre en el set,0.56,0.36,0.36,847424
+OGN-280,Grove of the God-Willow,Origins,1,0,847480,alta,Único producto con ese nombre en el set,0.27,1.28,0.27,847480
+OGN-294,Trifarian War Camp,Origins,1,0,847494,alta,Único producto con ese nombre en el set,0.12,0.93,0.12,847494
+OGN-298,Zaun Warrens,Origins,1,0,847498,alta,Único producto con ese nombre en el set,0.18,1.12,0.18,847498
+OGS-001,Annie - Fiery,Proving Grounds,2,0,847523,alta,Único producto con ese nombre en el set,1.66,,3.32,847523;874121
+OGS-002,Firestorm,Proving Grounds,3,0,847524,alta,Único producto con ese nombre en el set,0.35,,1.05,847524
+OGS-003,Incinerate,Proving Grounds,3,0,847525,alta,Único producto con ese nombre en el set,0.48,,1.44,847525
+OGS-005,Zephyr Sage,Proving Grounds,3,0,847527,alta,Único producto con ese nombre en el set,0.3,,0.9,847527
+OGS-006,Lux - Illuminated,Proving Grounds,2,0,847528,alta,Único producto con ese nombre en el set,0.73,,1.46,847528;874123
+OGS-007,Garen - Rugged,Proving Grounds,2,0,847529,alta,Único producto con ese nombre en el set,0.54,,1.08,847529;874124
+OGS-008,Gentlemen's Duel,Proving Grounds,3,0,847530,alta,Único producto con ese nombre en el set,0.24,,0.72,847530
+OGS-009,Master Yi - Honed,Proving Grounds,2,0,847531,alta,Único producto con ese nombre en el set,0.98,,1.96,847531;874125
+OGS-010,Annie - Stubborn,Proving Grounds,2,0,847532,alta,Único producto con ese nombre en el set,2.76,,5.52,847532;874126
+OGS-011,Flash,Proving Grounds,2,0,847533,alta,Único producto con ese nombre en el set,2.05,,4.1,847533;881164
+OGS-012,Blast of Power,Proving Grounds,3,0,847534,alta,Único producto con ese nombre en el set,0.63,,1.89,847534
+OGS-013,Garen - Commander,Proving Grounds,2,0,847535,alta,Único producto con ese nombre en el set,0.66,,1.32,847535;874127
+OGS-014,Lux - Crownguard,Proving Grounds,2,0,847536,alta,Único producto con ese nombre en el set,2.31,,4.62,847536;874128;897895
+OGS-015,Recruit the Vanguard,Proving Grounds,3,0,847537,alta,Único producto con ese nombre en el set,1.06,,3.18,847537
+OGS-016,Vanguard Attendant,Proving Grounds,6,0,847538,alta,Único producto con ese nombre en el set,0.14,,0.84,847538
+OGS-017,Annie - Dark Child - Starter,Proving Grounds,1,0,847539,alta,Único producto con ese nombre en el set,4.96,,4.96,847539;874129
+OGS-018,Tibbers,Proving Grounds,2,0,847540,alta,Único producto con ese nombre en el set,0.49,,0.98,847540;874130
+OGS-019,Master Yi - Wuju Bladesman - Starter,Proving Grounds,1,0,847541,alta,Único producto con ese nombre en el set,15.07,,15.07,847541;874131
+OGS-020,Highlander,Proving Grounds,2,0,847542,alta,Único producto con ese nombre en el set,0.75,,1.5,847542;874132
+OGS-021,Lux - Lady of Luminosity - Starter,Proving Grounds,1,0,847543,alta,Único producto con ese nombre en el set,5.58,,5.58,847543;874133
+OGS-022,Final Spark,Proving Grounds,2,0,847544,alta,Único producto con ese nombre en el set,0.82,,1.64,847544;874134
+OGS-023,Garen - Might of Demacia - Starter,Proving Grounds,1,0,847545,alta,Único producto con ese nombre en el set,1.17,,1.17,847545;874135
+OGS-024,Decisive Strike,Proving Grounds,2,0,847546,alta,Único producto con ese nombre en el set,0.4,,0.8,847546;874136
+RAD-001,Amateur Demolitionist,Radiance,2,0,917208,alta,Único producto con ese nombre en el set,0.11,0.28,0.22,917208
+RAD-002,Banner of Conquest,Radiance,3,0,917209,alta,Único producto con ese nombre en el set,0.08,0.2,0.24,917209;917623
+RAD-004,Brawl,Radiance,3,0,917211,alta,Único producto con ese nombre en el set,0.02,0.1,0.06,917211
+RAD-005,Lingering Animus,Radiance,3,0,917212,alta,Único producto con ese nombre en el set,0.06,,0.18,917212
+RAD-006,Scorched Earth,Radiance,4,0,917213,alta,Único producto con ese nombre en el set,0.09,,0.36,917213
+RAD-007,Rally for War,Radiance,4,0,917214,alta,Único producto con ese nombre en el set,0.02,0.1,0.08,917214
+RAD-008,War Scout,Radiance,1,1,917216,alta,Único producto con ese nombre en el set,0.02,0.1,0.12,917216;917624
+RAD-009,Antagonistic Apparatus,Radiance,1,1,917215,alta,Único producto con ese nombre en el set,0.26,0.35,0.61,917215
+RAD-012,Runeblade Anvil,Radiance,1,0,917217,alta,Único producto con ese nombre en el set,0.46,0.56,0.46,917217
+RAD-013,Lost to the Sands,Radiance,1,0,917218,alta,Único producto con ese nombre en el set,0.27,0.64,0.27,917218
+RAD-014,Shimmering Swimmer,Radiance,3,0,917219,alta,Único producto con ese nombre en el set,0.2,0.65,0.6,917219;917625
+RAD-015,Akali - Brash,Radiance,1,0,917220,alta,2 variantes en el set: la más barata es la base,,0.57,0.0,917220;917404;917405;917410
+RAD-017,Detonation Amplifier,Radiance,0,1,917222,alta,Único producto con ese nombre en el set,,0.5,0.5,917222
+RAD-019,Firebrand Raider,Radiance,0,1,917224,alta,Único producto con ese nombre en el set,,0.15,0.15,917224;917626
+RAD-020,Mordekaiser - Twice Slain,Radiance,1,0,917225,alta,2 variantes en el set: la más barata es la base,,0.02,0.0,917225;917226
+RAD-024,Blossoming Dreamroot,Radiance,3,0,917231,alta,Único producto con ese nombre en el set,0.14,0.73,0.42,917231
+RAD-025,Consult the Heavens,Radiance,3,0,917232,alta,Único producto con ese nombre en el set,0.04,0.27,0.12,917232
+RAD-026,Entrenched Boar,Radiance,2,0,917233,alta,Único producto con ese nombre en el set,0.08,0.15,0.16,917233
+RAD-027,Iridescent Avian,Radiance,3,0,917234,alta,Único producto con ese nombre en el set,0.04,0.35,0.12,917234;917627
+RAD-028,Ki Burst,Radiance,1,0,917235,alta,Único producto con ese nombre en el set,0.17,0.87,0.17,917235
+RAD-029,Life from Stone,Radiance,2,0,917236,alta,Único producto con ese nombre en el set,0.12,0.5,0.24,917236;917628
+RAD-030,Sanctum Conservator,Radiance,3,0,917237,alta,Único producto con ese nombre en el set,0.02,,0.06,917237
+RAD-031,Stoic Ferryman,Radiance,0,1,917418,alta,Único producto con ese nombre en el set,0.04,0.37,0.37,917418
+RAD-032,Battle Preparations,Radiance,1,0,917420,alta,Único producto con ese nombre en el set,0.52,1.29,0.52,917420
+RAD-035,Invigorating Bloom,Radiance,3,0,917240,alta,Único producto con ese nombre en el set,0.05,0.02,0.15,917240
+RAD-036,Storm Raptor,Radiance,0,1,917241,alta,Único producto con ese nombre en el set,0.02,,0.0,917241
+RAD-037,Watchful Curator,Radiance,1,1,917242,alta,Único producto con ese nombre en el set,0.19,0.49,0.68,917242;917629
+RAD-038,Ahri - Confident,Radiance,1,2,917243,alta,2 variantes en el set: la más barata es la base,,0.15,0.3,917243;917402;917403;917459
+RAD-042,Orianna - Exquisite,Radiance,1,0,917411,alta,2 variantes en el set: la más barata es la base,,0.29,0.0,917411;917412;917811
+RAD-047,Fanfare,Radiance,4,0,917252,alta,Único producto con ese nombre en el set,0.06,0.1,0.24,917252
+RAD-048,High Note,Radiance,3,0,917253,alta,Único producto con ese nombre en el set,0.06,0.2,0.18,917253;917631
+RAD-049,Industrious Mechsmith,Radiance,1,0,917254,alta,Único producto con ese nombre en el set,0.04,,0.04,917254
+RAD-050,Mysterious Chronomancer,Radiance,2,1,917255,alta,Único producto con ese nombre en el set,0.02,,0.04,917255
+RAD-051,Parallel Convergence,Radiance,1,0,917256,alta,Único producto con ese nombre en el set,0.09,0.35,0.09,917256
+RAD-052,Resource Extractor,Radiance,2,0,917257,alta,Único producto con ese nombre en el set,0.06,0.17,0.12,917257
+RAD-053,Strigian Oracle,Radiance,4,0,917422,alta,Único producto con ese nombre en el set,0.04,0.41,0.16,917422
+RAD-054,Trinket Peddler,Radiance,2,0,917423,alta,Único producto con ese nombre en el set,0.04,0.1,0.08,917423;917632
+RAD-056,Improvised Projectile,Radiance,1,0,917260,alta,Único producto con ese nombre en el set,0.02,0.49,0.02,917260
+RAD-057,Piltovan Guidebot,Radiance,2,0,917261,alta,Único producto con ese nombre en el set,0.02,0.2,0.04,917261
+RAD-058,Riptide Mage,Radiance,2,0,917262,alta,Único producto con ese nombre en el set,0.23,0.15,0.46,917262
+RAD-059,Supernova,Radiance,2,0,917263,alta,Único producto con ese nombre en el set,0.02,0.79,0.04,917263
+RAD-060,The Empyrean,Radiance,1,0,917264,alta,Único producto con ese nombre en el set,0.23,0.73,0.23,917264
+RAD-061,Ekko - Ingenious,Radiance,1,0,917265,alta,2 variantes en el set: la más barata es la base,,0.46,0.0,917265;917266
+RAD-065,Seraphine - Inspiring,Radiance,2,1,917424,alta,2 variantes en el set: la más barata es la base,,0.56,0.56,917424;917425
+RAD-070,Hold 'Em,Radiance,1,0,917274,alta,Único producto con ese nombre en el set,0.16,0.39,0.16,917274;917635
+RAD-072,Overloaded Traveler,Radiance,4,0,917276,alta,Único producto con ese nombre en el set,0.07,0.5,0.28,917276
+RAD-073,Pillaged Armory,Radiance,2,0,917277,alta,Único producto con ese nombre en el set,0.09,0.37,0.18,917277
+RAD-074,Raving Witness,Radiance,2,0,917278,alta,Único producto con ese nombre en el set,0.02,0.2,0.04,917278
+RAD-075,Skystrike Squadron,Radiance,3,0,917279,alta,Único producto con ese nombre en el set,0.07,0.39,0.21,917279
+RAD-076,Sneaky Zeebles,Radiance,2,0,917280,alta,Único producto con ese nombre en el set,0.17,0.2,0.34,917280;917636
+RAD-077,Wrath of the Freljord,Radiance,2,0,917281,alta,Único producto con ese nombre en el set,0.02,,0.04,917281
+RAD-078,Armored Tusker,Radiance,2,0,917427,alta,Único producto con ese nombre en el set,0.02,0.2,0.04,917427
+RAD-079,Avalanche,Radiance,1,0,917282,alta,Único producto con ese nombre en el set,0.22,0.39,0.22,917282
+RAD-081,Elnuk Herd,Radiance,1,0,917283,alta,Único producto con ese nombre en el set,0.26,0.59,0.26,917283
+RAD-084,Cataclysm,Radiance,0,3,917286,alta,Único producto con ese nombre en el set,,0.52,1.56,917286
+RAD-088,Staunch Survivor,Radiance,0,1,917291,alta,Único producto con ese nombre en el set,,0.37,0.37,917291
+RAD-093,Disposal Expert,Radiance,2,0,917297,alta,Único producto con ese nombre en el set,0.02,0.15,0.04,917297
+RAD-094,Explosimian,Radiance,2,0,917432,alta,Único producto con ese nombre en el set,0.08,0.2,0.16,917432;917639
+RAD-095,Momentary Companion,Radiance,2,0,917298,alta,Único producto con ese nombre en el set,0.11,0.36,0.22,917298
+RAD-096,Satchel Charge,Radiance,1,0,917299,alta,Único producto con ese nombre en el set,0.1,0.39,0.1,917299;917640
+RAD-097,Siren of the Shallows,Radiance,2,0,917300,alta,Único producto con ese nombre en el set,0.08,,0.16,917300
+RAD-098,Siren's Song,Radiance,2,0,917301,alta,Único producto con ese nombre en el set,0.23,0.52,0.46,917301
+RAD-099,Suave Negotiator,Radiance,2,0,917302,alta,Único producto con ese nombre en el set,0.02,,0.04,917302
+RAD-100,The Waters' Wage,Radiance,2,1,917303,alta,Único producto con ese nombre en el set,0.06,0.35,0.47,917303
+RAD-101,An Offer You Can't Refuse,Radiance,1,0,917304,alta,Único producto con ese nombre en el set,0.5,1.02,0.5,917304
+RAD-103,Gutter Guardian,Radiance,2,0,917433,alta,Único producto con ese nombre en el set,0.17,0.48,0.34,917433
+RAD-104,Pitiless Stalker,Radiance,1,0,917435,alta,Único producto con ese nombre en el set,0.02,,0.02,917435
+RAD-105,Reckless Innovator,Radiance,2,0,917306,alta,Único producto con ese nombre en el set,0.39,1.2,0.78,917306;917641
+RAD-106,The Good Stuff,Radiance,1,0,917307,alta,Único producto con ese nombre en el set,0.39,1.37,0.39,917307
+RAD-107,Bedeviling Stranger,Radiance,0,1,917308,alta,Único producto con ese nombre en el set,,3.17,3.17,917308;917642
+RAD-111,Mechanical Bandit,Radiance,0,1,917313,alta,Único producto con ese nombre en el set,,0.18,0.18,917313
+RAD-116,Concert Poster,Radiance,3,0,917319,alta,Único producto con ese nombre en el set,0.08,0.23,0.24,917319
+RAD-117,For Demacia!,Radiance,3,0,917320,alta,Único producto con ese nombre en el set,0.02,0.2,0.06,917320
+RAD-118,Herald of the Emperor,Radiance,4,0,917321,alta,Único producto con ese nombre en el set,0.04,,0.16,917321
+RAD-119,Hunting Dog,Radiance,1,0,917322,alta,Único producto con ese nombre en el set,0.07,0.48,0.07,917322;917643
+RAD-120,Meticulous Restorationist,Radiance,4,0,917323,alta,Único producto con ese nombre en el set,0.02,0.2,0.08,917323
+RAD-121,One-Two Punch,Radiance,1,0,917324,alta,Único producto con ese nombre en el set,0.04,0.2,0.04,917324
+RAD-122,Party Crasher,Radiance,4,0,917325,alta,Único producto con ese nombre en el set,0.02,0.2,0.08,917325;917644
+RAD-123,Protector's Shield,Radiance,2,0,917438,alta,Único producto con ese nombre en el set,0.02,0.35,0.04,917438
+RAD-124,Burn Away,Radiance,3,0,917439,alta,Único producto con ese nombre en el set,0.14,,0.42,917439
+RAD-125,Dune Devourer,Radiance,2,0,917326,alta,Único producto con ese nombre en el set,0.15,,0.3,917326
+RAD-126,Mournful Spirit,Radiance,2,0,917327,alta,Único producto con ese nombre en el set,0.14,0.2,0.28,917327
+RAD-127,Rousing Display,Radiance,2,0,917328,alta,Único producto con ese nombre en el set,0.03,,0.06,917328;917645
+RAD-129,Trifarian Captain,Radiance,2,0,917330,alta,Único producto con ese nombre en el set,1.33,2.6,2.66,917330
+RAD-132,Heimerdinger - Academy Instructor,Radiance,0,1,917333,alta,Único producto con ese nombre en el set,0.03,0.69,0.69,917333;917392
+RAD-133,Jarvan IV - Royal Heir,Radiance,0,1,917334,alta,2 variantes en el set: la más barata es la base,,0.02,0.02,917334;917335
+RAD-139,Ekko - Boy Who Shattered Time,Radiance,0,1,917341,alta,3 variantes en el set: la más barata es la base,,0.31,0.31,917341;917369;917486
+RAD-143,Mordekaiser - Iron Revenant,Radiance,2,0,917345,alta,3 variantes en el set: la más barata es la base,,0.28,0.0,917345;917371;917488
+RAD-144,Realm of Death,Radiance,0,1,917346,alta,Único producto con ese nombre en el set,,7.99,7.99,917346
+RAD-147,K'Sante - Pride of Nazumah,Radiance,1,0,917349,alta,3 variantes en el set: la más barata es la base,,0.1,0.0,917349;917373;917618
+RAD-151,Seraphine - Starry-Eyed Songstress,Radiance,1,0,917352,alta,5 variantes en el set: la más barata es la base,,0.2,0.0,917352;917374;917490;917605;917606
+RAD-152,Encore,Radiance,1,0,917353,alta,Único producto con ese nombre en el set,,3.05,0.0,917353
+RAD-153,Evelynn - Agony's Embrace,Radiance,1,0,917354,alta,3 variantes en el set: la más barata es la base,,0.19,0.0,917354;917375;917621
+RAD-161,Durand Memorial,Radiance,1,0,917362,alta,Único producto con ese nombre en el set,0.24,0.48,0.24,917362
+RAD-165,Rakelstake,Radiance,2,0,917366,alta,Único producto con ese nombre en el set,0.14,1.39,0.28,917366
+RAD-166,Ruined Monastery,Radiance,1,0,917367,alta,Único producto con ese nombre en el set,0.41,0.52,0.41,917367
+SFD-001,Against the Odds,Spiritforged,3,0,866723,alta,Único producto con ese nombre en el set,0.07,0.18,0.21,866723
+SFD-002,Armed Assailant,Spiritforged,2,0,866724,alta,Único producto con ese nombre en el set,0.03,0.11,0.06,866724
+SFD-003,Blood Rush,Spiritforged,2,0,866725,alta,Único producto con ese nombre en el set,0.08,0.23,0.16,866725
+SFD-004,Bushwhack,Spiritforged,1,0,866726,alta,Único producto con ese nombre en el set,0.06,0.25,0.06,866726
+SFD-005,Detonate,Spiritforged,3,0,866727,alta,Único producto con ese nombre en el set,0.1,0.2,0.3,866727
+SFD-006,Eager Drakehound,Spiritforged,2,0,866728,alta,Único producto con ese nombre en el set,0.03,0.1,0.06,866728
+SFD-007,Gem Jammer,Spiritforged,1,0,866729,alta,Único producto con ese nombre en el set,0.05,0.13,0.05,866729;874137
+SFD-008,Sentinel Adept,Spiritforged,2,0,866730,alta,Único producto con ese nombre en el set,0.02,0.11,0.04,866730
+SFD-009,Serrated Dirk,Spiritforged,2,0,866731,alta,Único producto con ese nombre en el set,0.05,0.13,0.1,866731;874138
+SFD-010,Void Drone,Spiritforged,1,0,866732,alta,Único producto con ese nombre en el set,0.06,0.08,0.06,866732
+SFD-013,Blast Corps Cadet,Spiritforged,1,0,866735,alta,Único producto con ese nombre en el set,0.05,0.17,0.05,866735;874139
+SFD-014,Minotaur Reckoner,Spiritforged,1,0,866736,alta,Único producto con ese nombre en el set,0.09,0.28,0.09,866736
+SFD-015,Perched Grimwyrm,Spiritforged,1,0,866737,alta,Único producto con ese nombre en el set,0.06,0.15,0.06,866737
+SFD-016,Recurve Bow,Spiritforged,1,0,866738,alta,Único producto con ese nombre en el set,0.06,0.19,0.06,866738
+SFD-017,Sudden Storm,Spiritforged,1,0,866739,alta,Único producto con ese nombre en el set,0.04,0.18,0.04,866739
+SFD-018,Void Hatchling,Spiritforged,1,0,866740,alta,Único producto con ese nombre en el set,0.05,0.17,0.05,866740
+SFD-020,Draven - Vanquisher,Spiritforged,1,0,866742,alta,2 variantes en el set: la más barata es la base,0.18,0.14,0.18,866742;866743
+SFD-021,Ferrous Forerunner,Spiritforged,1,0,866744,alta,Único producto con ese nombre en el set,1.83,2.04,1.83,866744
+SFD-031,Desert's Call,Spiritforged,3,0,866757,alta,Único producto con ese nombre en el set,0.04,0.21,0.12,866757
+SFD-032,Disarming Rake,Spiritforged,2,0,866758,alta,Único producto con ese nombre en el set,0.09,0.35,0.18,866758
+SFD-033,Doran's Shield,Spiritforged,3,0,866759,alta,Único producto con ese nombre en el set,0.05,0.16,0.15,866759;874140
+SFD-034,Feral Strength,Spiritforged,1,0,866760,alta,Único producto con ese nombre en el set,0.04,0.09,0.04,866760
+SFD-035,Guardian of the Passage,Spiritforged,1,0,866761,alta,Único producto con ese nombre en el set,0.07,0.17,0.07,866761
+SFD-036,Lonely Poro,Spiritforged,1,1,866762,alta,Único producto con ese nombre en el set,0.07,0.5,0.57,866762;884213
+SFD-038,Ribbon Dancer,Spiritforged,2,0,866764,alta,Único producto con ese nombre en el set,0.06,0.12,0.12,866764
+SFD-039,Royal Entourage,Spiritforged,1,0,866765,alta,Único producto con ese nombre en el set,0.03,0.1,0.03,866765
+SFD-040,Thwonk!,Spiritforged,1,0,866766,alta,Único producto con ese nombre en el set,0.03,0.15,0.03,866766
+SFD-041,Apprentice Smith,Spiritforged,1,0,866767,alta,Único producto con ese nombre en el set,0.19,0.25,0.19,866767
+SFD-042,Brutalizer,Spiritforged,2,0,866768,alta,Único producto con ese nombre en el set,0.49,1.21,0.98,866768
+SFD-046,Poro Snax,Spiritforged,0,1,866772,alta,Único producto con ese nombre en el set,0.17,0.46,0.46,866772
+SFD-047,Simian Ancestor,Spiritforged,1,0,866773,alta,Único producto con ese nombre en el set,0.06,0.17,0.06,866773
+SFD-048,Stellacorn Herder,Spiritforged,2,0,866774,alta,Único producto con ese nombre en el set,0.71,1.44,1.42,866774;874142
+SFD-052,Heart of Dark Ice,Spiritforged,0,1,866779,alta,Único producto con ese nombre en el set,0.26,0.21,0.21,866779
+SFD-053,Janna - Savior,Spiritforged,0,1,866780,alta,Único producto con ese nombre en el set,0.35,0.34,0.34,866780
+SFD-060,Tianna Crownguard,Spiritforged,0,1,866790,alta,Único producto con ese nombre en el set,3.42,2.24,2.24,866790
+SFD-061,Aspiring Engineer,Spiritforged,1,0,866791,alta,Único producto con ese nombre en el set,0.08,0.29,0.08,866791
+SFD-062,Bubble Bot,Spiritforged,2,0,866792,alta,Único producto con ese nombre en el set,0.04,0.14,0.08,866792
+SFD-063,Chemtech Cask,Spiritforged,2,0,866793,alta,Único producto con ese nombre en el set,0.04,0.13,0.08,866793
+SFD-064,Cloth Armor,Spiritforged,2,0,866794,alta,Único producto con ese nombre en el set,0.06,0.24,0.12,866794;874143
+SFD-065,Forecaster,Spiritforged,1,0,866795,alta,Único producto con ese nombre en el set,0.03,0.13,0.03,866795
+SFD-066,Frigid Touch,Spiritforged,1,0,866796,alta,Único producto con ese nombre en el set,0.06,0.24,0.06,866796
+SFD-068,Gearhead,Spiritforged,1,0,866798,alta,Único producto con ese nombre en el set,0.03,0.12,0.03,866798
+SFD-069,Plundering Poro,Spiritforged,2,0,866799,alta,Único producto con ese nombre en el set,0.08,0.5,0.16,866799;884214
+SFD-070,Wages of Pain,Spiritforged,1,0,866800,alta,Único producto con ese nombre en el set,0.07,0.28,0.07,866800
+SFD-071,Breakneck Mech,Spiritforged,1,0,866801,alta,Único producto con ese nombre en el set,0.03,0.11,0.03,866801
+SFD-074,Pickpocket,Spiritforged,1,0,866804,alta,Único producto con ese nombre en el set,0.23,1.09,0.23,866804
+SFD-076,Production Surge,Spiritforged,1,0,866806,alta,Único producto con ese nombre en el set,0.05,0.21,0.05,866806;874145
+SFD-077,Rocket Barrage,Spiritforged,1,0,866807,alta,Único producto con ese nombre en el set,0.13,0.74,0.13,866807
+SFD-080,Bellows Breath,Spiritforged,0,1,866810,alta,Único producto con ese nombre en el set,4.23,3.8,3.8,866810
+SFD-082,Ezreal - Dashing,Spiritforged,0,1,866812,alta,2 variantes en el set: la más barata es la base,0.18,0.12,0.12,866812;866813;914323;914324;914325;914326;917379;917662
+SFD-083,Hextech Anomaly,Spiritforged,0,1,866814,alta,Único producto con ese nombre en el set,0.19,0.2,0.2,866814
+SFD-091,Buhru Captain,Spiritforged,2,0,866826,alta,Único producto con ese nombre en el set,0.03,0.13,0.06,866826
+SFD-092,Combat Chef,Spiritforged,2,0,866827,alta,Único producto con ese nombre en el set,0.02,0.09,0.04,866827
+SFD-094,Direwing,Spiritforged,2,0,866829,alta,Único producto con ese nombre en el set,0.02,0.16,0.04,866829
+SFD-095,Doran's Blade,Spiritforged,2,0,866830,alta,Único producto con ese nombre en el set,0.04,0.16,0.08,866830;874146
+SFD-096,Laurent Bladekeeper,Spiritforged,2,0,866831,alta,Único producto con ese nombre en el set,0.02,0.16,0.04,866831
+SFD-097,Punch First,Spiritforged,2,1,866832,alta,Único producto con ese nombre en el set,0.14,1.28,1.56,866832
+SFD-098,Sea Monkey,Spiritforged,3,0,866833,alta,Único producto con ese nombre en el set,0.06,0.08,0.18,866833;874147
+SFD-100,Yordle Explorer,Spiritforged,1,0,866835,alta,Único producto con ese nombre en el set,0.05,0.11,0.05,866835
+SFD-101,Fae Dragon,Spiritforged,1,0,866836,alta,Único producto con ese nombre en el set,0.05,0.14,0.05,866836;874148
+SFD-104,Petricite Monument,Spiritforged,2,0,866839,alta,Único producto con ese nombre en el set,0.04,0.19,0.08,866839
+SFD-105,Ruin Runner,Spiritforged,1,0,866840,alta,Único producto con ese nombre en el set,0.3,1.46,0.3,866840
+SFD-107,Strike Down,Spiritforged,1,0,866842,alta,Único producto con ese nombre en el set,0.03,0.15,0.03,866842
+SFD-109,Akshan - Mischievous,Spiritforged,0,1,866844,alta,Único producto con ese nombre en el set,1.1,0.52,0.52,866844
+SFD-112,Kato the Arm,Spiritforged,0,1,866848,alta,Único producto con ese nombre en el set,0.08,0.1,0.1,866848
+SFD-113,Lucian - Merciless,Spiritforged,0,1,866849,alta,2 variantes en el set: la más barata es la base,0.27,0.2,0.2,866849;866850
+SFD-114,Marching Orders,Spiritforged,0,1,866851,alta,Único producto con ese nombre en el set,0.15,0.11,0.11,866851
+SFD-116,Yone - Blademaster,Spiritforged,1,0,866853,alta,3 variantes en el set: la más barata es la base,0.26,0.1,0.26,866853;866980;867009;871892;917380;917663
+SFD-122,Called Shot,Spiritforged,2,0,866861,alta,Único producto con ese nombre en el set,0.06,0.27,0.12,866861
+SFD-123,Corrupt Enforcer,Spiritforged,2,0,866862,alta,Único producto con ese nombre en el set,0.03,0.15,0.06,866862
+SFD-124,Doran's Ring,Spiritforged,1,0,866863,alta,Único producto con ese nombre en el set,0.04,0.08,0.04,866863;874149
+SFD-125,Fae Porter,Spiritforged,1,0,866864,alta,Único producto con ese nombre en el set,0.07,0.14,0.07,866864
+SFD-126,Loyal Pup,Spiritforged,2,0,866865,alta,Único producto con ese nombre en el set,0.03,0.16,0.06,866865
+SFD-127,Master Bingwen,Spiritforged,1,0,866866,alta,Único producto con ese nombre en el set,0.05,0.12,0.05,866866
+SFD-128,Overzealous Fan,Spiritforged,1,0,866867,alta,Único producto con ese nombre en el set,0.06,0.26,0.06,866867
+SFD-129,Temptation,Spiritforged,1,0,866868,alta,Único producto con ese nombre en el set,0.03,0.14,0.03,866868
+SFD-130,Treasure Hunter,Spiritforged,2,0,866869,alta,Único producto con ese nombre en el set,0.11,0.25,0.22,866869;874150
+SFD-131,Ancient Warmonger,Spiritforged,1,0,866870,alta,Único producto con ese nombre en el set,0.09,0.26,0.09,866870
+SFD-132,Beast Below,Spiritforged,1,0,866871,alta,Único producto con ese nombre en el set,0.12,0.29,0.12,866871
+SFD-136,Hard Bargain,Spiritforged,1,0,866875,alta,Único producto con ese nombre en el set,0.94,3.72,0.94,866875
+SFD-137,Harpoon Squad,Spiritforged,1,0,866876,alta,Único producto con ese nombre en el set,0.06,0.14,0.06,866876;874151
+SFD-138,Windsinger,Spiritforged,1,0,866877,alta,Único producto con ese nombre en el set,0.07,0.35,0.07,866877
+SFD-140,Fizz - Trickster,Spiritforged,0,1,866879,alta,Único producto con ese nombre en el set,7.52,4.19,4.19,866879
+SFD-145,Switcheroo,Spiritforged,0,1,866886,alta,Único producto con ese nombre en el set,0.99,3.34,3.34,866886
+SFD-151,Bonds of Strength,Spiritforged,1,0,866894,alta,Único producto con ese nombre en el set,0.03,0.15,0.03,866894
+SFD-152,Eminent Benefactor,Spiritforged,1,0,866895,alta,Único producto con ese nombre en el set,0.03,0.11,0.03,866895
+SFD-153,Eye of the Herald,Spiritforged,3,0,866896,alta,Único producto con ese nombre en el set,0.07,0.22,0.21,866896;874152
+SFD-154,Guards!,Spiritforged,8,0,866897,alta,Único producto con ese nombre en el set,0.06,0.23,0.48,866897
+SFD-155,Honest Broker,Spiritforged,3,0,866898,alta,Único producto con ese nombre en el set,0.08,0.22,0.24,866898
+SFD-156,Laurent Duelist,Spiritforged,2,0,866899,alta,Único producto con ese nombre en el set,0.02,0.12,0.04,866899;874153
+SFD-157,Royal Guard,Spiritforged,2,0,866900,alta,Único producto con ese nombre en el set,0.03,0.16,0.06,866900
+SFD-158,Sandshifter,Spiritforged,1,0,866901,alta,Único producto con ese nombre en el set,0.03,0.17,0.03,866901
+SFD-159,Trusty Ramhound,Spiritforged,2,0,866902,alta,Único producto con ese nombre en el set,0.1,0.16,0.2,866902
+SFD-160,Zaun Punk,Spiritforged,2,0,866903,alta,Único producto con ese nombre en el set,0.04,0.15,0.08,866903
+SFD-161,B.F. Sword,Spiritforged,4,0,866904,alta,Único producto con ese nombre en el set,0.24,1.02,0.96,866904
+SFD-162,Blood Money,Spiritforged,1,0,866905,alta,Único producto con ese nombre en el set,0.09,0.28,0.09,866905
+SFD-163,Deathgrip,Spiritforged,2,0,866906,alta,Único producto con ese nombre en el set,0.77,2.57,1.54,866906
+SFD-164,Drag Under,Spiritforged,2,0,866907,alta,Único producto con ese nombre en el set,0.12,0.48,0.24,866907
+SFD-166,Rally the Troops,Spiritforged,2,0,866909,alta,Único producto con ese nombre en el set,0.1,0.32,0.2,866909
+SFD-170,Rek'Sai - Swarm Queen,Spiritforged,0,1,866913,alta,2 variantes en el set: la más barata es la base,0.17,0.16,0.16,866913;866914
+SFD-171,Renata Glasc - Industrialist,Spiritforged,1,0,866915,alta,2 variantes en el set: la más barata es la base,0.2,0.19,0.2,866915;866916
+SFD-175,Undertitan,Spiritforged,0,1,866920,alta,Único producto con ese nombre en el set,0.28,0.25,0.25,866920
+SFD-187,Rek'Sai - Void Burrower,Spiritforged,0,1,866934,alta,2 variantes en el set: la más barata es la base,0.2,0.14,0.14,866934;866990
+SFD-189,Ornn - Fire Below the Mountain,Spiritforged,0,1,866936,alta,2 variantes en el set: la más barata es la base,0.21,0.23,0.23,866936;866991
+SFD-191,Rabadon's Deathcrown,Spiritforged,0,1,866938,alta,Único producto con ese nombre en el set,0.63,0.59,0.59,866938
+SFD-193,Jax - Grandmaster at Arms,Spiritforged,0,1,866940,alta,2 variantes en el set: la más barata es la base,0.18,0.07,0.07,866940;866992
+SFD-195,Irelia - Blade Dancer,Spiritforged,1,0,866942,alta,2 variantes en el set: la más barata es la base,0.19,0.14,0.19,866942;866993;873230
+SFD-197,Azir - Emperor of the Sands,Spiritforged,0,1,866944,alta,2 variantes en el set: la más barata es la base,0.26,0.17,0.17,866944;866994
+SFD-198,Arise!,Spiritforged,2,0,866945,alta,Único producto con ese nombre en el set,20.1,20.55,40.2,866945
+SFD-199,Ezreal - Prodigal Explorer,Spiritforged,1,0,866946,alta,2 variantes en el set: la más barata es la base,0.23,0.16,0.23,866946;866995
+SFD-205,Fiora - Grand Duelist,Spiritforged,0,1,866952,alta,2 variantes en el set: la más barata es la base,0.2,0.15,0.15,866952;866998
+SFD-207,Emperor's Dais,Spiritforged,1,0,866954,alta,Único producto con ese nombre en el set,0.15,0.48,0.15,866954
+SFD-208,Forge of the Fluft,Spiritforged,1,0,866955,alta,Único producto con ese nombre en el set,0.08,0.29,0.08,866955
+SFD-209,Forgotten Monument,Spiritforged,1,0,866956,alta,Único producto con ese nombre en el set,0.09,0.34,0.09,866956
+SFD-210,Hall of Legends,Spiritforged,1,0,866957,alta,Único producto con ese nombre en el set,0.1,0.23,0.1,866957
+SFD-211,Marai Spire,Spiritforged,1,0,866958,alta,Único producto con ese nombre en el set,0.05,0.23,0.05,866958
+SFD-212,Minefield,Spiritforged,2,0,866959,alta,Único producto con ese nombre en el set,0.1,0.3,0.2,866959
+SFD-214,Power Nexus,Spiritforged,1,0,866961,alta,Único producto con ese nombre en el set,0.05,0.31,0.05,866961
+SFD-217,Seat of Power,Spiritforged,1,0,866964,alta,Único producto con ese nombre en el set,0.16,0.77,0.16,866964
+SFD-R01,Fury Rune,Spiritforged,1,0,872478,alta,2 variantes en el set: la más barata es la base,0.06,,0.06,845886;845887;856120;871893;872478;874107;885238;888470;891436;898154;898178;898187;904314;917119;917446;917447;917608
+SFD-R02,Calm Rune,Spiritforged,1,0,872479,alta,2 variantes en el set: la más barata es la base,0.07,,0.07,847161;847162;856118;871894;872479;874108;885239;888471;891437;898155;898180;898188;904315;917120;917448;917449;917609
+SFD-R03,Mind Rune,Spiritforged,1,0,872480,alta,2 variantes en el set: la más barata es la base,0.06,,0.06,847213;847214;856121;871895;872480;874109;885240;888472;891438;898156;898181;898189;904316;917123;917450;917451;917610
+SFD-R04,Body Rune,Spiritforged,1,0,872481,alta,2 variantes en el set: la más barata es la base,0.05,,0.05,847277;847279;856117;871896;872481;874110;885241;888473;891439;898157;898182;898190;904317;917140;917452;917453;917611
+SFD-R06,Order Rune,Spiritforged,2,0,872483,alta,2 variantes en el set: la más barata es la base,0.09,,0.18,847385;847386;856122;871898;872483;874112;885243;888475;891441;898159;898184;898192;904319;917151;917456;917457;917613
+UNL-039,Soul Sword,Unleashed,3,0,884001,alta,Único producto con ese nombre en el set,0.05,0.19,0.15,884001;885257
+UNL-042,Back Off,Unleashed,3,0,884004,alta,Único producto con ese nombre en el set,0.22,0.8,0.66,884004
+UNL-156,Loyal Poro,Unleashed,2,0,884143,alta,Único producto con ese nombre en el set,0.04,0.13,0.08,884143;885294
+UNL-176,Vi - Peacekeeper,Unleashed,1,0,884164,alta,2 variantes en el set: la más barata es la base,3.69,4.09,3.69,884164;884165
+VEN-001,Baccai Sandspinner,Vendetta,1,0,897877,alta,Único producto con ese nombre en el set,0.03,0.12,0.03,897877
+VEN-002,Blade Twirler,Vendetta,3,0,897902,alta,Único producto con ese nombre en el set,0.03,0.14,0.09,897902;898205
+VEN-003,Brittle Steel,Vendetta,3,0,897910,alta,Único producto con ese nombre en el set,0.07,0.27,0.21,897910
+VEN-006,Oasis Raider,Vendetta,1,0,897930,alta,Único producto con ese nombre en el set,0.05,0.11,0.05,897930
+VEN-007,Punching Poro,Vendetta,3,0,897940,alta,Único producto con ese nombre en el set,0.04,0.12,0.12,897940
+VEN-008,Ruthless Strike,Vendetta,3,0,897943,alta,Único producto con ese nombre en el set,0.03,0.12,0.09,897943
+VEN-010,Consuming Curse,Vendetta,1,0,897945,alta,Único producto con ese nombre en el set,0.04,0.2,0.04,897945
+VEN-012,Perfect Execution,Vendetta,3,0,897947,alta,Único producto con ese nombre en el set,0.11,0.43,0.33,897947
+VEN-013,Shadow Assassin,Vendetta,3,0,897948,alta,Único producto con ese nombre en el set,0.03,0.18,0.09,897948;898207
+VEN-014,Shadow Fiend,Vendetta,1,0,897949,alta,Único producto con ese nombre en el set,0.08,0.15,0.08,897949
+VEN-017,Morgana - Vindictive,Vendetta,1,0,897952,alta,2 variantes en el set: la más barata es la base,0.15,0.14,0.15,897952;898175;904277
+VEN-020,Twilight Reveler,Vendetta,0,1,897956,alta,Único producto con ese nombre en el set,0.28,0.2,0.2,897956
+VEN-021,Akali - Deadly Weapon,Vendetta,1,0,897957,alta,2 variantes en el set: la más barata es la base,2.44,1.78,2.44,897957;897958
+VEN-024,Affectionate Poro,Vendetta,1,0,897962,alta,Único producto con ese nombre en el set,0.02,0.1,0.02,897962
+VEN-026,Field Musicians,Vendetta,2,0,897964,alta,Único producto con ese nombre en el set,0.04,0.12,0.08,897964;898208
+VEN-027,Hand Hammer,Vendetta,2,0,897965,alta,Único producto con ese nombre en el set,0.06,0.15,0.12,897965
+VEN-028,Mournful Witness,Vendetta,3,0,897966,alta,Único producto con ese nombre en el set,0.07,0.1,0.21,897966
+VEN-029,Ol' Poro,Vendetta,1,0,897967,alta,Único producto con ese nombre en el set,0.05,0.17,0.05,897967;898196
+VEN-030,Serene Ascetic,Vendetta,2,0,897968,alta,Único producto con ese nombre en el set,0.02,0.12,0.04,897968
+VEN-031,Twilight Shroud,Vendetta,1,0,897969,alta,Único producto con ese nombre en el set,0.09,0.23,0.09,897969
+VEN-033,Pakaa Protector,Vendetta,2,0,897971,alta,Único producto con ese nombre en el set,0.05,0.25,0.1,897971
+VEN-034,Resonating Strike,Vendetta,1,0,897972,alta,Único producto con ese nombre en el set,0.09,0.2,0.09,897972
+VEN-042,Shen - Scourge of Shadows,Vendetta,1,1,897981,alta,3 variantes en el set: la más barata es la base,0.08,0.08,0.16,897981;897982;898124
+VEN-043,Steel Paws,Vendetta,0,1,897983,alta,Único producto con ese nombre en el set,0.22,0.31,0.31,897983
+VEN-049,Dredge Up,Vendetta,1,0,897990,alta,Único producto con ese nombre en el set,0.06,0.15,0.06,897990
+VEN-052,Mesmerize,Vendetta,1,0,897993,alta,Único producto con ese nombre en el set,0.05,0.17,0.05,897993
+VEN-053,Otterpus,Vendetta,0,1,897994,alta,Único producto con ese nombre en el set,0.03,0.06,0.06,897994
+VEN-055,Applied Researchers,Vendetta,1,0,897996,alta,Único producto con ese nombre en el set,0.09,0.56,0.09,897996
+VEN-062,Hextech Formula,Vendetta,0,1,898003,alta,Único producto con ese nombre en el set,0.16,0.1,0.1,898003
+VEN-071,Fretful Feline,Vendetta,1,0,898015,alta,Único producto con ese nombre en el set,0.08,0.11,0.08,898015;898199
+VEN-077,Tools of Empire,Vendetta,1,0,898021,alta,Único producto con ese nombre en el set,0.03,0.14,0.03,898021
+VEN-082,Profiteer,Vendetta,1,0,898026,alta,Único producto con ese nombre en el set,0.05,0.11,0.05,898026;898201
+VEN-088,Jayce - Hammer in Hand,Vendetta,0,1,898033,alta,2 variantes en el set: la más barata es la base,0.08,0.14,0.14,898033;898034
+VEN-093,Kinkou Lifeblade,Vendetta,4,0,898040,alta,Único producto con ese nombre en el set,0.04,0.13,0.16,898040
+VEN-095,Shadow Order Disciple,Vendetta,3,0,898042,alta,Único producto con ese nombre en el set,0.06,0.25,0.18,898042
+VEN-096,Shadowblade Lurker,Vendetta,3,0,898043,alta,Único producto con ese nombre en el set,0.02,0.15,0.06,898043
+VEN-099,Tornado Warrior,Vendetta,1,0,898046,alta,Único producto con ese nombre en el set,0.09,0.17,0.09,898046;898209
+VEN-101,Gust Monk,Vendetta,2,0,898048,alta,Único producto con ese nombre en el set,0.15,0.39,0.3,898048;898195
+VEN-102,Ravenbloom Prefect,Vendetta,1,0,898049,alta,Único producto con ese nombre en el set,0.15,0.9,0.15,898049
+VEN-105,Twilight Step,Vendetta,2,0,898052,alta,Único producto con ese nombre en el set,0.06,0.14,0.12,898052
+VEN-106,Wind and Ghosts,Vendetta,1,0,898053,alta,Único producto con ese nombre en el set,0.14,0.47,0.14,898053
+VEN-110,Mel - Defiant Soul,Vendetta,0,1,898057,alta,3 variantes en el set: la más barata es la base,0.13,0.09,0.09,898057;898058;898140
+VEN-112,Zed - Without a Sound,Vendetta,1,1,898060,alta,2 variantes en el set: la más barata es la base,0.15,0.26,0.41,898060;898061
+VEN-116,Dragon Form,Vendetta,2,0,898066,alta,Único producto con ese nombre en el set,0.05,0.27,0.1,898066
+VEN-117,Disciple of Shen,Vendetta,3,0,898067,alta,Único producto con ese nombre en el set,0.04,0.15,0.12,898067
+VEN-118,Horns of the Dragon,Vendetta,1,0,898068,alta,Único producto con ese nombre en el set,0.02,0.12,0.02,898068;898202
+VEN-119,Keeper of Law,Vendetta,2,0,898069,alta,Único producto con ese nombre en el set,0.05,0.15,0.1,898069
+VEN-121,Reluctant Leader,Vendetta,1,0,898071,alta,Único producto con ese nombre en el set,0.03,0.1,0.03,898071
+VEN-123,Soulspinner,Vendetta,3,0,898073,alta,Único producto con ese nombre en el set,0.03,0.11,0.09,898073;901254
+VEN-126,Ki Barrier,Vendetta,1,0,898076,alta,Único producto con ese nombre en el set,0.12,0.27,0.12,898076
+VEN-127,Lacerate,Vendetta,2,0,898077,alta,Único producto con ese nombre en el set,0.09,0.26,0.18,898077
+VEN-128,Noxian Emissary,Vendetta,2,0,898078,alta,Único producto con ese nombre en el set,0.11,0.31,0.22,898078
+VEN-129,Sacred Protector,Vendetta,2,0,898079,alta,Único producto con ese nombre en el set,0.03,0.23,0.06,898079
+VEN-131,Decree of Unity,Vendetta,0,1,898081,alta,Único producto con ese nombre en el set,0.41,0.58,0.58,898081
+VEN-135,Kennen - Keeper of Balance,Vendetta,1,0,898086,alta,2 variantes en el set: la más barata es la base,0.32,0.29,0.32,898086;898087
+VEN-138,Shen - Leader of the Kinkou Order,Vendetta,0,1,898091,alta,2 variantes en el set: la más barata es la base,0.86,0.43,0.43,898091;898092
+VEN-139,Akali - Rogue Assassin,Vendetta,1,0,898093,alta,3 variantes en el set: la más barata es la base,0.15,0.11,0.15,898093;898141;898161;917165
+VEN-141,Renekton - Butcher of the Sands,Vendetta,1,0,898095,alta,3 variantes en el set: la más barata es la base,0.07,0.09,0.07,898095;898142;898162
+VEN-143,Zed - Master of Shadows,Vendetta,1,1,898097,alta,3 variantes en el set: la más barata es la base,0.11,0.11,0.22,898097;898143;898163
+VEN-144,Death Mark,Vendetta,0,1,898098,alta,Único producto con ese nombre en el set,3.18,2.89,2.89,898098
+VEN-145,Nasus - Curator of the Sands,Vendetta,1,0,898099,alta,3 variantes en el set: la más barata es la base,0.06,0.05,0.06,898099;898144;898164
+VEN-147,Shen - Eye of Twilight,Vendetta,1,1,898101,alta,3 variantes en el set: la más barata es la base,0.05,0.06,0.11,898101;898145;898165
+VEN-148,Shadow Dash,Vendetta,0,1,898102,alta,Único producto con ese nombre en el set,1.3,0.69,0.69,898102
+VEN-149,Jayce - Defender of Tomorrow,Vendetta,1,0,898103,alta,3 variantes en el set: la más barata es la base,0.12,0.13,0.12,898103;898146;898166
+VEN-151,Mel - Soul's Reflection,Vendetta,1,0,898105,alta,3 variantes en el set: la más barata es la base,0.07,0.07,0.07,898105;898147;898167
+VEN-153,Ambessa - Matriarch of War,Vendetta,1,1,898107,alta,3 variantes en el set: la más barata es la base,0.02,0.11,0.13,898107;898148;898168
+VEN-155,Kennen - Heart of the Tempest,Vendetta,1,0,898109,alta,3 variantes en el set: la más barata es la base,0.07,0.1,0.07,898109;898149;898169;916943
+VEN-159,Kinkou Temple,Vendetta,1,0,898113,alta,Único producto con ese nombre en el set,0.05,0.23,0.05,898113
+VEN-162,Protective Sands,Vendetta,1,0,898116,alta,Único producto con ese nombre en el set,0.02,0.17,0.02,898116
+VEN-165,Shadow Temple,Vendetta,1,0,898119,alta,Único producto con ese nombre en el set,0.06,0.32,0.06,898119
+VEN-166,Threshold of the Gray,Vendetta,2,0,898120,alta,Único producto con ese nombre en el set,0.06,0.25,0.12,898120
+VEN-R01,Fury Rune,Vendetta,1,0,898154,alta,2 variantes en el set: la más barata es la base,0.07,,0.07,845886;845887;856120;871893;872478;874107;885238;888470;891436;898154;898178;898187;904314;917119;917446;917447;917608

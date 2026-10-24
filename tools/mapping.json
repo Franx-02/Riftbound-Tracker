@@ -1,0 +1,1562 @@
+{
+ "OGN-089b": {
+  "idProduct": null,
+  "confianza": "sin mapear"
+ },
+ "OGN-273": {
+  "idProduct": null,
+  "confianza": "sin mapear"
+ },
+ "SFD-T01": {
+  "idProduct": null,
+  "confianza": "sin mapear"
+ },
+ "SFD-T02": {
+  "idProduct": null,
+  "confianza": "sin mapear"
+ },
+ "SFD-T03": {
+  "idProduct": null,
+  "confianza": "sin mapear"
+ },
+ "OGN-089": {
+  "idProduct": 847213,
+  "confianza": "baja"
+ },
+ "RAD-021": {
+  "idProduct": 917227,
+  "confianza": "baja"
+ },
+ "RAD-068": {
+  "idProduct": 917271,
+  "confianza": "baja"
+ },
+ "SFD-088": {
+  "idProduct": 866820,
+  "confianza": "baja"
+ },
+ "SFD-177": {
+  "idProduct": 866922,
+  "confianza": "baja"
+ },
+ "VEN-023": {
+  "idProduct": 897960,
+  "confianza": "baja"
+ },
+ "OGN-089a": {
+  "idProduct": 847214,
+  "confianza": "media"
+ },
+ "OGS-004-P": {
+  "idProduct": 874122,
+  "confianza": "media"
+ },
+ "RAD-114A": {
+  "idProduct": 917317,
+  "confianza": "media"
+ },
+ "SFD-110A": {
+  "idProduct": 866846,
+  "confianza": "media"
+ },
+ "SFD-141A": {
+  "idProduct": 866881,
+  "confianza": "media"
+ },
+ "SFD-R03a": {
+  "idProduct": 871895,
+  "confianza": "media"
+ },
+ "VEN-037-P": {
+  "idProduct": 898194,
+  "confianza": "media"
+ },
+ "VEN-R03a": {
+  "idProduct": 898181,
+  "confianza": "media"
+ },
+ "OGN-005": {
+  "idProduct": 845884,
+  "confianza": "alta"
+ },
+ "OGN-007": {
+  "idProduct": 845886,
+  "confianza": "alta"
+ },
+ "OGN-013": {
+  "idProduct": 845893,
+  "confianza": "alta"
+ },
+ "OGN-026": {
+  "idProduct": 847141,
+  "confianza": "alta"
+ },
+ "OGN-029": {
+  "idProduct": 847145,
+  "confianza": "alta"
+ },
+ "OGN-042": {
+  "idProduct": 847161,
+  "confianza": "alta"
+ },
+ "OGN-043": {
+  "idProduct": 847163,
+  "confianza": "alta"
+ },
+ "OGN-045": {
+  "idProduct": 847165,
+  "confianza": "alta"
+ },
+ "OGN-046": {
+  "idProduct": 847166,
+  "confianza": "alta"
+ },
+ "OGN-048": {
+  "idProduct": 847168,
+  "confianza": "alta"
+ },
+ "OGN-049": {
+  "idProduct": 847169,
+  "confianza": "alta"
+ },
+ "OGN-052": {
+  "idProduct": 847172,
+  "confianza": "alta"
+ },
+ "OGN-055": {
+  "idProduct": 847175,
+  "confianza": "alta"
+ },
+ "OGN-058": {
+  "idProduct": 847178,
+  "confianza": "alta"
+ },
+ "OGN-084": {
+  "idProduct": 847208,
+  "confianza": "alta"
+ },
+ "OGN-085": {
+  "idProduct": 847209,
+  "confianza": "alta"
+ },
+ "OGN-087": {
+  "idProduct": 847211,
+  "confianza": "alta"
+ },
+ "OGN-088": {
+  "idProduct": 847212,
+  "confianza": "alta"
+ },
+ "OGN-095": {
+  "idProduct": 847220,
+  "confianza": "alta"
+ },
+ "OGN-103": {
+  "idProduct": 847228,
+  "confianza": "alta"
+ },
+ "OGN-105": {
+  "idProduct": 847230,
+  "confianza": "alta"
+ },
+ "OGN-126": {
+  "idProduct": 847277,
+  "confianza": "alta"
+ },
+ "OGN-127": {
+  "idProduct": 847281,
+  "confianza": "alta"
+ },
+ "OGN-129": {
+  "idProduct": 847284,
+  "confianza": "alta"
+ },
+ "OGN-130": {
+  "idProduct": 847286,
+  "confianza": "alta"
+ },
+ "OGN-131": {
+  "idProduct": 847287,
+  "confianza": "alta"
+ },
+ "OGN-132": {
+  "idProduct": 847289,
+  "confianza": "alta"
+ },
+ "OGN-134": {
+  "idProduct": 847291,
+  "confianza": "alta"
+ },
+ "OGN-137": {
+  "idProduct": 847294,
+  "confianza": "alta"
+ },
+ "OGN-139": {
+  "idProduct": 847296,
+  "confianza": "alta"
+ },
+ "OGN-142": {
+  "idProduct": 847299,
+  "confianza": "alta"
+ },
+ "OGN-166": {
+  "idProduct": 847332,
+  "confianza": "alta"
+ },
+ "OGN-169": {
+  "idProduct": 847336,
+  "confianza": "alta"
+ },
+ "OGN-170": {
+  "idProduct": 847337,
+  "confianza": "alta"
+ },
+ "OGN-171": {
+  "idProduct": 847338,
+  "confianza": "alta"
+ },
+ "OGN-174": {
+  "idProduct": 847341,
+  "confianza": "alta"
+ },
+ "OGN-176": {
+  "idProduct": 847343,
+  "confianza": "alta"
+ },
+ "OGN-185": {
+  "idProduct": 847352,
+  "confianza": "alta"
+ },
+ "OGN-191": {
+  "idProduct": 847358,
+  "confianza": "alta"
+ },
+ "OGN-204": {
+  "idProduct": 847374,
+  "confianza": "alta"
+ },
+ "OGN-206": {
+  "idProduct": 847377,
+  "confianza": "alta"
+ },
+ "OGN-210": {
+  "idProduct": 847381,
+  "confianza": "alta"
+ },
+ "OGN-211": {
+  "idProduct": 847382,
+  "confianza": "alta"
+ },
+ "OGN-213": {
+  "idProduct": 847384,
+  "confianza": "alta"
+ },
+ "OGN-214": {
+  "idProduct": 847385,
+  "confianza": "alta"
+ },
+ "OGN-215": {
+  "idProduct": 847387,
+  "confianza": "alta"
+ },
+ "OGN-219": {
+  "idProduct": 847391,
+  "confianza": "alta"
+ },
+ "OGN-222": {
+  "idProduct": 847396,
+  "confianza": "alta"
+ },
+ "OGN-241": {
+  "idProduct": 847424,
+  "confianza": "alta"
+ },
+ "OGN-280": {
+  "idProduct": 847480,
+  "confianza": "alta"
+ },
+ "OGN-294": {
+  "idProduct": 847494,
+  "confianza": "alta"
+ },
+ "OGN-298": {
+  "idProduct": 847498,
+  "confianza": "alta"
+ },
+ "OGS-001": {
+  "idProduct": 847523,
+  "confianza": "alta"
+ },
+ "OGS-002": {
+  "idProduct": 847524,
+  "confianza": "alta"
+ },
+ "OGS-003": {
+  "idProduct": 847525,
+  "confianza": "alta"
+ },
+ "OGS-005": {
+  "idProduct": 847527,
+  "confianza": "alta"
+ },
+ "OGS-006": {
+  "idProduct": 847528,
+  "confianza": "alta"
+ },
+ "OGS-007": {
+  "idProduct": 847529,
+  "confianza": "alta"
+ },
+ "OGS-008": {
+  "idProduct": 847530,
+  "confianza": "alta"
+ },
+ "OGS-009": {
+  "idProduct": 847531,
+  "confianza": "alta"
+ },
+ "OGS-010": {
+  "idProduct": 847532,
+  "confianza": "alta"
+ },
+ "OGS-011": {
+  "idProduct": 847533,
+  "confianza": "alta"
+ },
+ "OGS-012": {
+  "idProduct": 847534,
+  "confianza": "alta"
+ },
+ "OGS-013": {
+  "idProduct": 847535,
+  "confianza": "alta"
+ },
+ "OGS-014": {
+  "idProduct": 847536,
+  "confianza": "alta"
+ },
+ "OGS-015": {
+  "idProduct": 847537,
+  "confianza": "alta"
+ },
+ "OGS-016": {
+  "idProduct": 847538,
+  "confianza": "alta"
+ },
+ "OGS-017": {
+  "idProduct": 847539,
+  "confianza": "alta"
+ },
+ "OGS-018": {
+  "idProduct": 847540,
+  "confianza": "alta"
+ },
+ "OGS-019": {
+  "idProduct": 847541,
+  "confianza": "alta"
+ },
+ "OGS-020": {
+  "idProduct": 847542,
+  "confianza": "alta"
+ },
+ "OGS-021": {
+  "idProduct": 847543,
+  "confianza": "alta"
+ },
+ "OGS-022": {
+  "idProduct": 847544,
+  "confianza": "alta"
+ },
+ "OGS-023": {
+  "idProduct": 847545,
+  "confianza": "alta"
+ },
+ "OGS-024": {
+  "idProduct": 847546,
+  "confianza": "alta"
+ },
+ "RAD-001": {
+  "idProduct": 917208,
+  "confianza": "alta"
+ },
+ "RAD-002": {
+  "idProduct": 917209,
+  "confianza": "alta"
+ },
+ "RAD-004": {
+  "idProduct": 917211,
+  "confianza": "alta"
+ },
+ "RAD-005": {
+  "idProduct": 917212,
+  "confianza": "alta"
+ },
+ "RAD-006": {
+  "idProduct": 917213,
+  "confianza": "alta"
+ },
+ "RAD-007": {
+  "idProduct": 917214,
+  "confianza": "alta"
+ },
+ "RAD-008": {
+  "idProduct": 917216,
+  "confianza": "alta"
+ },
+ "RAD-009": {
+  "idProduct": 917215,
+  "confianza": "alta"
+ },
+ "RAD-012": {
+  "idProduct": 917217,
+  "confianza": "alta"
+ },
+ "RAD-013": {
+  "idProduct": 917218,
+  "confianza": "alta"
+ },
+ "RAD-014": {
+  "idProduct": 917219,
+  "confianza": "alta"
+ },
+ "RAD-015": {
+  "idProduct": 917220,
+  "confianza": "alta"
+ },
+ "RAD-017": {
+  "idProduct": 917222,
+  "confianza": "alta"
+ },
+ "RAD-019": {
+  "idProduct": 917224,
+  "confianza": "alta"
+ },
+ "RAD-020": {
+  "idProduct": 917225,
+  "confianza": "alta"
+ },
+ "RAD-024": {
+  "idProduct": 917231,
+  "confianza": "alta"
+ },
+ "RAD-025": {
+  "idProduct": 917232,
+  "confianza": "alta"
+ },
+ "RAD-026": {
+  "idProduct": 917233,
+  "confianza": "alta"
+ },
+ "RAD-027": {
+  "idProduct": 917234,
+  "confianza": "alta"
+ },
+ "RAD-028": {
+  "idProduct": 917235,
+  "confianza": "alta"
+ },
+ "RAD-029": {
+  "idProduct": 917236,
+  "confianza": "alta"
+ },
+ "RAD-030": {
+  "idProduct": 917237,
+  "confianza": "alta"
+ },
+ "RAD-031": {
+  "idProduct": 917418,
+  "confianza": "alta"
+ },
+ "RAD-032": {
+  "idProduct": 917420,
+  "confianza": "alta"
+ },
+ "RAD-035": {
+  "idProduct": 917240,
+  "confianza": "alta"
+ },
+ "RAD-036": {
+  "idProduct": 917241,
+  "confianza": "alta"
+ },
+ "RAD-037": {
+  "idProduct": 917242,
+  "confianza": "alta"
+ },
+ "RAD-038": {
+  "idProduct": 917243,
+  "confianza": "alta"
+ },
+ "RAD-042": {
+  "idProduct": 917411,
+  "confianza": "alta"
+ },
+ "RAD-047": {
+  "idProduct": 917252,
+  "confianza": "alta"
+ },
+ "RAD-048": {
+  "idProduct": 917253,
+  "confianza": "alta"
+ },
+ "RAD-049": {
+  "idProduct": 917254,
+  "confianza": "alta"
+ },
+ "RAD-050": {
+  "idProduct": 917255,
+  "confianza": "alta"
+ },
+ "RAD-051": {
+  "idProduct": 917256,
+  "confianza": "alta"
+ },
+ "RAD-052": {
+  "idProduct": 917257,
+  "confianza": "alta"
+ },
+ "RAD-053": {
+  "idProduct": 917422,
+  "confianza": "alta"
+ },
+ "RAD-054": {
+  "idProduct": 917423,
+  "confianza": "alta"
+ },
+ "RAD-056": {
+  "idProduct": 917260,
+  "confianza": "alta"
+ },
+ "RAD-057": {
+  "idProduct": 917261,
+  "confianza": "alta"
+ },
+ "RAD-058": {
+  "idProduct": 917262,
+  "confianza": "alta"
+ },
+ "RAD-059": {
+  "idProduct": 917263,
+  "confianza": "alta"
+ },
+ "RAD-060": {
+  "idProduct": 917264,
+  "confianza": "alta"
+ },
+ "RAD-061": {
+  "idProduct": 917265,
+  "confianza": "alta"
+ },
+ "RAD-065": {
+  "idProduct": 917424,
+  "confianza": "alta"
+ },
+ "RAD-070": {
+  "idProduct": 917274,
+  "confianza": "alta"
+ },
+ "RAD-072": {
+  "idProduct": 917276,
+  "confianza": "alta"
+ },
+ "RAD-073": {
+  "idProduct": 917277,
+  "confianza": "alta"
+ },
+ "RAD-074": {
+  "idProduct": 917278,
+  "confianza": "alta"
+ },
+ "RAD-075": {
+  "idProduct": 917279,
+  "confianza": "alta"
+ },
+ "RAD-076": {
+  "idProduct": 917280,
+  "confianza": "alta"
+ },
+ "RAD-077": {
+  "idProduct": 917281,
+  "confianza": "alta"
+ },
+ "RAD-078": {
+  "idProduct": 917427,
+  "confianza": "alta"
+ },
+ "RAD-079": {
+  "idProduct": 917282,
+  "confianza": "alta"
+ },
+ "RAD-081": {
+  "idProduct": 917283,
+  "confianza": "alta"
+ },
+ "RAD-084": {
+  "idProduct": 917286,
+  "confianza": "alta"
+ },
+ "RAD-088": {
+  "idProduct": 917291,
+  "confianza": "alta"
+ },
+ "RAD-093": {
+  "idProduct": 917297,
+  "confianza": "alta"
+ },
+ "RAD-094": {
+  "idProduct": 917432,
+  "confianza": "alta"
+ },
+ "RAD-095": {
+  "idProduct": 917298,
+  "confianza": "alta"
+ },
+ "RAD-096": {
+  "idProduct": 917299,
+  "confianza": "alta"
+ },
+ "RAD-097": {
+  "idProduct": 917300,
+  "confianza": "alta"
+ },
+ "RAD-098": {
+  "idProduct": 917301,
+  "confianza": "alta"
+ },
+ "RAD-099": {
+  "idProduct": 917302,
+  "confianza": "alta"
+ },
+ "RAD-100": {
+  "idProduct": 917303,
+  "confianza": "alta"
+ },
+ "RAD-101": {
+  "idProduct": 917304,
+  "confianza": "alta"
+ },
+ "RAD-103": {
+  "idProduct": 917433,
+  "confianza": "alta"
+ },
+ "RAD-104": {
+  "idProduct": 917435,
+  "confianza": "alta"
+ },
+ "RAD-105": {
+  "idProduct": 917306,
+  "confianza": "alta"
+ },
+ "RAD-106": {
+  "idProduct": 917307,
+  "confianza": "alta"
+ },
+ "RAD-107": {
+  "idProduct": 917308,
+  "confianza": "alta"
+ },
+ "RAD-111": {
+  "idProduct": 917313,
+  "confianza": "alta"
+ },
+ "RAD-116": {
+  "idProduct": 917319,
+  "confianza": "alta"
+ },
+ "RAD-117": {
+  "idProduct": 917320,
+  "confianza": "alta"
+ },
+ "RAD-118": {
+  "idProduct": 917321,
+  "confianza": "alta"
+ },
+ "RAD-119": {
+  "idProduct": 917322,
+  "confianza": "alta"
+ },
+ "RAD-120": {
+  "idProduct": 917323,
+  "confianza": "alta"
+ },
+ "RAD-121": {
+  "idProduct": 917324,
+  "confianza": "alta"
+ },
+ "RAD-122": {
+  "idProduct": 917325,
+  "confianza": "alta"
+ },
+ "RAD-123": {
+  "idProduct": 917438,
+  "confianza": "alta"
+ },
+ "RAD-124": {
+  "idProduct": 917439,
+  "confianza": "alta"
+ },
+ "RAD-125": {
+  "idProduct": 917326,
+  "confianza": "alta"
+ },
+ "RAD-126": {
+  "idProduct": 917327,
+  "confianza": "alta"
+ },
+ "RAD-127": {
+  "idProduct": 917328,
+  "confianza": "alta"
+ },
+ "RAD-129": {
+  "idProduct": 917330,
+  "confianza": "alta"
+ },
+ "RAD-132": {
+  "idProduct": 917333,
+  "confianza": "alta"
+ },
+ "RAD-133": {
+  "idProduct": 917334,
+  "confianza": "alta"
+ },
+ "RAD-139": {
+  "idProduct": 917341,
+  "confianza": "alta"
+ },
+ "RAD-143": {
+  "idProduct": 917345,
+  "confianza": "alta"
+ },
+ "RAD-144": {
+  "idProduct": 917346,
+  "confianza": "alta"
+ },
+ "RAD-147": {
+  "idProduct": 917349,
+  "confianza": "alta"
+ },
+ "RAD-151": {
+  "idProduct": 917352,
+  "confianza": "alta"
+ },
+ "RAD-152": {
+  "idProduct": 917353,
+  "confianza": "alta"
+ },
+ "RAD-153": {
+  "idProduct": 917354,
+  "confianza": "alta"
+ },
+ "RAD-161": {
+  "idProduct": 917362,
+  "confianza": "alta"
+ },
+ "RAD-165": {
+  "idProduct": 917366,
+  "confianza": "alta"
+ },
+ "RAD-166": {
+  "idProduct": 917367,
+  "confianza": "alta"
+ },
+ "SFD-001": {
+  "idProduct": 866723,
+  "confianza": "alta"
+ },
+ "SFD-002": {
+  "idProduct": 866724,
+  "confianza": "alta"
+ },
+ "SFD-003": {
+  "idProduct": 866725,
+  "confianza": "alta"
+ },
+ "SFD-004": {
+  "idProduct": 866726,
+  "confianza": "alta"
+ },
+ "SFD-005": {
+  "idProduct": 866727,
+  "confianza": "alta"
+ },
+ "SFD-006": {
+  "idProduct": 866728,
+  "confianza": "alta"
+ },
+ "SFD-007": {
+  "idProduct": 866729,
+  "confianza": "alta"
+ },
+ "SFD-008": {
+  "idProduct": 866730,
+  "confianza": "alta"
+ },
+ "SFD-009": {
+  "idProduct": 866731,
+  "confianza": "alta"
+ },
+ "SFD-010": {
+  "idProduct": 866732,
+  "confianza": "alta"
+ },
+ "SFD-013": {
+  "idProduct": 866735,
+  "confianza": "alta"
+ },
+ "SFD-014": {
+  "idProduct": 866736,
+  "confianza": "alta"
+ },
+ "SFD-015": {
+  "idProduct": 866737,
+  "confianza": "alta"
+ },
+ "SFD-016": {
+  "idProduct": 866738,
+  "confianza": "alta"
+ },
+ "SFD-017": {
+  "idProduct": 866739,
+  "confianza": "alta"
+ },
+ "SFD-018": {
+  "idProduct": 866740,
+  "confianza": "alta"
+ },
+ "SFD-020": {
+  "idProduct": 866742,
+  "confianza": "alta"
+ },
+ "SFD-021": {
+  "idProduct": 866744,
+  "confianza": "alta"
+ },
+ "SFD-031": {
+  "idProduct": 866757,
+  "confianza": "alta"
+ },
+ "SFD-032": {
+  "idProduct": 866758,
+  "confianza": "alta"
+ },
+ "SFD-033": {
+  "idProduct": 866759,
+  "confianza": "alta"
+ },
+ "SFD-034": {
+  "idProduct": 866760,
+  "confianza": "alta"
+ },
+ "SFD-035": {
+  "idProduct": 866761,
+  "confianza": "alta"
+ },
+ "SFD-036": {
+  "idProduct": 866762,
+  "confianza": "alta"
+ },
+ "SFD-038": {
+  "idProduct": 866764,
+  "confianza": "alta"
+ },
+ "SFD-039": {
+  "idProduct": 866765,
+  "confianza": "alta"
+ },
+ "SFD-040": {
+  "idProduct": 866766,
+  "confianza": "alta"
+ },
+ "SFD-041": {
+  "idProduct": 866767,
+  "confianza": "alta"
+ },
+ "SFD-042": {
+  "idProduct": 866768,
+  "confianza": "alta"
+ },
+ "SFD-046": {
+  "idProduct": 866772,
+  "confianza": "alta"
+ },
+ "SFD-047": {
+  "idProduct": 866773,
+  "confianza": "alta"
+ },
+ "SFD-048": {
+  "idProduct": 866774,
+  "confianza": "alta"
+ },
+ "SFD-052": {
+  "idProduct": 866779,
+  "confianza": "alta"
+ },
+ "SFD-053": {
+  "idProduct": 866780,
+  "confianza": "alta"
+ },
+ "SFD-060": {
+  "idProduct": 866790,
+  "confianza": "alta"
+ },
+ "SFD-061": {
+  "idProduct": 866791,
+  "confianza": "alta"
+ },
+ "SFD-062": {
+  "idProduct": 866792,
+  "confianza": "alta"
+ },
+ "SFD-063": {
+  "idProduct": 866793,
+  "confianza": "alta"
+ },
+ "SFD-064": {
+  "idProduct": 866794,
+  "confianza": "alta"
+ },
+ "SFD-065": {
+  "idProduct": 866795,
+  "confianza": "alta"
+ },
+ "SFD-066": {
+  "idProduct": 866796,
+  "confianza": "alta"
+ },
+ "SFD-068": {
+  "idProduct": 866798,
+  "confianza": "alta"
+ },
+ "SFD-069": {
+  "idProduct": 866799,
+  "confianza": "alta"
+ },
+ "SFD-070": {
+  "idProduct": 866800,
+  "confianza": "alta"
+ },
+ "SFD-071": {
+  "idProduct": 866801,
+  "confianza": "alta"
+ },
+ "SFD-074": {
+  "idProduct": 866804,
+  "confianza": "alta"
+ },
+ "SFD-076": {
+  "idProduct": 866806,
+  "confianza": "alta"
+ },
+ "SFD-077": {
+  "idProduct": 866807,
+  "confianza": "alta"
+ },
+ "SFD-080": {
+  "idProduct": 866810,
+  "confianza": "alta"
+ },
+ "SFD-082": {
+  "idProduct": 866812,
+  "confianza": "alta"
+ },
+ "SFD-083": {
+  "idProduct": 866814,
+  "confianza": "alta"
+ },
+ "SFD-091": {
+  "idProduct": 866826,
+  "confianza": "alta"
+ },
+ "SFD-092": {
+  "idProduct": 866827,
+  "confianza": "alta"
+ },
+ "SFD-094": {
+  "idProduct": 866829,
+  "confianza": "alta"
+ },
+ "SFD-095": {
+  "idProduct": 866830,
+  "confianza": "alta"
+ },
+ "SFD-096": {
+  "idProduct": 866831,
+  "confianza": "alta"
+ },
+ "SFD-097": {
+  "idProduct": 866832,
+  "confianza": "alta"
+ },
+ "SFD-098": {
+  "idProduct": 866833,
+  "confianza": "alta"
+ },
+ "SFD-100": {
+  "idProduct": 866835,
+  "confianza": "alta"
+ },
+ "SFD-101": {
+  "idProduct": 866836,
+  "confianza": "alta"
+ },
+ "SFD-104": {
+  "idProduct": 866839,
+  "confianza": "alta"
+ },
+ "SFD-105": {
+  "idProduct": 866840,
+  "confianza": "alta"
+ },
+ "SFD-107": {
+  "idProduct": 866842,
+  "confianza": "alta"
+ },
+ "SFD-109": {
+  "idProduct": 866844,
+  "confianza": "alta"
+ },
+ "SFD-112": {
+  "idProduct": 866848,
+  "confianza": "alta"
+ },
+ "SFD-113": {
+  "idProduct": 866849,
+  "confianza": "alta"
+ },
+ "SFD-114": {
+  "idProduct": 866851,
+  "confianza": "alta"
+ },
+ "SFD-116": {
+  "idProduct": 866853,
+  "confianza": "alta"
+ },
+ "SFD-122": {
+  "idProduct": 866861,
+  "confianza": "alta"
+ },
+ "SFD-123": {
+  "idProduct": 866862,
+  "confianza": "alta"
+ },
+ "SFD-124": {
+  "idProduct": 866863,
+  "confianza": "alta"
+ },
+ "SFD-125": {
+  "idProduct": 866864,
+  "confianza": "alta"
+ },
+ "SFD-126": {
+  "idProduct": 866865,
+  "confianza": "alta"
+ },
+ "SFD-127": {
+  "idProduct": 866866,
+  "confianza": "alta"
+ },
+ "SFD-128": {
+  "idProduct": 866867,
+  "confianza": "alta"
+ },
+ "SFD-129": {
+  "idProduct": 866868,
+  "confianza": "alta"
+ },
+ "SFD-130": {
+  "idProduct": 866869,
+  "confianza": "alta"
+ },
+ "SFD-131": {
+  "idProduct": 866870,
+  "confianza": "alta"
+ },
+ "SFD-132": {
+  "idProduct": 866871,
+  "confianza": "alta"
+ },
+ "SFD-136": {
+  "idProduct": 866875,
+  "confianza": "alta"
+ },
+ "SFD-137": {
+  "idProduct": 866876,
+  "confianza": "alta"
+ },
+ "SFD-138": {
+  "idProduct": 866877,
+  "confianza": "alta"
+ },
+ "SFD-140": {
+  "idProduct": 866879,
+  "confianza": "alta"
+ },
+ "SFD-145": {
+  "idProduct": 866886,
+  "confianza": "alta"
+ },
+ "SFD-151": {
+  "idProduct": 866894,
+  "confianza": "alta"
+ },
+ "SFD-152": {
+  "idProduct": 866895,
+  "confianza": "alta"
+ },
+ "SFD-153": {
+  "idProduct": 866896,
+  "confianza": "alta"
+ },
+ "SFD-154": {
+  "idProduct": 866897,
+  "confianza": "alta"
+ },
+ "SFD-155": {
+  "idProduct": 866898,
+  "confianza": "alta"
+ },
+ "SFD-156": {
+  "idProduct": 866899,
+  "confianza": "alta"
+ },
+ "SFD-157": {
+  "idProduct": 866900,
+  "confianza": "alta"
+ },
+ "SFD-158": {
+  "idProduct": 866901,
+  "confianza": "alta"
+ },
+ "SFD-159": {
+  "idProduct": 866902,
+  "confianza": "alta"
+ },
+ "SFD-160": {
+  "idProduct": 866903,
+  "confianza": "alta"
+ },
+ "SFD-161": {
+  "idProduct": 866904,
+  "confianza": "alta"
+ },
+ "SFD-162": {
+  "idProduct": 866905,
+  "confianza": "alta"
+ },
+ "SFD-163": {
+  "idProduct": 866906,
+  "confianza": "alta"
+ },
+ "SFD-164": {
+  "idProduct": 866907,
+  "confianza": "alta"
+ },
+ "SFD-166": {
+  "idProduct": 866909,
+  "confianza": "alta"
+ },
+ "SFD-170": {
+  "idProduct": 866913,
+  "confianza": "alta"
+ },
+ "SFD-171": {
+  "idProduct": 866915,
+  "confianza": "alta"
+ },
+ "SFD-175": {
+  "idProduct": 866920,
+  "confianza": "alta"
+ },
+ "SFD-187": {
+  "idProduct": 866934,
+  "confianza": "alta"
+ },
+ "SFD-189": {
+  "idProduct": 866936,
+  "confianza": "alta"
+ },
+ "SFD-191": {
+  "idProduct": 866938,
+  "confianza": "alta"
+ },
+ "SFD-193": {
+  "idProduct": 866940,
+  "confianza": "alta"
+ },
+ "SFD-195": {
+  "idProduct": 866942,
+  "confianza": "alta"
+ },
+ "SFD-197": {
+  "idProduct": 866944,
+  "confianza": "alta"
+ },
+ "SFD-198": {
+  "idProduct": 866945,
+  "confianza": "alta"
+ },
+ "SFD-199": {
+  "idProduct": 866946,
+  "confianza": "alta"
+ },
+ "SFD-205": {
+  "idProduct": 866952,
+  "confianza": "alta"
+ },
+ "SFD-207": {
+  "idProduct": 866954,
+  "confianza": "alta"
+ },
+ "SFD-208": {
+  "idProduct": 866955,
+  "confianza": "alta"
+ },
+ "SFD-209": {
+  "idProduct": 866956,
+  "confianza": "alta"
+ },
+ "SFD-210": {
+  "idProduct": 866957,
+  "confianza": "alta"
+ },
+ "SFD-211": {
+  "idProduct": 866958,
+  "confianza": "alta"
+ },
+ "SFD-212": {
+  "idProduct": 866959,
+  "confianza": "alta"
+ },
+ "SFD-214": {
+  "idProduct": 866961,
+  "confianza": "alta"
+ },
+ "SFD-217": {
+  "idProduct": 866964,
+  "confianza": "alta"
+ },
+ "SFD-R01": {
+  "idProduct": 872478,
+  "confianza": "alta"
+ },
+ "SFD-R02": {
+  "idProduct": 872479,
+  "confianza": "alta"
+ },
+ "SFD-R03": {
+  "idProduct": 872480,
+  "confianza": "alta"
+ },
+ "SFD-R04": {
+  "idProduct": 872481,
+  "confianza": "alta"
+ },
+ "SFD-R06": {
+  "idProduct": 872483,
+  "confianza": "alta"
+ },
+ "UNL-039": {
+  "idProduct": 884001,
+  "confianza": "alta"
+ },
+ "UNL-042": {
+  "idProduct": 884004,
+  "confianza": "alta"
+ },
+ "UNL-156": {
+  "idProduct": 884143,
+  "confianza": "alta"
+ },
+ "UNL-176": {
+  "idProduct": 884164,
+  "confianza": "alta"
+ },
+ "VEN-001": {
+  "idProduct": 897877,
+  "confianza": "alta"
+ },
+ "VEN-002": {
+  "idProduct": 897902,
+  "confianza": "alta"
+ },
+ "VEN-003": {
+  "idProduct": 897910,
+  "confianza": "alta"
+ },
+ "VEN-006": {
+  "idProduct": 897930,
+  "confianza": "alta"
+ },
+ "VEN-007": {
+  "idProduct": 897940,
+  "confianza": "alta"
+ },
+ "VEN-008": {
+  "idProduct": 897943,
+  "confianza": "alta"
+ },
+ "VEN-010": {
+  "idProduct": 897945,
+  "confianza": "alta"
+ },
+ "VEN-012": {
+  "idProduct": 897947,
+  "confianza": "alta"
+ },
+ "VEN-013": {
+  "idProduct": 897948,
+  "confianza": "alta"
+ },
+ "VEN-014": {
+  "idProduct": 897949,
+  "confianza": "alta"
+ },
+ "VEN-017": {
+  "idProduct": 897952,
+  "confianza": "alta"
+ },
+ "VEN-020": {
+  "idProduct": 897956,
+  "confianza": "alta"
+ },
+ "VEN-021": {
+  "idProduct": 897957,
+  "confianza": "alta"
+ },
+ "VEN-024": {
+  "idProduct": 897962,
+  "confianza": "alta"
+ },
+ "VEN-026": {
+  "idProduct": 897964,
+  "confianza": "alta"
+ },
+ "VEN-027": {
+  "idProduct": 897965,
+  "confianza": "alta"
+ },
+ "VEN-028": {
+  "idProduct": 897966,
+  "confianza": "alta"
+ },
+ "VEN-029": {
+  "idProduct": 897967,
+  "confianza": "alta"
+ },
+ "VEN-030": {
+  "idProduct": 897968,
+  "confianza": "alta"
+ },
+ "VEN-031": {
+  "idProduct": 897969,
+  "confianza": "alta"
+ },
+ "VEN-033": {
+  "idProduct": 897971,
+  "confianza": "alta"
+ },
+ "VEN-034": {
+  "idProduct": 897972,
+  "confianza": "alta"
+ },
+ "VEN-042": {
+  "idProduct": 897981,
+  "confianza": "alta"
+ },
+ "VEN-043": {
+  "idProduct": 897983,
+  "confianza": "alta"
+ },
+ "VEN-049": {
+  "idProduct": 897990,
+  "confianza": "alta"
+ },
+ "VEN-052": {
+  "idProduct": 897993,
+  "confianza": "alta"
+ },
+ "VEN-053": {
+  "idProduct": 897994,
+  "confianza": "alta"
+ },
+ "VEN-055": {
+  "idProduct": 897996,
+  "confianza": "alta"
+ },
+ "VEN-062": {
+  "idProduct": 898003,
+  "confianza": "alta"
+ },
+ "VEN-071": {
+  "idProduct": 898015,
+  "confianza": "alta"
+ },
+ "VEN-077": {
+  "idProduct": 898021,
+  "confianza": "alta"
+ },
+ "VEN-082": {
+  "idProduct": 898026,
+  "confianza": "alta"
+ },
+ "VEN-088": {
+  "idProduct": 898033,
+  "confianza": "alta"
+ },
+ "VEN-093": {
+  "idProduct": 898040,
+  "confianza": "alta"
+ },
+ "VEN-095": {
+  "idProduct": 898042,
+  "confianza": "alta"
+ },
+ "VEN-096": {
+  "idProduct": 898043,
+  "confianza": "alta"
+ },
+ "VEN-099": {
+  "idProduct": 898046,
+  "confianza": "alta"
+ },
+ "VEN-101": {
+  "idProduct": 898048,
+  "confianza": "alta"
+ },
+ "VEN-102": {
+  "idProduct": 898049,
+  "confianza": "alta"
+ },
+ "VEN-105": {
+  "idProduct": 898052,
+  "confianza": "alta"
+ },
+ "VEN-106": {
+  "idProduct": 898053,
+  "confianza": "alta"
+ },
+ "VEN-110": {
+  "idProduct": 898057,
+  "confianza": "alta"
+ },
+ "VEN-112": {
+  "idProduct": 898060,
+  "confianza": "alta"
+ },
+ "VEN-116": {
+  "idProduct": 898066,
+  "confianza": "alta"
+ },
+ "VEN-117": {
+  "idProduct": 898067,
+  "confianza": "alta"
+ },
+ "VEN-118": {
+  "idProduct": 898068,
+  "confianza": "alta"
+ },
+ "VEN-119": {
+  "idProduct": 898069,
+  "confianza": "alta"
+ },
+ "VEN-121": {
+  "idProduct": 898071,
+  "confianza": "alta"
+ },
+ "VEN-123": {
+  "idProduct": 898073,
+  "confianza": "alta"
+ },
+ "VEN-126": {
+  "idProduct": 898076,
+  "confianza": "alta"
+ },
+ "VEN-127": {
+  "idProduct": 898077,
+  "confianza": "alta"
+ },
+ "VEN-128": {
+  "idProduct": 898078,
+  "confianza": "alta"
+ },
+ "VEN-129": {
+  "idProduct": 898079,
+  "confianza": "alta"
+ },
+ "VEN-131": {
+  "idProduct": 898081,
+  "confianza": "alta"
+ },
+ "VEN-135": {
+  "idProduct": 898086,
+  "confianza": "alta"
+ },
+ "VEN-138": {
+  "idProduct": 898091,
+  "confianza": "alta"
+ },
+ "VEN-139": {
+  "idProduct": 898093,
+  "confianza": "alta"
+ },
+ "VEN-141": {
+  "idProduct": 898095,
+  "confianza": "alta"
+ },
+ "VEN-143": {
+  "idProduct": 898097,
+  "confianza": "alta"
+ },
+ "VEN-144": {
+  "idProduct": 898098,
+  "confianza": "alta"
+ },
+ "VEN-145": {
+  "idProduct": 898099,
+  "confianza": "alta"
+ },
+ "VEN-147": {
+  "idProduct": 898101,
+  "confianza": "alta"
+ },
+ "VEN-148": {
+  "idProduct": 898102,
+  "confianza": "alta"
+ },
+ "VEN-149": {
+  "idProduct": 898103,
+  "confianza": "alta"
+ },
+ "VEN-151": {
+  "idProduct": 898105,
+  "confianza": "alta"
+ },
+ "VEN-153": {
+  "idProduct": 898107,
+  "confianza": "alta"
+ },
+ "VEN-155": {
+  "idProduct": 898109,
+  "confianza": "alta"
+ },
+ "VEN-159": {
+  "idProduct": 898113,
+  "confianza": "alta"
+ },
+ "VEN-162": {
+  "idProduct": 898116,
+  "confianza": "alta"
+ },
+ "VEN-165": {
+  "idProduct": 898119,
+  "confianza": "alta"
+ },
+ "VEN-166": {
+  "idProduct": 898120,
+  "confianza": "alta"
+ },
+ "VEN-R01": {
+  "idProduct": 898154,
+  "confianza": "alta"
+ }
+}

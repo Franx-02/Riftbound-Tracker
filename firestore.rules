@@ -1,0 +1,36 @@
+rules_version = '2';
+
+// Modelo de acceso:
+// - Solo entran los emails con un documento en /allowed/{email} (se añaden desde la consola de Firebase).
+// - Un invitado puede LEER los datos de cualquier otro invitado (colecciones visibles para el grupo).
+// - Un invitado solo puede ESCRIBIR bajo su propio uid.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function invited() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/allowed/$(request.auth.token.email.lower()));
+    }
+
+    // Lista de invitados: cada uno puede comprobar su propia invitación. Nadie la modifica desde la app.
+    match /allowed/{email} {
+      allow read: if signedIn() && email == request.auth.token.email.lower();
+      allow write: if false;
+    }
+
+    // Perfil público mínimo (nombre para mostrar a los demás) y todos los datos del usuario.
+    match /users/{uid}/{document=**} {
+      allow read: if invited();
+      allow write: if invited() && request.auth.uid == uid;
+    }
+
+    // Correcciones de mapeo compartidas (F2+): cualquier invitado lee y corrige.
+    match /mappingOverrides/{cardId} {
+      allow read, write: if invited();
+    }
+  }
+}
