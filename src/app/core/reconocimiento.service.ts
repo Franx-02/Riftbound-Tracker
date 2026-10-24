@@ -95,11 +95,16 @@ export class ReconocimientoService {
    * encuadres no sea lento: primero una sola huella por encuadre, para quedarse con los
    * dos que más se parecen a alguna carta, y después, solo en esos, la búsqueda fina
    * con pequeños desplazamientos y escalas (`huellasConMargen`).
+   * `descartadas` son cartas que el usuario ya ha dicho que no son: no se proponen.
    */
   reconocer(
     px: Pixeles,
     encuadres: Encuadre[] = [{ x: 0, y: 0, w: px.width, h: px.height }],
+    descartadas: ReadonlySet<string> = new Set(),
   ): Reconocimiento {
+    const catalogo = descartadas.size
+      ? new Map([...this.huellas].filter(([id]) => !descartadas.has(id)))
+      : this.huellas;
     const ilustracion = (z: Encuadre) => {
       const ilus = regionIlustracion(z.w, z.h);
       return { ...ilus, x: z.x + ilus.x, y: z.y + ilus.y };
@@ -110,15 +115,13 @@ export class ReconocimientoService {
         : encuadres
             .map((z) => ({
               z,
-              d:
-                masParecidas([calcularHuella(px, ilustracion(z))], this.huellas, 1)[0]?.distancia ??
-                1,
+              d: masParecidas([calcularHuella(px, ilustracion(z))], catalogo, 1)[0]?.distancia ?? 1,
             }))
             .sort((a, b) => a.d - b.d)
             .slice(0, 2)
             .map((m) => m.z);
     const variantes = mejores.flatMap((z) => huellasConMargen(px, ilustracion(z)));
-    const candidatas = masParecidas(variantes, this.huellas, 8);
+    const candidatas = masParecidas(variantes, catalogo, 8);
     if (!candidatas.length) return { candidatas, segura: false };
     // Las gemelas de la primera no cuentan para el margen: son la misma imagen.
     const primera = this.huellas.get(candidatas[0].cardId)!;

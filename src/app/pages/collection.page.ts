@@ -21,6 +21,7 @@ import { ConfidenceBadgeComponent } from '../ui/confidence-badge.component';
 import { EurPipe, ThumbPipe } from '../ui/pipes';
 import { CardTileComponent } from '../ui/card-tile.component';
 import { LoadMoreComponent } from '../ui/load-more.component';
+import { VolverArribaComponent } from '../ui/volver-arriba.component';
 import { QtyControlComponent } from '../ui/qty-control.component';
 
 type Orden = 'valor' | 'nombre' | 'set';
@@ -73,6 +74,7 @@ interface Fila {
     ConfidenceBadgeComponent,
     CardTileComponent,
     LoadMoreComponent,
+    VolverArribaComponent,
   ],
   template: `
     <main class="pagina">
@@ -342,6 +344,7 @@ interface Fila {
         </p>
       }
     </main>
+    <app-volver-arriba />
   `,
   styles: `
     .pagina {

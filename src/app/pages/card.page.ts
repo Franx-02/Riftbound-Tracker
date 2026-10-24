@@ -13,6 +13,7 @@ import { ConfidenceBadgeComponent } from '../ui/confidence-badge.component';
 import { EurPipe, ThumbPipe } from '../ui/pipes';
 import { QtyControlComponent } from '../ui/qty-control.component';
 import { RulesTextComponent } from '../ui/rules-text.component';
+import { GraficaPrecioComponent, PuntoPrecio } from '../ui/grafica-precio.component';
 
 @Component({
   selector: 'app-card-page',
@@ -24,6 +25,7 @@ import { RulesTextComponent } from '../ui/rules-text.component';
     QtyControlComponent,
     ConfidenceBadgeComponent,
     RulesTextComponent,
+    GraficaPrecioComponent,
   ],
   template: `
     <main class="pagina">
@@ -117,7 +119,7 @@ import { RulesTextComponent } from '../ui/rules-text.component';
                 </button>
               }
               @if (wish.error()) {
-                <p class="error" role="alert">No se pudo guardar: {{ wish.error() }}</p>
+                <p class="error" role="alert">{{ wish.error() }}</p>
               }
             </section>
 
@@ -157,6 +159,31 @@ import { RulesTextComponent } from '../ui/rules-text.component';
                     · actualizado {{ d.updatedAt | date: 'dd/MM/yyyy HH:mm' }}
                   }
                 </p>
+                <a
+                  class="cardmarket"
+                  [href]="urlCardmarket()"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Ver en Cardmarket ↗
+                </a>
+
+                <div class="historial">
+                  <h3>Evolución del precio</h3>
+                  @if (historialError()) {
+                    <p class="muted">No se pudo cargar el historial: {{ historialError() }}</p>
+                  } @else if (historial(); as h) {
+                    @if (h.length) {
+                      <app-grafica-precio [puntos]="h" />
+                    } @else {
+                      <p class="muted">
+                        Aún no hay historial de esta carta: se guarda el precio una vez al día.
+                      </p>
+                    }
+                  } @else {
+                    <p class="muted">Cargando historial…</p>
+                  }
+                </div>
               }
               <p class="motivo">{{ p.motivo }}</p>
 
@@ -354,6 +381,21 @@ import { RulesTextComponent } from '../ui/rules-text.component';
       font-size: 0.8rem;
       margin: 8px 0 0;
     }
+    .cardmarket {
+      display: inline-block;
+      margin-top: 8px;
+      font-weight: 600;
+    }
+    .historial {
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 8px;
+    }
+    .historial h3 {
+      margin: 0;
+      font-size: 0.95rem;
+    }
     .motivo {
       font-size: 0.85rem;
       color: var(--muted);
@@ -498,6 +540,37 @@ export class CardPage {
     );
   });
   protected readonly corrigiendo = signal(false);
+
+  /**
+   * Los JSON públicos de Cardmarket no traen la URL de cada producto, así que se abre
+   * su buscador de Riftbound con el nombre (sin "(Alternate Art)" y similares).
+   */
+  protected readonly urlCardmarket = computed(() => {
+    const nombre = (this.card()?.name ?? '').replace(/\s*\([^)]*\)\s*$/, '');
+    return `https://www.cardmarket.com/es/Riftbound/Products/Search?searchString=${encodeURIComponent(nombre)}`;
+  });
+
+  /** Historial diario del producto (netlify/functions/historial.mts). null = cargando. */
+  protected readonly historial = signal<PuntoPrecio[] | null>(null);
+  protected readonly historialError = signal<string | null>(null);
+  private readonly cargarHistorial = effect((onCleanup) => {
+    const id = this.pricing().idProduct;
+    this.historial.set(null);
+    this.historialError.set(null);
+    if (!id) return;
+    const ctrl = new AbortController();
+    onCleanup(() => ctrl.abort());
+    fetch(`/api/historial?id=${id}`, { signal: ctrl.signal })
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const { puntos } = (await r.json()) as { puntos: PuntoPrecio[] };
+        this.historial.set(puntos);
+      })
+      .catch((e: unknown) => {
+        if (ctrl.signal.aborted) return;
+        this.historialError.set(e instanceof Error ? e.message : String(e));
+      });
+  });
 
   constructor() {
     void this.wish.load();

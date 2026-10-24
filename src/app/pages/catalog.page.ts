@@ -4,6 +4,7 @@ import { CollectionService } from '../core/collection.service';
 import { TraduccionService } from '../core/traduccion.service';
 import { CardTileComponent } from '../ui/card-tile.component';
 import { LoadMoreComponent } from '../ui/load-more.component';
+import { VolverArribaComponent } from '../ui/volver-arriba.component';
 
 const POR_PAGINA = 60;
 
@@ -34,7 +35,7 @@ export class CatalogFiltersState {
 
 @Component({
   selector: 'app-catalog-page',
-  imports: [CardTileComponent, LoadMoreComponent],
+  imports: [CardTileComponent, LoadMoreComponent, VolverArribaComponent],
   template: `
     <main class="pagina">
       <section class="filtros" aria-label="Filtros">
@@ -108,6 +109,7 @@ export class CatalogFiltersState {
         <p class="error" role="alert">No se pudo guardar: {{ col.error() }}</p>
       }
     </main>
+    <app-volver-arriba />
   `,
   styles: `
     .pagina {

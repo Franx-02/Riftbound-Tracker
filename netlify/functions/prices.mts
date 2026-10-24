@@ -1,7 +1,8 @@
 import type { Config } from '@netlify/functions';
 
 // Price guide público de Cardmarket para Riftbound (juego 22). Se regenera una vez al día.
-const PRICE_GUIDE_URL = 'https://downloads.s3.cardmarket.com/productCatalog/priceGuide/price_guide_22.json';
+const PRICE_GUIDE_URL =
+  'https://downloads.s3.cardmarket.com/productCatalog/priceGuide/price_guide_22.json';
 
 interface RawPrice {
   idProduct: number;

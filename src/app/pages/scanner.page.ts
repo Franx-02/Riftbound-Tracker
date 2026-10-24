@@ -3,13 +3,14 @@ import {
   ElementRef,
   OnDestroy,
   computed,
+  effect,
   inject,
   signal,
   viewChild,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CatalogCard, CatalogService } from '../core/catalog.service';
-import { CollectionService } from '../core/collection.service';
+import { CollectionService, Finish } from '../core/collection.service';
 import { PROPORCION_CARTA, Pixeles } from '../core/huella';
 import {
   Encuadre,
@@ -18,7 +19,8 @@ import {
 } from '../core/reconocimiento.service';
 import { cartasDelCodigo, parseCodigos } from '../core/scanner';
 import { TraduccionService } from '../core/traduccion.service';
-import { ThumbPipe } from '../ui/pipes';
+import { ValuationService } from '../core/valuation.service';
+import { EurPipe, ThumbPipe } from '../ui/pipes';
 import { QtyControlComponent } from '../ui/qty-control.component';
 
 /** Pausa entre lecturas de la cámara. Reconocer un fotograma tarda unos 20-60 ms. */
@@ -27,6 +29,14 @@ const PAUSA_MS = 350;
 const ANCHO_MUESTRA = 240;
 /** Margen alrededor de la guía que también se captura, en fracción de su tamaño. */
 const MARGEN = 0.2;
+
+/** La ventana de "carta encontrada": las candidatas y cuál se está enseñando. */
+interface Encontrada {
+  cartas: CatalogCard[];
+  elegida: number;
+  nota: string | null;
+  origen: 'camara' | 'foto';
+}
 
 interface Resultado {
   /** Para el `track` y para no repetir el mismo resultado arriba. */
@@ -44,7 +54,7 @@ interface Resultado {
  */
 @Component({
   selector: 'app-scanner-page',
-  imports: [RouterLink, ThumbPipe, QtyControlComponent],
+  imports: [RouterLink, ThumbPipe, EurPipe, QtyControlComponent],
   template: `
     <main class="pagina">
       <header>
@@ -58,7 +68,10 @@ interface Resultado {
       <section class="camara" [class.activa]="camaraActiva()">
         <video #video playsinline muted [hidden]="!camaraActiva()"></video>
         @if (camaraActiva()) {
-          <div #guia class="guia" aria-hidden="true"></div>
+          <div #guia class="guia" aria-hidden="true">
+            <span class="esquina ai"></span><span class="esquina ad"></span>
+            <span class="esquina bi"></span><span class="esquina bd"></span>
+          </div>
           <p class="estado-camara" aria-live="polite">
             @if (!reco.listo()) {
               Preparando el reconocimiento…
@@ -95,6 +108,50 @@ interface Resultado {
           />
         </label>
       </div>
+
+      <section class="escaneos" aria-labelledby="titulo-escaneos">
+        <div class="cabecera-escaneos">
+          <span class="pastilla"
+            >{{ anadidas().length }} {{ anadidas().length === 1 ? 'carta' : 'cartas' }}</span
+          >
+          <h2 id="titulo-escaneos">Tus escaneos</h2>
+          <span class="pastilla">{{ valorEscaneos() | eur: '—' }}</span>
+        </div>
+        @if (!anadidas().length) {
+          <p class="muted vacio-escaneos">Lo que escanees saldrá aquí.</p>
+        } @else {
+          <ul class="lista-escaneos">
+            @for (a of anadidas(); track a.clave) {
+              <li>
+                <a [routerLink]="['/carta', a.card.cardId]">
+                  <img
+                    [src]="a.card.imgUrl | thumb: 120"
+                    [alt]="a.card.name"
+                    width="40"
+                    height="56"
+                    loading="lazy"
+                  />
+                </a>
+                <div class="datos">
+                  <a [routerLink]="['/carta', a.card.cardId]" class="nombre">{{ a.card.name }}</a>
+                  <span class="muted">
+                    {{ a.card.cardId }} · {{ a.finish === 'foil' ? 'Foil' : 'Normal' }}
+                  </span>
+                </div>
+                <span class="precio">{{ precio(a.card.cardId, a.finish) | eur: '—' }}</span>
+                <button
+                  type="button"
+                  class="deshacer"
+                  [attr.aria-label]="'Quitar la copia añadida de ' + a.card.name"
+                  (click)="deshacer(a.clave)"
+                >
+                  ×
+                </button>
+              </li>
+            }
+          </ul>
+        }
+      </section>
 
       <form class="manual" (submit)="$event.preventDefault(); buscarManual()">
         <label for="codigo-manual">O escribe el código de abajo a la izquierda</label>
@@ -164,6 +221,60 @@ interface Resultado {
         <p class="error" role="alert">No se pudo guardar: {{ col.error() }}</p>
       }
     </main>
+
+    @if (encontrada(); as e) {
+      @let c = e.cartas[e.elegida];
+      <div class="fondo-modal" (click)="cerrarVentana()"></div>
+      <div
+        class="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="titulo-encontrada"
+        (keydown.escape)="cerrarVentana()"
+      >
+        <button type="button" class="cerrar" aria-label="Cerrar" (click)="cerrarVentana()">
+          ×
+        </button>
+        @if (e.nota) {
+          <p class="muted nota-modal">{{ e.nota }}</p>
+        }
+        <img class="grande" [src]="c.imgUrl | thumb: 400" [alt]="c.name" width="200" height="279" />
+        <h2 id="titulo-encontrada">{{ c.name }}</h2>
+        <p class="muted">{{ c.cardId }} · {{ c.setName }} · {{ t.etiqueta(c.rarity) }}</p>
+        @if (col.editable()) {
+          <p class="tienes">
+            Tienes {{ col.qty(c.cardId).normal }} normal · {{ col.qty(c.cardId).foil }} foil
+          </p>
+          <div class="anadir">
+            <button #primerBoton type="button" (click)="anadir('normal')">+ Normal</button>
+            <button type="button" class="foil" (click)="anadir('foil')">+ Foil</button>
+          </div>
+        } @else {
+          <p class="muted">Cargando tu colección…</p>
+        }
+        <button type="button" class="secondary no-es" (click)="noEsEsta()">
+          No es esta, volver a probar
+        </button>
+        @if (e.cartas.length > 1) {
+          <p class="muted otras-titulo">¿O es una de estas?</p>
+          <div class="otras">
+            @for (o of e.cartas; track o.cardId; let i = $index) {
+              @if (i !== e.elegida) {
+                <button
+                  type="button"
+                  class="otra"
+                  [attr.aria-label]="o.name + ' (' + o.cardId + ')'"
+                  (click)="elegir(i)"
+                >
+                  <img [src]="o.imgUrl | thumb: 120" [alt]="" width="60" height="84" />
+                  <span>{{ o.cardId }}</span>
+                </button>
+              }
+            }
+          </div>
+        }
+      </div>
+    }
   `,
   styles: `
     .pagina {
@@ -206,9 +317,106 @@ interface Resultado {
       height: 82%;
       aspect-ratio: 744 / 1039;
       transform: translateX(-50%);
-      border: 2px solid var(--accent);
       border-radius: 14px;
       box-shadow: 0 0 0 9999px rgb(0 0 0 / 45%);
+    }
+    /* Solo las esquinas, como un visor. */
+    .esquina {
+      position: absolute;
+      width: 13%;
+      aspect-ratio: 1;
+      border: 4px solid #fff;
+    }
+    .esquina.ai {
+      top: -2px;
+      left: -2px;
+      border-right: 0;
+      border-bottom: 0;
+      border-top-left-radius: 16px;
+    }
+    .esquina.ad {
+      top: -2px;
+      right: -2px;
+      border-left: 0;
+      border-bottom: 0;
+      border-top-right-radius: 16px;
+    }
+    .esquina.bi {
+      bottom: -2px;
+      left: -2px;
+      border-right: 0;
+      border-top: 0;
+      border-bottom-left-radius: 16px;
+    }
+    .esquina.bd {
+      bottom: -2px;
+      right: -2px;
+      border-left: 0;
+      border-top: 0;
+      border-bottom-right-radius: 16px;
+    }
+    .escaneos {
+      padding: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+    }
+    .cabecera-escaneos {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .cabecera-escaneos h2 {
+      margin: 0;
+      font-size: 1rem;
+    }
+    .pastilla {
+      padding: 6px 12px;
+      border-radius: 10px;
+      background: var(--surface-2);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .vacio-escaneos {
+      margin: 16px 0 8px;
+      text-align: center;
+    }
+    .lista-escaneos {
+      list-style: none;
+      margin: 12px 0 0;
+      padding: 0;
+      display: grid;
+      gap: 8px;
+    }
+    .lista-escaneos li {
+      display: grid;
+      grid-template-columns: 40px minmax(0, 1fr) auto auto;
+      gap: 10px;
+      align-items: center;
+    }
+    .lista-escaneos img {
+      display: block;
+      width: 40px;
+      height: auto;
+      border-radius: 4px;
+    }
+    .lista-escaneos .nombre {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .precio {
+      font-variant-numeric: tabular-nums;
+      font-size: 0.9rem;
+    }
+    .deshacer {
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      background: transparent;
+      color: var(--muted);
+      font-size: 1.2rem;
     }
     .estado-camara {
       position: absolute;
@@ -301,6 +509,104 @@ interface Resultado {
     .datos .muted {
       font-size: 0.8rem;
     }
+    .fondo-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      background: rgb(0 0 0 / 60%);
+    }
+    .modal {
+      position: fixed;
+      z-index: 31;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: min(380px, calc(100vw - 24px));
+      max-height: calc(100dvh - 24px);
+      overflow-y: auto;
+      display: grid;
+      justify-items: center;
+      gap: 8px;
+      padding: 20px 16px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      text-align: center;
+    }
+    .modal h2 {
+      margin: 0;
+      font-size: 1.15rem;
+    }
+    .modal p {
+      margin: 0;
+    }
+    .cerrar {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      font-size: 1.4rem;
+      line-height: 1;
+      background: transparent;
+      color: var(--muted);
+    }
+    .nota-modal {
+      font-size: 0.85rem;
+      padding: 0 24px;
+    }
+    .grande {
+      width: min(200px, 50vw);
+      height: auto;
+      border-radius: 10px;
+    }
+    .tienes {
+      font-size: 0.9rem;
+    }
+    .anadir {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      width: 100%;
+    }
+    .anadir button {
+      padding: 12px;
+      font-size: 1rem;
+    }
+    .anadir .foil {
+      background: linear-gradient(135deg, #c9a13b, #8fd3e8, #c58fe0);
+      color: #15120a;
+    }
+    .no-es {
+      width: 100%;
+    }
+    .otras-titulo {
+      font-size: 0.85rem;
+      margin-top: 4px !important;
+    }
+    .otras {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+    }
+    .otra {
+      display: grid;
+      justify-items: center;
+      gap: 2px;
+      padding: 4px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--muted);
+      font-size: 0.7rem;
+    }
+    .otra img {
+      width: 60px;
+      height: auto;
+      border-radius: 4px;
+    }
   `,
 })
 export class ScannerPage implements OnDestroy {
@@ -308,6 +614,7 @@ export class ScannerPage implements OnDestroy {
   protected readonly col = inject(CollectionService);
   protected readonly t = inject(TraduccionService);
   private readonly catalog = inject(CatalogService);
+  private readonly valuation = inject(ValuationService);
 
   private readonly video = viewChild.required<ElementRef<HTMLVideoElement>>('video');
   private readonly guia = viewChild<ElementRef<HTMLDivElement>>('guia');
@@ -321,6 +628,20 @@ export class ScannerPage implements OnDestroy {
   protected readonly resultados = signal<Resultado[]>([]);
   protected readonly error = signal<string | null>(null);
   protected readonly aviso = signal<string | null>(null);
+  protected readonly encontrada = signal<Encontrada | null>(null);
+  protected readonly anadidas = signal<{ clave: number; card: CatalogCard; finish: Finish }[]>([]);
+  private readonly primerBoton = viewChild<ElementRef<HTMLButtonElement>>('primerBoton');
+
+  /** Cartas que el usuario ha dicho que no son; se olvidan al pasar a otra carta. */
+  private descartadas = new Set<string>();
+  /**
+   * La última carta añadida desde la cámara: mientras siga delante, no se vuelve a
+   * proponer (si no, la ventana saltaría otra vez nada más cerrarla).
+   */
+  private recienAnadida: string | null = null;
+  /** La última foto, para "no es esta" (se vuelve a buscar en ella sin la descartada). */
+  private ultimaFoto: { px: Pixeles; encuadres: Encuadre[] } | null = null;
+  private contador = 0;
 
   private stream: MediaStream | null = null;
   private temporizador: ReturnType<typeof setTimeout> | null = null;
@@ -333,6 +654,10 @@ export class ScannerPage implements OnDestroy {
   constructor() {
     void this.col.loadMine();
     void this.reco.load();
+    // Al abrir la ventana, el foco va a "+ Normal": se puede añadir con Intro.
+    effect(() => {
+      if (this.encontrada()) this.primerBoton()?.nativeElement.focus();
+    });
   }
 
   ngOnDestroy(): void {
@@ -372,6 +697,8 @@ export class ScannerPage implements OnDestroy {
   }
 
   protected cerrarCamara(): void {
+    this.recienAnadida = null;
+    this.descartadas = new Set();
     if (this.temporizador) clearTimeout(this.temporizador);
     this.temporizador = null;
     this.stream?.getTracks().forEach((t) => t.stop());
@@ -382,7 +709,6 @@ export class ScannerPage implements OnDestroy {
 
   protected seguir(): void {
     this.pausado.set(false);
-    this.aviso.set(null);
     this.anterior = null;
     this.programar(0);
   }
@@ -400,12 +726,21 @@ export class ScannerPage implements OnDestroy {
     if (!this.camaraActiva() || this.pausado()) return;
     const captura = this.reco.listo() ? this.recuadro() : null;
     if (captura) {
-      const r = this.reco.reconocer(captura.px, encuadresAlrededor(captura.guia));
+      const r = this.reco.reconocer(captura.px, encuadresAlrededor(captura.guia), this.descartadas);
       const primera = r.candidatas[0]?.cardId ?? null;
+      if (r.segura && primera === this.recienAnadida) {
+        // Sigue delante la que se acaba de añadir: se espera a que cambien de carta.
+        this.provisional.set(null);
+        this.anterior = null;
+        this.programar(PAUSA_MS);
+        return;
+      }
+      if (r.segura) this.recienAnadida = null;
       if (r.segura && primera === this.anterior) {
         this.mostrar(
           r.candidatas.map((c) => c.cardId),
           null,
+          'camara',
         );
         this.pausado.set(true);
         this.provisional.set(null);
@@ -422,10 +757,11 @@ export class ScannerPage implements OnDestroy {
   protected usarFotograma(): void {
     const captura = this.reco.listo() ? this.recuadro() : null;
     if (!captura) return;
-    const r = this.reco.reconocer(captura.px, encuadresAlrededor(captura.guia));
+    const r = this.reco.reconocer(captura.px, encuadresAlrededor(captura.guia), this.descartadas);
     this.mostrar(
       r.candidatas.map((c) => c.cardId),
-      r.segura ? null : 'No está claro: la buena puede ser cualquiera de estas.',
+      r.segura ? null : 'No está claro: si no es esta, mira las de abajo.',
+      'camara',
     );
     this.pausado.set(true);
     this.provisional.set(null);
@@ -487,14 +823,10 @@ export class ScannerPage implements OnDestroy {
       const ctx = this.lienzo.getContext('2d', { willReadFrequently: true })!;
       ctx.drawImage(bitmap, 0, 0, W, H);
       bitmap.close();
-      const r = this.reco.reconocer(ctx.getImageData(0, 0, W, H), encuadresDeFoto(W, H));
+      this.descartadas = new Set();
+      this.ultimaFoto = { px: ctx.getImageData(0, 0, W, H), encuadres: encuadresDeFoto(W, H) };
       this.aviso.set(null);
-      this.mostrar(
-        r.candidatas.map((c) => c.cardId),
-        r.segura
-          ? null
-          : 'No está claro: puede que la carta no llene la foto. La buena puede ser cualquiera de estas.',
-      );
+      this.buscarEnFoto();
     } catch (e) {
       this.aviso.set(null);
       this.error.set(`No se pudo leer la foto: ${e instanceof Error ? e.message : String(e)}`);
@@ -527,19 +859,90 @@ export class ScannerPage implements OnDestroy {
     this.manual.set('');
   }
 
-  /** Las candidatas del reconocimiento, arriba de los resultados. */
-  private mostrar(cardIds: string[], nota: string | null): void {
+  private buscarEnFoto(): void {
+    if (!this.ultimaFoto) return;
+    const { px, encuadres } = this.ultimaFoto;
+    const r = this.reco.reconocer(px, encuadres, this.descartadas);
+    this.mostrar(
+      r.candidatas.map((c) => c.cardId),
+      r.segura
+        ? null
+        : 'No está claro (quizá la carta no llena la foto): si no es esta, mira las de abajo.',
+      'foto',
+    );
+  }
+
+  /** Abre la ventana con las candidatas del reconocimiento. */
+  private mostrar(cardIds: string[], nota: string | null, origen: Encontrada['origen']): void {
     const cartas = cardIds.map((id) => this.catalog.card(id)).filter((c): c is CatalogCard => !!c);
     if (!cartas.length) {
       this.aviso.set('No se ha reconocido ninguna carta.');
       return;
     }
-    this.anadirResultado({
-      clave: `foto-${Date.now()}`,
-      titulo: `Parece ${cartas[0].name}`,
-      nota: nota ?? 'Si no es la marcada, elige entre las siguientes.',
-      cartas,
-    });
+    this.aviso.set(null);
+    this.encontrada.set({ cartas, elegida: 0, nota, origen });
+  }
+
+  /** Tendencia de Cardmarket del acabado añadido; null si no hay precio. */
+  protected precio(cardId: string, finish: Finish): number | null {
+    return this.valuation.pricing(cardId)[finish];
+  }
+
+  protected readonly valorEscaneos = computed(() => {
+    let total = 0;
+    let alguno = false;
+    for (const a of this.anadidas()) {
+      const p = this.precio(a.card.cardId, a.finish);
+      if (p === null) continue;
+      total += p;
+      alguno = true;
+    }
+    return alguno || !this.anadidas().length ? total : null;
+  });
+
+  /** Quita de la colección la copia que se añadió por error y la borra de la lista. */
+  protected deshacer(clave: number): void {
+    const a = this.anadidas().find((x) => x.clave === clave);
+    if (!a) return;
+    this.col.adjust(a.card.cardId, a.finish, -1);
+    this.anadidas.set(this.anadidas().filter((x) => x.clave !== clave));
+  }
+
+  protected elegir(i: number): void {
+    const e = this.encontrada();
+    if (e) this.encontrada.set({ ...e, elegida: i });
+  }
+
+  /** Suma una copia de la carta enseñada y, con la cámara, sigue buscando la siguiente. */
+  protected anadir(finish: Finish): void {
+    const e = this.encontrada();
+    if (!e) return;
+    const card = e.cartas[e.elegida];
+    this.col.adjust(card.cardId, finish, 1);
+    this.anadidas.set([{ clave: ++this.contador, card, finish }, ...this.anadidas()].slice(0, 50));
+    this.aviso.set(`Añadida ${card.name} (${finish === 'foil' ? 'foil' : 'normal'}).`);
+    this.encontrada.set(null);
+    this.descartadas = new Set();
+    if (e.origen === 'camara' && this.camaraActiva()) {
+      this.recienAnadida = card.cardId;
+      this.seguir();
+    }
+  }
+
+  /** La enseñada no es: se descarta y se vuelve a buscar sin ella. */
+  protected noEsEsta(): void {
+    const e = this.encontrada();
+    if (!e) return;
+    this.descartadas.add(e.cartas[e.elegida].cardId);
+    this.encontrada.set(null);
+    if (e.origen === 'foto') this.buscarEnFoto();
+    else if (this.camaraActiva()) this.seguir();
+  }
+
+  /** Cierra sin añadir. La cámara queda en pausa hasta "Escanear otra". */
+  protected cerrarVentana(): void {
+    this.encontrada.set(null);
+    this.descartadas = new Set();
   }
 
   private anadirResultado(r: Resultado): void {

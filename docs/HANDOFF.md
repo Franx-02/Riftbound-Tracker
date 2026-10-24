@@ -428,6 +428,29 @@ Tesseract). Se quitó el OCR y la dependencia. Lo que hay ahora:
   **Falta probarlo con cartas físicas en el móvil** (reflejos de las foils, luz real, perspectiva).
 - Las huellas son de la imagen oficial: una carta con otra ilustración que no esté en el
   catálogo (o los campos de batalla, que son apaisados) se reconocerá peor.
+- **Ventana al encontrar una carta** (25/10/2026, a petición del usuario): imagen grande,
+  "+ Normal" / "+ Foil", "No es esta, volver a probar" (la descarta y sigue buscando sin ella; en
+  una foto, enseña la siguiente) y las otras parecidas para elegir. Tras añadir, la cámara sigue
+  sola y no vuelve a proponer la misma carta mientras siga delante. Recuadro de esquinas y panel
+  "Tus escaneos" con cuántas cartas y cuánto valen, y una × para deshacer cada una.
+
+### Extras del 25/10/2026
+- **Volver arriba**: `src/app/ui/volver-arriba.component.ts`, botón flotante en Mi colección y
+  Catálogo a partir de 800 px de scroll.
+- **Enlace a Cardmarket** en la ficha. Los JSON públicos no traen la URL del producto, así que
+  abre el buscador de Riftbound con el nombre (`/es/Riftbound/Products/Search?searchString=…`).
+  **Sin comprobar** que esa URL funcione (no se navega por cardmarket.com): que lo pruebe el usuario.
+- **Historial de precios y gráfica**:
+  - `netlify/functions/guardar-precios.mts`: función **programada** (todos los días a las 9:00
+    UTC) que guarda la tendencia normal y foil de cada producto en **Netlify Blobs** (gratis), en 64
+    trozos por `idProduct % 64` (`netlify/lib/historial.mts`). Solo corre en el despliegue
+    publicado; en local: `npx netlify functions:invoke guardar-precios` con `netlify dev` en marcha.
+  - `netlify/functions/historial.mts`: `/api/historial?id=…` devuelve los puntos de un producto.
+  - `src/app/ui/grafica-precio.component.ts`: SVG con normal (`#b08a24`) y foil (`#3b8fe0`),
+    colores validados con el script de la skill de dataviz para el fondo oscuro; leyenda, rangos
+    1M/3M/1A/Todo, cruceta con tooltip y tabla accesible.
+  - **El historial empieza el día del primer despliegue**: Cardmarket no publica precios
+    antiguos. Los primeros días la gráfica tendrá uno o pocos puntos (lo explica en pantalla).
 
 ## 9. Riesgos y avisos
 

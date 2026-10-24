@@ -118,7 +118,7 @@ export class WishlistService {
       this.error.set(null);
     } catch (e) {
       this.carga = null;
-      this.error.set(e instanceof Error ? e.message : String(e));
+      this.error.set(`No se pudo cargar tu lista: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
       this.loading.set(false);
     }
@@ -172,7 +172,7 @@ export class WishlistService {
       .then(() => this.error.set(null))
       .catch((e: unknown) => {
         this.aplicar(uid, id, anterior);
-        this.error.set(e instanceof Error ? e.message : String(e));
+        this.error.set(`No se pudo guardar: ${e instanceof Error ? e.message : String(e)}`);
       });
     this.cola.set(id, tarea);
   }

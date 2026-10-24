@@ -38,7 +38,7 @@ interface Fila {
       </header>
 
       @if (wish.error()) {
-        <p class="error" role="alert">No se pudo guardar: {{ wish.error() }}</p>
+        <p class="error" role="alert">{{ wish.error() }}</p>
       }
 
       <section class="resumen">

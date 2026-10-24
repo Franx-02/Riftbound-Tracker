@@ -16,6 +16,7 @@
     "allowImportingTsExtensions": true
   },
   "include": [
-    "tools/**/*.mts"
+    "tools/**/*.mts",
+    "netlify/**/*.mts"
   ]
 }
