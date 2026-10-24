@@ -113,3 +113,82 @@ cuando funcionan como keyword ("Spend my buff", "Disempower a unit"): `buff`, `E
 
 Se traduce libre, buscando que suene natural y conservando el tono del personaje, no palabra por
 palabra. Las atribuciones ("—Annie") se dejan igual.
+
+## Textos recordatorio fijos
+
+Las frases entre paréntesis que explican una keyword se repiten en cientos de cartas (59 frases,
+711 apariciones). Se traducen siempre igual. `N` es un número y `:R:`/`:E:` el símbolo de runa o de
+energía que lleve la carta.
+
+`Empower`, `Empowered` y `Disempower` se quedan en inglés (decisión 1). "Empower me" se traduce
+por su efecto: "me vuelvo Empowered".
+
+| Inglés | Español |
+|---|---|
+| Play on your turn or in showdowns. | Juega en tu turno o en enfrentamientos. |
+| Play any time, even before spells and abilities resolve. | Juega en cualquier momento, incluso antes de que se resuelvan hechizos y habilidades. |
+| …, including to a battlefield you control. | …, también en un campo de batalla que controles. |
+| Hide now for :R: to react with later for :E:. | Ocúltala ahora por :R: para reaccionar con ella más tarde por :E:. |
+| You may pay :E::R: as an additional cost to have me enter ready. | Puedes pagar :E::R: como coste adicional para entrar preparada. |
+| I can move from battlefield to battlefield. | Puedo moverme de un campo de batalla a otro. |
+| It can move from battlefield to battlefield. | Puede moverse de un campo de batalla a otro. |
+| Opponents must pay :R: to choose me with a spell or ability. | Los rivales deben pagar :R: para elegirme con un hechizo o una habilidad. |
+| +N :rb_might: while I'm an attacker / a defender. | +N :rb_might: mientras sea atacante / defensora. |
+| +N :rb_might: while it's an attacker. | +N :rb_might: mientras sea atacante. |
+| +N :rb_might: while they're attackers / defenders. | +N :rb_might: mientras sean atacantes / defensoras. |
+| I must be assigned combat damage first / last. | Se me debe asignar el daño de combate en primer / último lugar. |
+| It must be assigned combat damage first. | Se le debe asignar el daño de combate en primer lugar. |
+| Abilities that add resources can't be reacted to. | No se puede reaccionar a las habilidades que añaden recursos. |
+| It doesn't deal combat damage this turn. | No inflige daño de combate este turno. |
+| A stunned unit doesn't deal combat damage this turn. | Una unidad aturdida no inflige daño de combate este turno. |
+| You may pay the additional cost to repeat this spell's effect. | Puedes pagar el coste adicional para repetir el efecto de este hechizo. |
+| When I die, get the effect. | Cuando muera, obtén el efecto. |
+| Play this only to a battlefield. When an opponent holds here, kill this. | Juega esto solo en un campo de batalla. Cuando un rival mantenga aquí, mata esto. |
+| You may play me as a [Reaction] to a battlefield where you have units. | Puedes jugarme como [Reaction] en un campo de batalla donde tengas unidades. |
+| You may play this from your trash for its Flow cost. Then banish it. | Puedes jugar esto desde tu descarte por su coste de Flow. Después, destiérralo. |
+| :R:: Attach this to a unit you control. | :R:: Acopla esto a una unidad que controles. |
+| Pay the cost: Attach this to a unit you control. | Paga el coste: acopla esto a una unidad que controles. |
+| When I conquer or hold, gain N XP. | Cuando conquiste o mantenga, gana N XP. |
+| While you have N+ XP, get the effect. | Mientras tengas N+ XP, obtén el efecto. |
+| A unit is Mighty while it has N+ :rb_might:. | Una unidad es Mighty mientras tenga N+ :rb_might:. |
+| :E:: Empower me. Use only if not Empowered. | :E:: me vuelvo Empowered. Úsalo solo si no lo estoy. |
+| Pay the cost: Empower me. Use only if not Empowered. | Paga el coste: me vuelvo Empowered. Úsalo solo si no lo estoy. |
+| I become Empowered if I'm not already. | Me vuelvo Empowered si no lo estoy ya. |
+| If it doesn't have a buff, it gets a +N :rb_might: buff. | Si no tiene un buff, obtiene un buff de +N :rb_might:. |
+| If I don't have a buff, I get a +N :rb_might: buff. | Si no tengo un buff, obtengo un buff de +N :rb_might:. |
+| Give it a +N :rb_might: buff if it doesn't have one. | Dale un buff de +N :rb_might: si no tiene uno. |
+| Kill it at the start of its controller's Beginning Phase, before scoring. | Mátala al comienzo de la fase inicial de su controlador, antes de anotar. |
+| Get the effect if you've played another card this turn. | Obtén el efecto si has jugado otra carta este turno. |
+| Send it to base. This isn't a move. | Envíala a la base. Esto no es un movimiento. |
+| Look at the top card of your Main Deck. You may recycle it. | Mira la primera carta de tu mazo principal. Puedes reciclarla. |
+| Look at the top N cards of your Main Deck. Recycle any of them and put the rest back in any order. | Mira las N primeras cartas de tu mazo principal. Recicla las que quieras y devuelve el resto en cualquier orden. |
+| Put the top N cards of your Main Deck into your trash. | Pon las N primeras cartas de tu mazo principal en tu descarte. |
+| You must still pay its Power cost. | Aún debes pagar su coste de Power. |
+| Each instance of damage the spell deals is increased by N. | Cada daño que inflija el hechizo aumenta en N. |
+
+## Añadidos al traducir
+
+| Inglés | Español |
+|---|---|
+| Awaken Phase · Beginning Phase · Main Phase · Ending Phase | fase de despertar · fase inicial · fase principal · fase final |
+| heal | curar |
+| win a combat | ganar un combate |
+| face down | boca abajo |
+| the board / leaves the board | el tablero / sale del tablero |
+| occupied (battlefield) | ocupado |
+| split among | repartido entre |
+| attached / detached Equipment | equipamiento acoplado / desacoplado |
+| empower X / disempower X | volver Empowered a X / quitar Empowered a X |
+| buff me / buff a unit | dame un buff / da un buff a una unidad |
+| They [Burn N]. | Ese jugador sufre [Burn N]. |
+| becomes [Mighty] | se vuelve [Mighty] |
+| ready (verbo, "when I become ready") | prepararse ("cuando me prepare") |
+
+**Keywords que hacen de verbo**: cuando una keyword entre corchetes es la acción de la frase, se
+antepone "aplica": `[Stun] a unit.` → `Aplica [Stun] a una unidad.`; `[Buff] a unit.` → `Aplica [Buff]
+a una unidad.`. Si es algo que se da, "da": `Give a unit [Assault 3]` → `Da [Assault 3] a una unidad`.
+
+**Keywords de acción sin objeto** (`[Predict]`, `[Predict 2]`): "haz" — `When you play me, [Predict 2].`
+→ `Cuando me juegues, haz [Predict 2].` Si la frase inglesa repite la keyword sin corchetes ("If you
+showed off"), se traduce por "si lo hiciste": añadir otro corchete descuadraría el recuento del
+validador y no aporta nada.

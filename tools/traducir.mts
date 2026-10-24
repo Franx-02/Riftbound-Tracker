@@ -81,10 +81,16 @@ function pendientes(): void {
   const set = argumento('set')?.toUpperCase();
   const max = Number(argumento('max') ?? Infinity);
   const tipo = argumento('tipo') as Tipo | undefined;
+  // --coleccion: primero los textos de las cartas de tools/collection1.csv, que son las que
+  // más se miran. Dentro de cada grupo se mantiene el orden del catálogo.
+  const deLaColeccion = process.argv.includes('--coleccion') ? idsDeLaColeccion() : null;
+  const prioridad = (t: Texto) => (deLaColeccion && t.cartas.some((id) => deLaColeccion.has(id)) ? 0 : 1);
   const lista = [...todos.values()]
     .filter((t) => !hechas.has(t.clave))
     .filter((t) => !tipo || t.tipo === tipo)
     .filter((t) => !set || t.cartas.some((id) => id.startsWith(`${set}-`)))
+    .filter((t) => !deLaColeccion || process.argv.includes('--y-resto') || prioridad(t) === 0)
+    .sort((a, b) => prioridad(a) - prioridad(b))
     .slice(0, max)
     .map((t) => ({ ...t, cartas: t.cartas.slice(0, 3) }));
   mkdirSync(DIR, { recursive: true });
@@ -92,6 +98,18 @@ function pendientes(): void {
   const quedan = [...todos.values()].filter((t) => !hechas.has(t.clave)).length;
   console.log(
     `${lista.length} textos en tools/traduccion/pendientes.json (${quedan} sin traducir en total)`,
+  );
+}
+
+function idsDeLaColeccion(): Set<string> {
+  const ruta = join(RAIZ, 'tools', 'collection1.csv');
+  if (!existsSync(ruta)) return new Set();
+  return new Set(
+    readFileSync(ruta, 'utf8')
+      .split(/\r?\n/)
+      .slice(1)
+      .map((l) => l.split(',')[0].replaceAll('"', '').trim().toUpperCase())
+      .filter(Boolean),
   );
 }
 
