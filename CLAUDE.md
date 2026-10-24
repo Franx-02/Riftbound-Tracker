@@ -2,7 +2,7 @@
 
 App PWA (Angular 22 + Netlify + Firebase) para colecciones de cartas de Riftbound con precios de Cardmarket. Registro abierto con Google (cualquiera entra), coste 0 €.
 
-**Lee `docs/HANDOFF.md` antes de empezar cualquier tarea.** Contiene las decisiones, los datos externos, el algoritmo de mapeo y el plan por fases. Desplegada en https://riftboundtracker.netlify.app con F1 a F3 hechas. F4 (traducción al español) está hecha a falta de la revisión del usuario: el glosario de `docs/glosario.md` manda sobre cualquier traducción.
+**Lee `docs/HANDOFF.md` antes de empezar cualquier tarea.** Contiene las decisiones, los datos externos, el algoritmo de mapeo y el plan por fases. Desplegada en https://riftboundtracker.netlify.app con F1 a F3 hechas. F4 (traducción) y F5 (lista de deseos) están hechas; F4 a falta de la revisión del usuario: el glosario de `docs/glosario.md` manda sobre cualquier traducción.
 
 ## Comandos
 - `npm install`

@@ -366,8 +366,29 @@ traducido). Traducción terminada el mismo día:
 - Detalle visto al revisar: la ambientación se pinta sin saltos de línea (también en inglés), así
   que las citas con la atribución en otra línea salen seguidas. Es cosmético.
 
-### F5 — Lista de deseos
+### F5 — Lista de deseos ← HECHA (falta publicar las reglas)
 Cartas que faltan, coste total en Cardmarket y **quién del grupo tiene copias** de cada una.
+
+Hecho (25/10/2026):
+- `WishlistService` (`src/app/core/wishlist.service.ts`): `users/{uid}/wishlist/{cardId}` =
+  `{ qty, nota? }`, con su almacén de modo demo. Mismo patrón que la colección: se lee una vez por
+  sesión, cambios optimistas que se deshacen si fallan, y se tira lo cacheado al cambiar de usuario.
+  `qty` son las copias que quieres **en total**; lo que falta es `qty` menos las que ya tienes
+  (normales y foil cuentan igual). Bajar a 0 quita la carta de la lista.
+- Pantalla `/deseos` (enlace "Deseos" en la barra): resumen (coste de lo que falta, cartas,
+  copias que faltan), buscador para añadir, una fila por carta con +/−, nota, precio y total, y las
+  ya conseguidas al final y atenuadas. El precio es la tendencia normal (la foil si no hay normal);
+  las cartas sin precio no suman y se avisa cuántas son.
+- **Quién la tiene**: botón "Buscar quién las tiene". Lee la colección de cada usuario con
+  `CollectionService.loadOther` (1 lectura por carta de cada persona), por eso solo se hace al
+  pedirlo y queda cacheado en la sesión. Cada carta enseña quién tiene copias, con enlace a su
+  colección. Si el grupo crece mucho, esto es lo primero que habría que cambiar (ver §riesgos de
+  cuota: un documento resumen por usuario).
+- En la ficha de carta: bloque "Lista de deseos" para añadirla, cambiar las copias o quitarla.
+- `firestore.rules`: regla nueva para `wishlist` (lee cualquiera con sesión, escribe solo el dueño,
+  `qty` entero 1–99, `nota` de hasta 200 caracteres). **El usuario tiene que publicarla** en la
+  consola de Firebase; hasta entonces, en producción la lista da error de permisos.
+- Tests: `wishlist.service.spec.ts` (servicio en demo, `faltan` y `quienTiene`).
 
 ### F6 — Mazos
 Crear mazos; validación básica (leyenda, 40 cartas en el mazo principal, runas, 3 campos de batalla; comprobar reglas oficiales antes de codificarlas); qué falta respecto a tu colección, cuánto cuesta completarlo y enviar lo que falta a la lista de deseos.

@@ -48,6 +48,20 @@ service cloud.firestore {
         && (!('alias' in request.resource.data) || shortString(request.resource.data.alias, 20));
     }
 
+    // Lista de deseos: users/{uid}/wishlist/{cardId} = { qty, nota? }.
+    // La leen los demás, como la colección, para poder ofrecerte la carta que buscas.
+    match /users/{uid}/wishlist/{cardId} {
+      allow read: if signedIn();
+      allow delete: if owner(uid);
+      allow create, update: if owner(uid)
+        && cardId.size() <= 20
+        && request.resource.data.keys().hasOnly(['qty', 'nota'])
+        && request.resource.data.qty is int
+        && request.resource.data.qty >= 1
+        && request.resource.data.qty <= 99
+        && (!('nota' in request.resource.data) || shortString(request.resource.data.nota, 200));
+    }
+
     // Correcciones de mapeo compartidas: cualquiera lee y corrige, y vale para todos.
     // Las reglas no pueden comprobar que `by` sea de verdad el nombre de quien escribe,
     // pero sí que el documento tenga solo estos campos y con tamaños razonables.

@@ -8,6 +8,7 @@ import { MappingOverridesService } from '../core/mapping-overrides.service';
 import { PricesService } from '../core/prices.service';
 import { TraduccionService } from '../core/traduccion.service';
 import { ValuationService } from '../core/valuation.service';
+import { WishlistService } from '../core/wishlist.service';
 import { ConfidenceBadgeComponent } from '../ui/confidence-badge.component';
 import { EurPipe, ThumbPipe } from '../ui/pipes';
 import { QtyControlComponent } from '../ui/qty-control.component';
@@ -78,6 +79,45 @@ import { RulesTextComponent } from '../ui/rules-text.component';
               }
               @if (col.error()) {
                 <p class="error" role="alert">No se pudo guardar: {{ col.error() }}</p>
+              }
+            </section>
+
+            <section class="bloque">
+              <h2>Lista de deseos</h2>
+              @if (!wish.editable()) {
+                <p class="muted">Cargando tu lista…</p>
+              } @else if (wish.get(c.cardId); as w) {
+                <div class="deseo">
+                  <span>Quiero</span>
+                  <button
+                    type="button"
+                    class="paso"
+                    aria-label="Querer una copia menos"
+                    (click)="wish.adjust(c.cardId, -1)"
+                  >
+                    −
+                  </button>
+                  <span class="n" aria-live="polite">{{ w.qty }}</span>
+                  <button
+                    type="button"
+                    class="paso"
+                    aria-label="Querer una copia más"
+                    (click)="wish.adjust(c.cardId, 1)"
+                  >
+                    +
+                  </button>
+                  <button type="button" class="secondary" (click)="wish.remove(c.cardId)">
+                    Quitar
+                  </button>
+                  <a routerLink="/deseos">Ver la lista</a>
+                </div>
+              } @else {
+                <button type="button" class="secondary" (click)="wish.add(c.cardId)">
+                  Añadir a la lista de deseos
+                </button>
+              }
+              @if (wish.error()) {
+                <p class="error" role="alert">No se pudo guardar: {{ wish.error() }}</p>
               }
             </section>
 
@@ -268,6 +308,22 @@ import { RulesTextComponent } from '../ui/rules-text.component';
       border-radius: 12px;
       padding: 16px;
     }
+    .deseo {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+    .deseo .paso {
+      width: 32px;
+      height: 32px;
+      padding: 0;
+    }
+    .deseo .n {
+      min-width: 2ch;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
     .bloque h2 {
       display: flex;
       align-items: center;
@@ -405,6 +461,7 @@ export class CardPage {
   private readonly title = inject(Title);
   private readonly router = inject(Router);
   protected readonly t = inject(TraduccionService);
+  protected readonly wish = inject(WishlistService);
 
   /** De la ruta `/carta/:cardId`. */
   readonly cardId = input.required<string>();
@@ -443,6 +500,7 @@ export class CardPage {
   protected readonly corrigiendo = signal(false);
 
   constructor() {
+    void this.wish.load();
     effect(() => {
       const c = this.card();
       this.title.setTitle(c ? `${c.name} · Riftbound` : 'Carta · Riftbound');
