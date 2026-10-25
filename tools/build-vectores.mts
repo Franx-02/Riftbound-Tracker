@@ -24,12 +24,23 @@ async function main() {
   const { cards } = JSON.parse(readFileSync(join(RAIZ, 'public/data/catalog.json'), 'utf8')) as {
     cards: Carta[];
   };
-  // Los campos de batalla (apaisados) no caben en la guía vertical: se quedan fuera.
-  const cartas = cards.filter((c) => c.orientation !== 'landscape');
+  // Los campos de batalla son apaisados: para escanearlos se sujetan en vertical (girados),
+  // y como no se sabe hacia qué lado, se guardan girados 90° en los dos sentidos. El mismo
+  // id sale dos veces; al puntuar se queda el mejor (puntuarRed).
+  const entradas = cards.flatMap((c) =>
+    c.orientation === 'landscape'
+      ? [
+          { c, giro: 90 },
+          { c, giro: 270 },
+        ]
+      : [{ c, giro: 0 }],
+  );
+  const cartas = entradas.map((e) => e.c);
   const vectores: Float32Array[] = [];
   const t0 = Date.now();
-  for (const [i, c] of cartas.entries()) {
+  for (const [i, { c, giro }] of entradas.entries()) {
     const { data, info } = await sharp(await imagen(c))
+      .rotate(giro)
       .resize(372)
       .ensureAlpha()
       .raw()

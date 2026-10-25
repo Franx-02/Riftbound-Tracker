@@ -72,7 +72,8 @@ export function puntuarRed(
       for (let j = 0; j < cat.dim; j++) s += v[j] * cat.datos[i * cat.dim + j];
       mejor = Math.max(mejor, s / 127);
     }
-    salida.set(cat.ids[i], mejor);
+    // Un mismo id puede salir varias veces (campos de batalla, girados a cada lado).
+    salida.set(cat.ids[i], Math.max(mejor, salida.get(cat.ids[i]) ?? -1));
   }
   return salida;
 }

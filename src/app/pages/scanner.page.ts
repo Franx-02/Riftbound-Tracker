@@ -29,6 +29,8 @@ import { QtyControlComponent } from '../ui/qty-control.component';
 
 /** Pausa entre lecturas de la cámara. Reconocer un fotograma tarda unos 20-60 ms. */
 const PAUSA_MS = 350;
+/** Tras añadir o cerrar, cuánto tarda en poder volver a saltar la misma carta. */
+const BLOQUEO_MS = 4000;
 /** Ancho al que se reduce la carta antes de calcular su huella: de sobra para 32×32. */
 const ANCHO_MUESTRA = 240;
 /** Margen alrededor de la guía que también se captura, en fracción de su tamaño. */
@@ -645,6 +647,11 @@ export class ScannerPage implements OnDestroy {
    * proponer (si no, la ventana saltaría otra vez nada más cerrarla).
    */
   private recienAnadida: string | null = null;
+  /**
+   * Hasta cuándo dura ese bloqueo. Caduca solo: si no, al volver a escanear la misma
+   * carta (otra copia) la cámara se quedaba buscando para siempre.
+   */
+  private recienAnadidaHasta = 0;
   /** La última foto, para "no es esta" (se vuelve a buscar en ella sin la descartada). */
   private ultimaFoto: { px: Pixeles; encuadres: Encuadre[] } | null = null;
   private contador = 0;
@@ -746,7 +753,11 @@ export class ScannerPage implements OnDestroy {
    * para sola cuando varias coinciden, no con una lectura suelta.
    */
   private async leerFotograma(): Promise<void> {
-    if (!this.camaraActiva() || this.pausado() || this.procesando) return;
+    if (!this.camaraActiva() || this.pausado()) return;
+    // Si aún se está procesando el fotograma anterior, se reintenta luego (antes se
+    // perdía la vuelta y el bucle se quedaba parado, "buscando" sin hacer nada).
+    if (this.procesando) return this.programar(PAUSA_MS);
+    if (this.recienAnadida && Date.now() > this.recienAnadidaHasta) this.recienAnadida = null;
     const captura = this.reco.listo() ? this.recuadro() : null;
     if (!captura) return this.programar(PAUSA_MS);
     this.procesando = true;
@@ -981,6 +992,7 @@ export class ScannerPage implements OnDestroy {
     this.descartadas = new Set();
     if (e.origen === 'camara' && this.camaraActiva()) {
       this.recienAnadida = card.cardId;
+      this.recienAnadidaHasta = Date.now() + BLOQUEO_MS;
       this.seguir();
     }
   }
@@ -1005,6 +1017,7 @@ export class ScannerPage implements OnDestroy {
     this.descartadas = new Set();
     if (e?.origen === 'camara' && this.camaraActiva()) {
       this.recienAnadida = e.cartas[e.elegida]?.cardId ?? null;
+      this.recienAnadidaHasta = Date.now() + BLOQUEO_MS;
       this.seguir();
     }
   }

@@ -506,6 +506,14 @@ círculos) y remates dorados en el héroe de inicio. Solo estética: ni logos ni
 La gráfica del valor de la colección se movió de inicio a Mi colección
 (`src/app/ui/valor-coleccion.component.ts`). El escáner sigue buscando solo tras cerrar la ventana.
 
+### Arreglos del escáner (25/10/2026, pruebas de Sans)
+- "Se queda buscando y al reabrir la cámara la pilla": tras añadir o cerrar, la misma carta se
+  bloqueaba hasta ver otra distinta, así que volver a escanear la misma no salía nunca. Ahora el
+  bloqueo caduca a los 4 s (`BLOQUEO_MS`). Y si un fotograma llegaba mientras el anterior aún se
+  procesaba, el bucle se paraba: ahora se reintenta.
+- Campos de batalla: se escanean girados en vertical. `build:vectores` los guarda girados 90° a
+  cada lado (mismo id dos veces; `puntuarRed` se queda con el mejor). Probados 5 de 5.
+
 ### Extras del 25/10/2026
 - **Navegación en móvil** (≤ 700 px): las secciones pasan a una barra fija abajo con iconos
   (Colección, Catálogo, Escanear, Deseos); arriba solo quedan la marca y Salir. En escritorio, igual
