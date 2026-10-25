@@ -35,7 +35,7 @@ import { QtyControlComponent } from './qty-control.component';
       @if (copias() > 0) {
         <span class="etiqueta tengo" [title]="detalleCopias()">×{{ copias() }}</span>
       } @else if (descartada()) {
-        <span class="etiqueta falta">no la quiero</span>
+        <span class="etiqueta descartada">no la quiero</span>
       } @else if (dim()) {
         <span class="etiqueta falta">falta</span>
       }
@@ -126,9 +126,17 @@ import { QtyControlComponent } from './qty-control.component';
     :host(.apagada) img {
       filter: grayscale(0.85) brightness(0.4);
     }
-    /* La que no quieres, más apagada todavía: no es un hueco que haya que llenar. */
+    /* La que no quieres: fondo rojizo, para distinguirla de un hueco que hay que llenar. */
     :host(.descartada) {
-      opacity: 0.55;
+      background: color-mix(in srgb, #b3261e 28%, var(--surface));
+      border-color: color-mix(in srgb, #e05a4f 60%, var(--border));
+    }
+    :host(.descartada) img {
+      filter: grayscale(0.6) sepia(0.35) hue-rotate(-25deg) saturate(1.6) brightness(0.45);
+    }
+    .etiqueta.descartada {
+      background: #b3261e;
+      color: #fff;
     }
     .descartar {
       display: block;
