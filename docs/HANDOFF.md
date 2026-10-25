@@ -491,8 +491,11 @@ GitHub avisa por email al dueño del repo.
 accesos a colección, deseos (con lo que cuesta lo que falta), escáner y catálogo, tus 10 cartas más
 valiosas y dos filas de Cardmarket: "Subiendo esta semana" (tendencia ≥ 1 € y al menos un 10 % por
 encima de la media de 7 días) y "Las más caras". Cardmarket no publica ventas en sus datos públicos,
-así que no hay "más vendidas". Pendiente que pidieron: una gráfica del valor de la colección en el
-tiempo (habría que guardar el valor cada día) y, más adelante, mejorar el aspecto general.
+así que no hay "más vendidas". Gráfica "Cómo ha evolucionado su valor": `POST /api/historial-coleccion`
+(`netlify/functions/historial-coleccion.mts`, cálculo en `valorPorDia` de `netlify/lib/historial.mts`)
+recibe los productos con tus copias y devuelve lo que habría valido cada día esa colección con los
+precios guardados de ese día (arrastra el último precio si un día falta). No guarda nada nuevo: sale
+del historial de precios, que empieza el 25/10/2026. Pendiente: mejorar el aspecto general.
 
 ### Extras del 25/10/2026
 - **Navegación en móvil** (≤ 700 px): las secciones pasan a una barra fija abajo con iconos

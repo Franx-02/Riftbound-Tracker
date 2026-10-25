@@ -37,3 +37,34 @@ export function anotar(trozo: Trozo, idProduct: number, punto: Punto): void {
     lista.sort((a, b) => a[0].localeCompare(b[0]));
   }
 }
+
+/**
+ * Valor de un conjunto de copias cada día: para cada fecha con algún precio guardado,
+ * suma copias × precio. Si un producto no tiene precio un día, cuenta el último que tuvo
+ * (y hasta su primer precio no cuenta).
+ */
+export function valorPorDia(
+  series: readonly { id: number; n: number; f: number; puntos: readonly Punto[] }[],
+): [string, number, null][] {
+  const fechas = [...new Set(series.flatMap((s) => s.puntos.map((p) => p[0])))].sort();
+  const ultimo = new Map<number, [number | null, number | null]>();
+  const indice = new Map<number, number>();
+  const salida: [string, number, null][] = [];
+  for (const fecha of fechas) {
+    let total = 0;
+    for (const s of series) {
+      let i = indice.get(s.id) ?? 0;
+      while (i < s.puntos.length && s.puntos[i][0] <= fecha) {
+        const [, normal, foil] = s.puntos[i];
+        const previo = ultimo.get(s.id);
+        ultimo.set(s.id, [normal ?? previo?.[0] ?? null, foil ?? previo?.[1] ?? null]);
+        i++;
+      }
+      indice.set(s.id, i);
+      const u = ultimo.get(s.id);
+      if (u) total += s.n * (u[0] ?? 0) + s.f * (u[1] ?? 0);
+    }
+    salida.push([fecha, Math.round(total * 100) / 100, null]);
+  }
+  return salida;
+}

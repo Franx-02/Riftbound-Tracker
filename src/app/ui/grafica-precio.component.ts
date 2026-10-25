@@ -149,16 +149,18 @@ const aFecha = (s: string) => new Date(`${s}T12:00:00`);
         <thead>
           <tr>
             <th>Fecha</th>
-            <th>Normal</th>
-            <th>Foil</th>
+            @for (s of seriesVisibles(); track s.clave) {
+              <th>{{ s.nombre }}</th>
+            }
           </tr>
         </thead>
         <tbody>
           @for (d of datosInvertidos(); track d[0]) {
             <tr>
               <td>{{ fechaLarga(d[0]) }}</td>
-              <td>{{ d[1] | eur: '—' }}</td>
-              <td>{{ d[2] | eur: '—' }}</td>
+              @for (s of seriesVisibles(); track s.clave) {
+                <td>{{ d[s.clave] | eur: '—' }}</td>
+              }
             </tr>
           }
         </tbody>
@@ -305,6 +307,8 @@ const aFecha = (s: string) => new Date(`${s}T12:00:00`);
 })
 export class GraficaPrecioComponent {
   readonly puntos = input.required<readonly PuntoPrecio[]>();
+  /** Nombres de las dos series (por defecto, los precios normal y foil de una carta). */
+  readonly nombres = input<readonly [string, string]>(['Normal', 'Foil']);
 
   protected readonly alto = ALTO;
   protected readonly margen = MARGEN;
@@ -331,7 +335,9 @@ export class GraficaPrecioComponent {
 
   /** Una serie solo sale si tiene algún dato (muchas cartas no tienen precio foil). */
   protected readonly seriesVisibles = computed(() =>
-    SERIES.filter((s) => this.puntos().some((p) => p[s.clave] !== null)),
+    SERIES.map((s, i) => ({ ...s, nombre: this.nombres()[i] ?? s.nombre })).filter((s) =>
+      this.puntos().some((p) => p[s.clave] !== null),
+    ),
   );
 
   protected readonly geometria = computed(() => {

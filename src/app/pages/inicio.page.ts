@@ -1,4 +1,4 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../core/auth.service';
 import { CatalogCard, CatalogService } from '../core/catalog.service';
@@ -7,6 +7,7 @@ import { PricesService } from '../core/prices.service';
 import { ValuationService } from '../core/valuation.service';
 import { WishlistService, faltan } from '../core/wishlist.service';
 import { EurPipe, ThumbPipe } from '../ui/pipes';
+import { GraficaPrecioComponent, PuntoPrecio } from '../ui/grafica-precio.component';
 
 interface Destacada {
   card: CatalogCard;
@@ -27,7 +28,7 @@ const PRECIO_MINIMO_SUBIDA = 1;
  */
 @Component({
   selector: 'app-inicio-page',
-  imports: [RouterLink, EurPipe, ThumbPipe],
+  imports: [RouterLink, EurPipe, ThumbPipe, GraficaPrecioComponent],
   template: `
     <main class="pagina">
       <section class="hero">
@@ -41,6 +42,29 @@ const PRECIO_MINIMO_SUBIDA = 1;
           }
         </p>
       </section>
+
+      @if (totales().cards) {
+        <section class="evolucion">
+          <h2>Cómo ha evolucionado su valor</h2>
+          @if (historialError()) {
+            <p class="muted">No se pudo cargar el historial: {{ historialError() }}</p>
+          } @else if (historial(); as h) {
+            @if (h.length) {
+              <app-grafica-precio [puntos]="h" [nombres]="['Valor de la colección', '']" />
+              <p class="muted nota">
+                Lo que habría valido cada día lo que tienes ahora, con los precios de ese día. Se
+                guarda un precio al día desde el 25/10/2026.
+              </p>
+            } @else {
+              <p class="muted">
+                Aún no hay historial: se guarda el precio de las cartas una vez al día.
+              </p>
+            }
+          } @else {
+            <p class="muted">Cargando…</p>
+          }
+        </section>
+      }
 
       <nav class="accesos" aria-label="Ir a">
         <a routerLink="/coleccion" class="acceso">
@@ -194,6 +218,15 @@ const PRECIO_MINIMO_SUBIDA = 1;
       margin-top: 6px !important;
       font-size: 0.9rem;
     }
+    .evolucion {
+      padding: 16px;
+      border-radius: 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 8px;
+    }
     .accesos {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -292,8 +325,48 @@ export class InicioPage {
   private readonly valuation = inject(ValuationService);
   private readonly auth = inject(AuthService);
 
+  /** Valor de la colección actual día a día (netlify/functions/historial-coleccion.mts). */
+  protected readonly historial = signal<PuntoPrecio[] | null>(null);
+  protected readonly historialError = signal<string | null>(null);
+  /** Lo que se le pide al servidor: cada producto con tus copias. Cambia si cambia la colección. */
+  private readonly pedido = computed(() => {
+    const items: { id: number; n: number; f: number }[] = [];
+    const porProducto = new Map<number, { id: number; n: number; f: number }>();
+    for (const [cardId, q] of this.col.cards()) {
+      const id = this.valuation.pricing(cardId).idProduct;
+      if (!id) continue;
+      const it = porProducto.get(id) ?? { id, n: 0, f: 0 };
+      it.n += q.normal;
+      it.f += q.foil;
+      porProducto.set(id, it);
+    }
+    items.push(...porProducto.values());
+    return JSON.stringify({ items: items.sort((a, b) => a.id - b.id) });
+  });
+
   constructor() {
     void this.wish.load();
+    effect((onCleanup) => {
+      const cuerpo = this.pedido();
+      if (cuerpo === '{"items":[]}') return;
+      const ctrl = new AbortController();
+      onCleanup(() => ctrl.abort());
+      fetch('/api/historial-coleccion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: cuerpo,
+        signal: ctrl.signal,
+      })
+        .then(async (r) => {
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          this.historial.set(((await r.json()) as { puntos: PuntoPrecio[] }).puntos);
+          this.historialError.set(null);
+        })
+        .catch((e: unknown) => {
+          if (!ctrl.signal.aborted)
+            this.historialError.set(e instanceof Error ? e.message : String(e));
+        });
+    });
   }
 
   protected readonly nombre = computed(
