@@ -43,6 +43,8 @@ export interface Reconocimiento {
   segura: boolean;
   /** Distancia hasta la siguiente carta de otra ilustración (cuanto más, más clara). */
   margen: number;
+  /** El encuadre donde mejor encaja una carta: de ahí se recorta el título para el OCR. */
+  encuadre: Encuadre | null;
 }
 
 /**
@@ -108,13 +110,13 @@ export function reconocerEn(
           .map((m) => m.z);
   const variantes = mejores.flatMap((z) => huellasConMargen(px, ilustracion(z)));
   const candidatas = masParecidas(variantes, catalogo, 8);
-  if (!candidatas.length) return { candidatas, segura: false, margen: 0 };
+  if (!candidatas.length) return { candidatas, segura: false, margen: 0, encuadre: null };
   // Las gemelas de la primera no cuentan para el margen: son la misma imagen.
   const primera = huellas.get(candidatas[0].cardId)!;
   const ajena = candidatas.find((c) => distancia(huellas.get(c.cardId)!, primera) >= GEMELAS);
   const margen = ajena ? ajena.distancia - candidatas[0].distancia : 1;
   const segura = candidatas[0].distancia <= DISTANCIA_SEGURA && margen >= MARGEN_SEGURO;
-  return { candidatas: candidatas.slice(0, 5), segura, margen };
+  return { candidatas: candidatas.slice(0, 5), segura, margen, encuadre: mejores[0] ?? null };
 }
 
 /**

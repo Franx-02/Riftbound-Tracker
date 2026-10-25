@@ -15,6 +15,7 @@ App PWA (Angular 22 + Netlify + Firebase) para colecciones de cartas de Riftboun
 - `npm run check:import` → ida y vuelta de tools/collection1.csv (criterio de salida de F3)
 - `npm run traducir -- pendientes|aplicar` → flujo de traducción de F4 (ver docs/glosario.md antes de traducir)
 - `npm run build:huellas [-- --medir]` → regenera public/data/huellas.json para el escáner por imagen. **Después de cada `build:catalog`**.
+- `npm run build:vectores` → regenera public/data/vectores.* (red neuronal del escáner). **Después de cada `build:catalog`**.
 - `npm run medir:escaner [-- N]` → mide el escáner con vídeos simulados (aciertos, falsos positivos). Pasarlo antes de tocar `reconocimiento.ts`.
 
 ## Reglas del proyecto

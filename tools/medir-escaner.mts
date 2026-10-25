@@ -29,17 +29,18 @@ const RAIZ = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CACHE = join(RAIZ, 'tools', '.cache', 'imagenes');
 const FOTOGRAMAS = Number(process.env.FOTOGRAMAS ?? 6);
 /** Tamaño de la guía en la captura, como en la app (ANCHO_MUESTRA y MARGEN de scanner.page). */
-const GUIA_W = Number(process.env.GUIA_W ?? 240);
-const GUIA_H = Math.round(GUIA_W / PROPORCION_CARTA);
-const MARGEN = 0.2;
+export const GUIA_W = Number(process.env.GUIA_W ?? 240);
+export const GUIA_H = Math.round(GUIA_W / PROPORCION_CARTA);
+export const MARGEN = 0.2;
+const DURO = process.env.DURO === '1';
 
-interface Carta {
+export interface Carta {
   cardId: string;
   imgUrl: string;
   orientation: string;
 }
 
-async function imagen(c: Carta): Promise<Buffer> {
+export async function imagen(c: Carta): Promise<Buffer> {
   const f = join(CACHE, `${c.cardId.replace(/[^A-Z0-9-]/gi, '_')}-744.webp`);
   if (existsSync(f)) return readFileSync(f);
   const u = new URL(c.imgUrl);
@@ -52,7 +53,7 @@ async function imagen(c: Carta): Promise<Buffer> {
   return buf;
 }
 
-function azar(semilla: number) {
+export function azar(semilla: number) {
   let s = semilla;
   return () => ((s = (s * 16807) % 2147483647) - 1) / 2147483646;
 }
@@ -69,7 +70,7 @@ interface Escena {
   fondo: { r: number; g: number; b: number };
 }
 
-function escena(r: () => number): Escena {
+export function escena(r: () => number): Escena {
   return {
     escala:
       Number(process.env.ESC_MIN ?? 0.75) +
@@ -77,23 +78,27 @@ function escena(r: () => number): Escena {
     dx: (r() - 0.5) * 0.14,
     dy: (r() - 0.5) * 0.14,
     angulo: (r() - 0.5) * 12,
-    cizalla: [(r() - 0.5) * 0.12, (r() - 0.5) * 0.12],
+    // Con DURO=1: más perspectiva, reflejos más fuertes y frecuentes y peor luz.
+    cizalla: [(r() - 0.5) * (DURO ? 0.3 : 0.12), (r() - 0.5) * (DURO ? 0.3 : 0.12)],
     ganancias: [0.82 + r() * 0.36, 0.82 + r() * 0.36, 0.82 + r() * 0.36],
-    brillo: 0.6 + r() * 0.7,
-    reflejo: r() < 0.4 ? { x: r(), y: r(), fuerza: 0.25 + r() * 0.45 } : null,
+    brillo: DURO ? 0.45 + r() * 0.9 : 0.6 + r() * 0.7,
+    reflejo:
+      r() < (DURO ? 0.8 : 0.4)
+        ? { x: r(), y: r(), fuerza: DURO ? 0.5 + r() * 0.45 : 0.25 + r() * 0.45 }
+        : null,
     fondo: { r: Math.round(r() * 200), g: Math.round(r() * 200), b: Math.round(r() * 200) },
   };
 }
 
 /** Un fotograma de la escena, del tamaño de lo que captura la app (guía + margen). */
-async function fotograma(carta: Buffer, e: Escena, r: () => number, espejo: boolean) {
+export async function fotograma(carta: Buffer, e: Escena, r: () => number, espejo: boolean) {
   const W = Math.round(GUIA_W * (1 + 2 * MARGEN));
   const H = Math.round(GUIA_H * (1 + 2 * MARGEN));
   const cw = Math.round(GUIA_W * e.escala);
   const ch = Math.round(cw / PROPORCION_CARTA);
   let img = sharp(carta).resize(cw, ch);
   if (espejo) img = img.flop();
-  const deformada = await img
+  const deformadaGrande = await img
     .affine(
       [
         [1, e.cizalla[0]],
@@ -104,6 +109,14 @@ async function fotograma(carta: Buffer, e: Escena, r: () => number, espejo: bool
     .rotate(e.angulo + (r() - 0.5) * 1.5, { background: { r: 0, g: 0, b: 0, alpha: 0 } })
     .png()
     .toBuffer({ resolveWithObject: true });
+  // Con mucha perspectiva la carta deformada puede no caber: se reduce hasta que quepa.
+  const deformada =
+    deformadaGrande.info.width > W - 2 || deformadaGrande.info.height > H - 2
+      ? await sharp(deformadaGrande.data)
+          .resize(W - 2, H - 2, { fit: 'inside' })
+          .png()
+          .toBuffer({ resolveWithObject: true })
+      : deformadaGrande;
   const temblor = () => (r() - 0.5) * 0.04;
   const left = Math.round((W - deformada.info.width) / 2 + (e.dx + temblor()) * GUIA_W);
   const top = Math.round((H - deformada.info.height) / 2 + (e.dy + temblor()) * GUIA_H);
@@ -264,7 +277,9 @@ async function main() {
   );
 }
 
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+// Solo al ejecutarlo directamente, no al importarlo desde otro medidor.
+if (process.argv[1]?.endsWith('medir-escaner.mts'))
+  main().catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });

@@ -454,6 +454,28 @@ Tesseract). Se quitó el OCR y la dependencia. Lo que hay ahora:
   - En la app, con la cámara simulada: 8 de 10 bien a la primera; 2 de ellas eran la firmada en vez
     de la normal o la promo en vez de la normal (misma ilustración, salen juntas en la ventana).
 
+- **Red neuronal** (25/10/2026, el usuario pidió que fuera mucho más fiable). Se probó leer el
+  título con OCR (Tesseract): a resolución de cámara lee basura salvo títulos grandes y no mejoraba
+  nada medible, así que se quitó. Lo que funciona es una red neuronal de imagen junto con la huella:
+  - Modelo **DINOv2-small** (`Xenova/dinov2-small`, cuantizado q8, ~24 MB) con transformers.js
+    (`@huggingface/transformers`). Lo descarga el navegador de Hugging Face la primera vez que se
+    abre el escáner y queda en caché; mientras carga, el escáner sigue con la huella sola.
+  - `npm run build:vectores` (`tools/build-vectores.mts`) genera `public/data/vectores.bin` (un
+    vector de 384 dimensiones por carta, int8, ~600 KB) y `vectores.json`. **Tras cada
+    `build:catalog`, igual que `build:huellas`.** Solo cartas verticales.
+  - `src/app/core/red.ts` (puro): recorte de la ilustración, vector, `combinarRedYHuella` (coseno de
+    la red + bonificación de la huella para sus candidatas) y `VotacionRed` (para con margen ≥ 0,15
+    o dos lecturas seguidas iguales con margen ≥ 0,05; el margen se mide contra otra carta, no
+    contra una versión gemela). `red.service.ts` carga el modelo y los vectores.
+  - En la cámara, cada fotograma: la huella localiza la carta y la red compara dos recortes (el
+    encuadre de la huella y el mejor borde localizado).
+  - Medido con `tools/medir-red.mts` (variables MODELO, ZONA, PESO, DURO=1 para reflejos fuertes y
+    más perspectiva), carta del 45 % al 110 % de la guía, aciertos a la primera por lectura:
+    normal: huella 96 %, red 85 %, juntas 98 %; duro: huella 78 %, red 83 %, juntas 95 %.
+  - En la app (build de producción, cámara simulada, 16 cartas): 16/16 con la carta buena (13 la
+    versión exacta, 3 una gemela que sale al lado), ninguna equivocada; antes 13/16. ~2 s por carta
+    en escritorio. **Falta probarlo en el móvil**, donde la red irá más lenta (WebAssembly sin hilos).
+
 ### Extras del 25/10/2026
 - **Navegación en móvil** (≤ 700 px): las secciones pasan a una barra fija abajo con iconos
   (Colección, Catálogo, Escanear, Deseos); arriba solo quedan la marca y Salir. En escritorio, igual

@@ -84,7 +84,8 @@ function pendientes(): void {
   // --coleccion: primero los textos de las cartas de tools/collection1.csv, que son las que
   // más se miran. Dentro de cada grupo se mantiene el orden del catálogo.
   const deLaColeccion = process.argv.includes('--coleccion') ? idsDeLaColeccion() : null;
-  const prioridad = (t: Texto) => (deLaColeccion && t.cartas.some((id) => deLaColeccion.has(id)) ? 0 : 1);
+  const prioridad = (t: Texto) =>
+    deLaColeccion && t.cartas.some((id) => deLaColeccion.has(id)) ? 0 : 1;
   const lista = [...todos.values()]
     .filter((t) => !hechas.has(t.clave))
     .filter((t) => !tipo || t.tipo === tipo)

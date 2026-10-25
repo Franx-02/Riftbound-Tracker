@@ -13,7 +13,8 @@
     "start:demo": "netlify dev --command \"npx ng serve --port 4200 --configuration demo\"",
     "traducir": "tsx tools/traducir.mts",
     "build:huellas": "tsx tools/build-huellas.mts",
-    "medir:escaner": "tsx tools/medir-escaner.mts"
+    "medir:escaner": "tsx tools/medir-escaner.mts",
+    "build:vectores": "tsx tools/build-vectores.mts"
   },
   "private": true,
   "packageManager": "npm@10.9.9",
@@ -25,6 +26,7 @@
     "@angular/platform-browser": "^22.2.0",
     "@angular/router": "^22.2.0",
     "@angular/service-worker": "^22.2.0",
+    "@huggingface/transformers": "4.3.0",
     "@netlify/blobs": "11.1.4",
     "firebase": "^13.1.0",
     "rxjs": "~7.8.0",

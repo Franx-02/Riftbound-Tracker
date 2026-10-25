@@ -5,6 +5,7 @@ const lectura = (cardId: string, d: number, margen = 0.05, segura = false): Reco
   candidatas: [{ cardId, distancia: d }],
   segura,
   margen,
+  encuadre: null,
 });
 
 describe('Votacion', () => {

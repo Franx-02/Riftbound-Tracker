@@ -21,6 +21,8 @@ import {
 } from '../core/reconocimiento.service';
 import { cartasDelCodigo, parseCodigos } from '../core/scanner';
 import { TraduccionService } from '../core/traduccion.service';
+import { VotacionRed, combinarRedYHuella } from '../core/red';
+import { RedService } from '../core/red.service';
 import { ValuationService } from '../core/valuation.service';
 import { EurPipe, ThumbPipe } from '../ui/pipes';
 import { QtyControlComponent } from '../ui/qty-control.component';
@@ -77,6 +79,8 @@ interface Resultado {
           <p class="estado-camara" aria-live="polite">
             @if (!reco.listo()) {
               Preparando el reconocimiento…
+            } @else if (red.cargando() && !pausado()) {
+              Buscando una carta… (preparando el modo preciso, solo la primera vez)
             } @else if (pausado()) {
               Carta encontrada
             } @else if (provisional(); as p) {
@@ -649,6 +653,16 @@ export class ScannerPage implements OnDestroy {
   private temporizador: ReturnType<typeof setTimeout> | null = null;
   /** Decide cuándo hay carta a partir de varias lecturas seguidas. */
   private readonly votacion = new Votacion();
+  protected readonly red = inject(RedService);
+  /** Con la red cargada, decide esta votación; mientras tanto, la de la huella. */
+  private readonly votacionRed = new VotacionRed();
+  /** Para medir el margen contra otra carta y no contra una versión gemela. */
+  private readonly nombresBase = computed(
+    () =>
+      new Map(this.catalog.cards().map((c) => [c.cardId, c.name.replace(/\s*\([^)]*\)\s*$/, '')])),
+  );
+  private readonly nombreBase = (id: string) => this.nombresBase().get(id) ?? id;
+  private procesando = false;
   private readonly lienzo = document.createElement('canvas');
 
   private readonly setsValidos = computed(() => new Set(this.catalog.sets().map((s) => s.id)));
@@ -656,6 +670,7 @@ export class ScannerPage implements OnDestroy {
   constructor() {
     void this.col.loadMine();
     void this.reco.load();
+    void this.red.load();
     // Al abrir la ventana, el foco va a "+ Normal": se puede añadir con Intro.
     effect(() => {
       if (this.encontrada()) this.primerBoton()?.nativeElement.focus();
@@ -712,12 +727,13 @@ export class ScannerPage implements OnDestroy {
   protected seguir(): void {
     this.pausado.set(false);
     this.votacion.reiniciar();
+    this.votacionRed.reiniciar();
     this.programar(0);
   }
 
   private programar(ms: number): void {
     if (this.temporizador) clearTimeout(this.temporizador);
-    this.temporizador = setTimeout(() => this.leerFotograma(), ms);
+    this.temporizador = setTimeout(() => void this.leerFotograma(), ms);
   }
 
   /** Dónde buscar la carta en la captura: donde se ve su borde y, por si acaso, en la guía. */
@@ -729,25 +745,38 @@ export class ScannerPage implements OnDestroy {
    * Reconoce la carta del recuadro y vota entre lecturas seguidas (ver `Votacion`): se
    * para sola cuando varias coinciden, no con una lectura suelta.
    */
-  private leerFotograma(): void {
-    if (!this.camaraActiva() || this.pausado()) return;
+  private async leerFotograma(): Promise<void> {
+    if (!this.camaraActiva() || this.pausado() || this.procesando) return;
     const captura = this.reco.listo() ? this.recuadro() : null;
-    if (captura) {
-      const r = this.reco.reconocer(
-        captura.px,
-        this.encuadresCamara(captura.px, captura.guia),
-        this.descartadas,
-      );
-      const ganadora = this.votacion.anadir(r);
-      const provisional = this.votacion.provisional();
+    if (!captura) return this.programar(PAUSA_MS);
+    this.procesando = true;
+    try {
+      const encuadres = this.encuadresCamara(captura.px, captura.guia);
+      const r = this.reco.reconocer(captura.px, encuadres, this.descartadas);
+      let ganadora: string | null;
+      let candidatas = r.candidatas.map((c) => c.cardId);
+      let provisional: string | null;
+      if (this.red.listo()) {
+        // La huella localiza la carta; la red compara lo que hay en los dos mejores sitios.
+        const zonas = [r.encuadre, encuadres[0]].filter((z): z is Encuadre => !!z);
+        const puntos = await this.red.puntuar(captura.px, zonas);
+        if (!this.camaraActiva() || this.pausado()) return;
+        const c = combinarRedYHuella(puntos ?? new Map(), r, this.nombreBase, this.descartadas);
+        candidatas = c.candidatas.map((x) => x.cardId);
+        ganadora = this.votacionRed.anadir(c);
+        provisional = c.margen >= 0.05 ? (candidatas[0] ?? null) : null;
+      } else {
+        ganadora = this.votacion.anadir(r);
+        provisional = this.votacion.provisional();
+      }
       if (provisional && provisional !== this.recienAnadida) this.recienAnadida = null;
       if (ganadora && ganadora === this.recienAnadida) {
         // Sigue delante la que se acaba de añadir: se espera a que cambien de carta.
         this.votacion.reiniciar();
+        this.votacionRed.reiniciar();
         this.provisional.set(null);
       } else if (ganadora) {
-        const resto = r.candidatas.map((c) => c.cardId).filter((id) => id !== ganadora);
-        this.mostrar([ganadora, ...resto], null, 'camara');
+        this.mostrar([ganadora, ...candidatas.filter((id) => id !== ganadora)], null, 'camara');
         this.pausado.set(true);
         this.provisional.set(null);
         navigator.vibrate?.(60);
@@ -759,26 +788,37 @@ export class ScannerPage implements OnDestroy {
             : null,
         );
       }
+    } finally {
+      this.procesando = false;
     }
     this.programar(PAUSA_MS);
   }
 
   /** Por si no se para sola: usa lo que haya ahora en el recuadro. */
-  protected usarFotograma(): void {
+  protected async usarFotograma(): Promise<void> {
     const captura = this.reco.listo() ? this.recuadro() : null;
     if (!captura) return;
-    const r = this.reco.reconocer(
-      captura.px,
-      this.encuadresCamara(captura.px, captura.guia),
-      this.descartadas,
-    );
-    this.mostrar(
-      r.candidatas.map((c) => c.cardId),
-      r.segura ? null : 'No está claro: si no es esta, mira las de abajo.',
-      'camara',
-    );
     this.pausado.set(true);
     this.provisional.set(null);
+    const encuadres = this.encuadresCamara(captura.px, captura.guia);
+    const { ids, clara } = await this.reconocerCompleto(captura.px, encuadres);
+    this.mostrar(ids, clara ? null : 'No está claro: si no es esta, mira las de abajo.', 'camara');
+  }
+
+  /**
+   * Huella y, si está cargada, red. Devuelve las candidatas y si la primera es clara
+   * (margen suficiente con la red; "segura" con la huella sola).
+   */
+  private async reconocerCompleto(
+    px: Pixeles,
+    encuadres: Encuadre[],
+  ): Promise<{ ids: string[]; clara: boolean }> {
+    const r = this.reco.reconocer(px, encuadres, this.descartadas);
+    if (!this.red.listo()) return { ids: r.candidatas.map((c) => c.cardId), clara: r.segura };
+    const zonas = [r.encuadre, encuadres[0]].filter((z): z is Encuadre => !!z);
+    const puntos = await this.red.puntuar(px, zonas);
+    const c = combinarRedYHuella(puntos ?? new Map(), r, this.nombreBase, this.descartadas);
+    return { ids: c.candidatas.map((x) => x.cardId), clara: c.margen >= 0.05 };
   }
 
   /**
@@ -840,8 +880,7 @@ export class ScannerPage implements OnDestroy {
       this.descartadas = new Set();
       const px = ctx.getImageData(0, 0, W, H);
       this.ultimaFoto = { px, encuadres: encuadresDeFoto(px) };
-      this.aviso.set(null);
-      this.buscarEnFoto();
+      await this.buscarEnFoto();
     } catch (e) {
       this.aviso.set(null);
       this.error.set(`No se pudo leer la foto: ${e instanceof Error ? e.message : String(e)}`);
@@ -874,13 +913,15 @@ export class ScannerPage implements OnDestroy {
     this.manual.set('');
   }
 
-  private buscarEnFoto(): void {
+  private async buscarEnFoto(): Promise<void> {
     if (!this.ultimaFoto) return;
     const { px, encuadres } = this.ultimaFoto;
-    const r = this.reco.reconocer(px, encuadres, this.descartadas);
+    if (this.red.cargando()) this.aviso.set('Preparando el reconocimiento…');
+    await this.red.load();
+    const { ids, clara } = await this.reconocerCompleto(px, encuadres);
     this.mostrar(
-      r.candidatas.map((c) => c.cardId),
-      r.segura
+      ids,
+      clara
         ? null
         : 'No está claro (quizá la carta no llena la foto): si no es esta, mira las de abajo.',
       'foto',
@@ -950,7 +991,7 @@ export class ScannerPage implements OnDestroy {
     if (!e) return;
     this.descartadas.add(e.cartas[e.elegida].cardId);
     this.encontrada.set(null);
-    if (e.origen === 'foto') this.buscarEnFoto();
+    if (e.origen === 'foto') void this.buscarEnFoto();
     else if (this.camaraActiva()) this.seguir();
   }
 
