@@ -15,6 +15,7 @@ import { AuthService } from '../core/auth.service';
 import { CatalogCard, CatalogService } from '../core/catalog.service';
 import { CardQty, CollectionMap, CollectionService, totalsOf } from '../core/collection.service';
 import { DescartadasService } from '../core/descartadas.service';
+import { TraduccionService } from '../core/traduccion.service';
 import { PricesService } from '../core/prices.service';
 import { UsersService } from '../core/users.service';
 import { CardPricing, ValuationService } from '../core/valuation.service';
@@ -43,6 +44,14 @@ export class CollectionViewState {
   readonly set = signal('');
   readonly mostrar = signal<Mostrar>('todas');
   readonly limite = signal(POR_PAGINA);
+  /** Filtros de "Más filtros". Cadena vacía = sin filtrar. Energía '7' = 7 o más. */
+  readonly energia = signal('');
+  readonly dominio = signal('');
+  readonly tipo = signal('');
+  readonly rareza = signal('');
+  readonly acabado = signal<'' | 'foil' | 'normal'>('');
+  readonly precioMinimo = signal('');
+  readonly filtrosAbiertos = signal(false);
   private ultimaColeccion: string | null | undefined = undefined;
 
   /** Al entrar en una colección distinta de la última, la búsqueda y la tanda empiezan de cero. */
@@ -235,6 +244,17 @@ interface Fila {
               <option value="set">Por set y número</option>
             </select>
           }
+          <button
+            type="button"
+            class="secondary boton-filtros"
+            [attr.aria-expanded]="v.filtrosAbiertos()"
+            (click)="v.filtrosAbiertos.set(!v.filtrosAbiertos())"
+          >
+            Filtros
+            @if (filtrosActivos()) {
+              <span class="contador">{{ filtrosActivos() }}</span>
+            }
+          </button>
           <div class="vistas" role="group" aria-label="Vista">
             <button
               type="button"
@@ -254,6 +274,75 @@ interface Fila {
             </button>
           </div>
         </section>
+
+        @if (v.filtrosAbiertos()) {
+          <section class="filtros" aria-label="Más filtros">
+            <label>
+              Energía
+              <select [value]="v.energia()" (change)="cambiar(v.energia, $event)">
+                <option value="">Cualquiera</option>
+                @for (e of energias; track e) {
+                  <option [value]="e" [selected]="e === v.energia()">
+                    {{ e === '7' ? '7 o más' : e }}
+                  </option>
+                }
+              </select>
+            </label>
+            <label>
+              Dominio
+              <select [value]="v.dominio()" (change)="cambiar(v.dominio, $event)">
+                <option value="">Todos</option>
+                @for (d of catalog.domains(); track d) {
+                  <option [value]="d" [selected]="d === v.dominio()">{{ t.etiqueta(d) }}</option>
+                }
+              </select>
+            </label>
+            <label>
+              Tipo
+              <select [value]="v.tipo()" (change)="cambiar(v.tipo, $event)">
+                <option value="">Todos</option>
+                @for (x of catalog.types(); track x) {
+                  <option [value]="x" [selected]="x === v.tipo()">{{ t.etiqueta(x) }}</option>
+                }
+              </select>
+            </label>
+            <label>
+              Rareza
+              <select [value]="v.rareza()" (change)="cambiar(v.rareza, $event)">
+                <option value="">Todas</option>
+                @for (x of catalog.rarities(); track x) {
+                  <option [value]="x" [selected]="x === v.rareza()">{{ t.etiqueta(x) }}</option>
+                }
+              </select>
+            </label>
+            <label>
+              Acabado
+              <select [value]="v.acabado()" (change)="cambiar(v.acabado, $event)">
+                <option value="">Cualquiera</option>
+                <option value="foil" [selected]="v.acabado() === 'foil'">
+                  Las que tengo en foil
+                </option>
+                <option value="normal" [selected]="v.acabado() === 'normal'">
+                  Solo en normal (sin foil)
+                </option>
+              </select>
+            </label>
+            <label>
+              Precio
+              <select [value]="v.precioMinimo()" (change)="cambiar(v.precioMinimo, $event)">
+                <option value="">Cualquiera</option>
+                @for (p of precios; track p) {
+                  <option [value]="p" [selected]="p === v.precioMinimo()">Más de {{ p }} €</option>
+                }
+              </select>
+            </label>
+            @if (filtrosActivos()) {
+              <button type="button" class="secondary limpiar" (click)="limpiarFiltros()">
+                Quitar filtros
+              </button>
+            }
+          </section>
+        }
 
         @if (v.vista() === 'carpeta') {
           @if (completado(); as c) {
@@ -488,6 +577,39 @@ interface Fila {
       gap: 8px;
       align-items: center;
     }
+    .boton-filtros {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .contador {
+      min-width: 18px;
+      padding: 0 5px;
+      border-radius: 999px;
+      background: var(--accent);
+      color: var(--bg);
+      font-size: 0.7rem;
+      line-height: 18px;
+      text-align: center;
+    }
+    .filtros {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 10px;
+      align-items: end;
+      padding: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+    }
+    .filtros label {
+      display: grid;
+      gap: 4px;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    .filtros select {
+      width: 100%;
+    }
     .controles input {
       flex: 1 1 220px;
     }
@@ -643,6 +765,7 @@ export class CollectionPage implements OnInit {
   protected readonly prices = inject(PricesService);
   private readonly valuation = inject(ValuationService);
   private readonly descartadas = inject(DescartadasService);
+  protected readonly t = inject(TraduccionService);
   private readonly users = inject(UsersService);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
@@ -692,18 +815,22 @@ export class CollectionPage implements OnInit {
     const cartas = this.catalog.filter({
       texto: this.v.texto(),
       sets: this.v.set() ? [this.v.set()] : [],
+      domains: this.v.dominio() ? [this.v.dominio()] : [],
+      types: this.v.tipo() ? [this.v.tipo()] : [],
+      rarities: this.v.rareza() ? [this.v.rareza()] : [],
     });
     // "No la quiero" solo cuenta en la colección propia: es una preferencia personal.
     const descartadas = this.propia() ? this.descartadas.ids() : new Set<string>();
+    const pasa = this.filtroExtra();
     switch (this.v.mostrar()) {
       case 'tengo':
-        return cartas.filter((c) => tiene(c.cardId));
+        return cartas.filter((c) => tiene(c.cardId) && pasa(c));
       case 'faltan':
-        return cartas.filter((c) => !tiene(c.cardId) && !descartadas.has(c.cardId));
+        return cartas.filter((c) => !tiene(c.cardId) && !descartadas.has(c.cardId) && pasa(c));
       case 'descartadas':
-        return cartas.filter((c) => descartadas.has(c.cardId));
+        return cartas.filter((c) => descartadas.has(c.cardId) && pasa(c));
       default:
-        return cartas;
+        return cartas.filter(pasa);
     }
   });
 
@@ -747,6 +874,62 @@ export class CollectionPage implements OnInit {
     });
   }
 
+  protected readonly energias = ['0', '1', '2', '3', '4', '5', '6', '7'];
+  protected readonly precios = ['1', '5', '20', '50'];
+
+  /** Cuántos de "Más filtros" están puestos (para el número del botón). */
+  protected readonly filtrosActivos = computed(
+    () =>
+      [
+        this.v.energia(),
+        this.v.dominio(),
+        this.v.tipo(),
+        this.v.rareza(),
+        this.v.acabado(),
+        this.v.precioMinimo(),
+      ].filter(Boolean).length,
+  );
+
+  protected limpiarFiltros(): void {
+    for (const s of [
+      this.v.energia,
+      this.v.dominio,
+      this.v.tipo,
+      this.v.rareza,
+      this.v.precioMinimo,
+    ])
+      s.set('');
+    this.v.acabado.set('');
+    this.v.limite.set(POR_PAGINA);
+  }
+
+  /**
+   * Los filtros que no hace el catálogo: energía, acabado (mira las copias de la colección
+   * que se está viendo) y precio mínimo (el mayor entre normal y foil).
+   */
+  private readonly filtroExtra = computed(() => {
+    const energia = this.v.energia();
+    const acabado = this.v.acabado();
+    const minimo = Number(this.v.precioMinimo()) || 0;
+    const fuente = this.fuente() ?? new Map<string, CardQty>();
+    return (c: CatalogCard): boolean => {
+      if (energia) {
+        const e = Number(energia);
+        if (c.energy === null || (e === 7 ? c.energy < 7 : c.energy !== e)) return false;
+      }
+      if (acabado) {
+        const q = fuente.get(c.cardId);
+        if (acabado === 'foil' && !(q && q.foil > 0)) return false;
+        if (acabado === 'normal' && !(q && q.normal > 0 && q.foil === 0)) return false;
+      }
+      if (minimo) {
+        const p = this.valuation.pricing(c.cardId);
+        if (Math.max(p.normal ?? 0, p.foil ?? 0) < minimo) return false;
+      }
+      return true;
+    };
+  });
+
   protected cambiar(destino: { set(v: never): void }, ev: Event): void {
     destino.set((ev.target as HTMLInputElement | HTMLSelectElement).value as never);
     this.v.limite.set(POR_PAGINA);
@@ -788,11 +971,16 @@ export class CollectionPage implements OnInit {
 
   protected readonly filas = computed(() => {
     const q = this.v.texto().trim().toLowerCase();
-    const filtradas = q
-      ? this.todas().filter(
-          (f) => f.card.name.toLowerCase().includes(q) || f.card.cardId.toLowerCase().includes(q),
-        )
-      : this.todas();
+    const pasa = this.filtroExtra();
+    const v = this.v;
+    const filtradas = this.todas().filter(
+      (f) =>
+        (!q || f.card.name.toLowerCase().includes(q) || f.card.cardId.toLowerCase().includes(q)) &&
+        (!v.dominio() || f.card.domains.includes(v.dominio())) &&
+        (!v.tipo() || f.card.type === v.tipo()) &&
+        (!v.rareza() || f.card.rarity === v.rareza()) &&
+        pasa(f.card),
+    );
     const ordenadas = [...filtradas];
     switch (this.orden()) {
       case 'valor':
