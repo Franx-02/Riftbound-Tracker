@@ -27,7 +27,7 @@ import { VolverArribaComponent } from '../ui/volver-arriba.component';
 import { ValorColeccionComponent } from '../ui/valor-coleccion.component';
 import { QtyControlComponent } from '../ui/qty-control.component';
 
-type Orden = 'valor' | 'nombre' | 'set';
+type Orden = 'valor' | 'nombre' | 'set' | 'energia';
 type Vista = 'carpeta' | 'lista';
 type Mostrar = 'todas' | 'tengo' | 'faltan' | 'descartadas';
 
@@ -51,6 +51,10 @@ export class CollectionViewState {
   readonly rareza = signal('');
   readonly acabado = signal<'' | 'foil' | 'normal'>('');
   readonly precioMinimo = signal('');
+  /** Power: '' cualquiera, 'no' sin power, '1', '2', '3' (3 o más). */
+  readonly power = signal('');
+  /** Orden de la vista de carpeta (la lista tiene el suyo). */
+  readonly ordenCarpeta = signal<Orden>('set');
   readonly filtrosAbiertos = signal(false);
   private ultimaColeccion: string | null | undefined = undefined;
 
@@ -233,6 +237,20 @@ interface Fila {
                 {{ propia() ? 'Las que me faltan' : 'Las que le faltan' }}
               </option>
             </select>
+            <select
+              aria-label="Ordenar"
+              [value]="v.ordenCarpeta()"
+              (change)="cambiar(v.ordenCarpeta, $event)"
+            >
+              <option value="set">Por set y número</option>
+              <option value="energia" [selected]="v.ordenCarpeta() === 'energia'">
+                Por energía
+              </option>
+              <option value="valor" [selected]="v.ordenCarpeta() === 'valor'">
+                Más valiosas primero
+              </option>
+              <option value="nombre" [selected]="v.ordenCarpeta() === 'nombre'">Por nombre</option>
+            </select>
           } @else {
             <select
               aria-label="Ordenar"
@@ -242,6 +260,7 @@ interface Fila {
               <option value="valor">Más valiosas primero</option>
               <option value="nombre">Por nombre</option>
               <option value="set">Por set y número</option>
+              <option value="energia">Por energía</option>
             </select>
           }
           <button
@@ -286,6 +305,16 @@ interface Fila {
                     {{ e === '7' ? '7 o más' : e }}
                   </option>
                 }
+              </select>
+            </label>
+            <label>
+              Power
+              <select [value]="v.power()" (change)="cambiar(v.power, $event)">
+                <option value="">Cualquiera</option>
+                <option value="no" [selected]="v.power() === 'no'">Sin power</option>
+                <option value="1" [selected]="v.power() === '1'">1</option>
+                <option value="2" [selected]="v.power() === '2'">2</option>
+                <option value="3" [selected]="v.power() === '3'">3 o más</option>
               </select>
             </label>
             <label>
@@ -822,6 +851,15 @@ export class CollectionPage implements OnInit {
     // "No la quiero" solo cuenta en la colección propia: es una preferencia personal.
     const descartadas = this.propia() ? this.descartadas.ids() : new Set<string>();
     const pasa = this.filtroExtra();
+    return this.ordenarCarpeta(this.filtrarCarpeta(cartas, tiene, descartadas, pasa));
+  });
+
+  private filtrarCarpeta(
+    cartas: CatalogCard[],
+    tiene: (id: string) => boolean,
+    descartadas: ReadonlySet<string>,
+    pasa: (c: CatalogCard) => boolean,
+  ): CatalogCard[] {
     switch (this.v.mostrar()) {
       case 'tengo':
         return cartas.filter((c) => tiene(c.cardId) && pasa(c));
@@ -832,7 +870,27 @@ export class CollectionPage implements OnInit {
       default:
         return cartas.filter(pasa);
     }
-  });
+  }
+
+  /** Las sin coste de energía (campos de batalla, runas…) van al final al ordenar por energía. */
+  private ordenarCarpeta(cartas: CatalogCard[]): CatalogCard[] {
+    const precio = (c: CatalogCard) => {
+      const p = this.valuation.pricing(c.cardId);
+      return Math.max(p.normal ?? 0, p.foil ?? 0);
+    };
+    switch (this.v.ordenCarpeta()) {
+      case 'energia':
+        return [...cartas].sort(
+          (a, b) => (a.energy ?? 99) - (b.energy ?? 99) || a.name.localeCompare(b.name),
+        );
+      case 'valor':
+        return [...cartas].sort((a, b) => precio(b) - precio(a));
+      case 'nombre':
+        return [...cartas].sort((a, b) => a.name.localeCompare(b.name));
+      default:
+        return cartas;
+    }
+  }
 
   protected readonly carpetaVisible = computed(() => this.carpeta().slice(0, this.v.limite()));
 
@@ -887,6 +945,7 @@ export class CollectionPage implements OnInit {
         this.v.rareza(),
         this.v.acabado(),
         this.v.precioMinimo(),
+        this.v.power(),
       ].filter(Boolean).length,
   );
 
@@ -897,6 +956,7 @@ export class CollectionPage implements OnInit {
       this.v.tipo,
       this.v.rareza,
       this.v.precioMinimo,
+      this.v.power,
     ])
       s.set('');
     this.v.acabado.set('');
@@ -911,11 +971,17 @@ export class CollectionPage implements OnInit {
     const energia = this.v.energia();
     const acabado = this.v.acabado();
     const minimo = Number(this.v.precioMinimo()) || 0;
+    const power = this.v.power();
     const fuente = this.fuente() ?? new Map<string, CardQty>();
     return (c: CatalogCard): boolean => {
       if (energia) {
         const e = Number(energia);
         if (c.energy === null || (e === 7 ? c.energy < 7 : c.energy !== e)) return false;
+      }
+      if (power) {
+        if (power === 'no' ? c.power !== null : c.power === null) return false;
+        if (power === '3' ? (c.power ?? 0) < 3 : power !== 'no' && c.power !== Number(power))
+          return false;
       }
       if (acabado) {
         const q = fuente.get(c.cardId);
@@ -990,6 +1056,12 @@ export class CollectionPage implements OnInit {
         break;
       case 'nombre':
         ordenadas.sort((a, b) => a.card.name.localeCompare(b.card.name));
+        break;
+      case 'energia':
+        ordenadas.sort(
+          (a, b) =>
+            (a.card.energy ?? 99) - (b.card.energy ?? 99) || a.card.name.localeCompare(b.card.name),
+        );
         break;
       case 'set':
         ordenadas.sort(
