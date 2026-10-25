@@ -497,6 +497,15 @@ recibe los productos con tus copias y devuelve lo que habría valido cada día e
 precios guardados de ese día (arrastra el último precio si un día falta). No guarda nada nuevo: sale
 del historial de precios, que empieza el 25/10/2026. Pendiente: mejorar el aspecto general.
 
+### Estilo "Hextech" (25/10/2026)
+A petición del usuario ("estilo League of Legends, que no parezca tan IA"): tokens en
+`src/styles.scss` con la paleta del cliente de LoL (azul noche #010a13/#0a1428, oro #c8aa6e/
+#c89b3c, crema #f0e6d2, turquesa #0ac8b9), Cinzel (títulos, botones, barra) y Source Sans 3 (texto)
+de Google Fonts, botones con marco dorado biselado, esquinas de 2 px en todo (salvo pastillas y
+círculos) y remates dorados en el héroe de inicio. Solo estética: ni logos ni marcas de Riot.
+La gráfica del valor de la colección se movió de inicio a Mi colección
+(`src/app/ui/valor-coleccion.component.ts`). El escáner sigue buscando solo tras cerrar la ventana.
+
 ### Extras del 25/10/2026
 - **Navegación en móvil** (≤ 700 px): las secciones pasan a una barra fija abajo con iconos
   (Colección, Catálogo, Escanear, Deseos); arriba solo quedan la marca y Salir. En escritorio, igual

@@ -84,13 +84,19 @@ import { TraduccionService } from '../core/traduccion.service';
       align-items: center;
       gap: 16px;
       padding: 8px 16px;
-      background: var(--bg);
-      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, #091428, #010a13);
+      border-bottom: 1px solid transparent;
+      border-image: linear-gradient(90deg, transparent, var(--accent-fuerte), transparent) 1;
     }
     .marca {
+      font-family: var(--fuente-titulos);
       font-weight: 700;
-      color: var(--text);
+      font-size: 1.15rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
       text-decoration: none;
+      text-shadow: 0 0 12px rgb(200 155 60 / 35%);
     }
     nav {
       display: flex;
@@ -104,12 +110,20 @@ import { TraduccionService } from '../core/traduccion.service';
       color: var(--muted);
       text-decoration: none;
       padding: 6px 10px;
-      border-radius: 8px;
       white-space: nowrap;
+      font-family: var(--fuente-titulos);
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border-bottom: 2px solid transparent;
+    }
+    nav a:hover {
+      color: var(--text);
     }
     nav a.activo {
-      color: var(--text);
-      background: var(--surface-2);
+      color: var(--accent);
+      border-bottom-color: var(--accent);
     }
     .usuario {
       flex-shrink: 0;
@@ -165,8 +179,9 @@ import { TraduccionService } from '../core/traduccion.service';
         justify-items: center;
         gap: 2px;
         padding: 6px 2px;
-        font-size: 0.72rem;
-        border-radius: 10px;
+        font-size: 0.62rem;
+        letter-spacing: 0.04em;
+        border-bottom: 0;
       }
       nav a.activo {
         background: transparent;

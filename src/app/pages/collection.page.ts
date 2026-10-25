@@ -23,6 +23,7 @@ import { EurPipe, ThumbPipe } from '../ui/pipes';
 import { CardTileComponent } from '../ui/card-tile.component';
 import { LoadMoreComponent } from '../ui/load-more.component';
 import { VolverArribaComponent } from '../ui/volver-arriba.component';
+import { ValorColeccionComponent } from '../ui/valor-coleccion.component';
 import { QtyControlComponent } from '../ui/qty-control.component';
 
 type Orden = 'valor' | 'nombre' | 'set';
@@ -76,6 +77,7 @@ interface Fila {
     CardTileComponent,
     LoadMoreComponent,
     VolverArribaComponent,
+    ValorColeccionComponent,
   ],
   template: `
     <main class="pagina">
@@ -143,6 +145,12 @@ interface Fila {
             >
           </div>
         </section>
+
+        @if (propia() && totales().cards) {
+          <section class="evolucion">
+            <app-valor-coleccion />
+          </section>
+        }
 
         @if (prices.data() && valor().copiasSinPrecio > 0) {
           <details class="aviso">
@@ -408,6 +416,12 @@ interface Fila {
       color: var(--text);
       border: 1px solid var(--border);
     }
+    .evolucion {
+      padding: 16px;
+      border-radius: 2px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+    }
     .resumen {
       display: grid;
       grid-template-columns: 2fr 1fr 1fr;
@@ -420,13 +434,14 @@ interface Fila {
       padding: 14px 16px;
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: 2px;
     }
     .etiqueta {
       font-size: 0.8rem;
       color: var(--muted);
     }
     .numero {
+      font-family: var(--fuente-titulos);
       font-size: 1.6rem;
       font-weight: 700;
       font-variant-numeric: tabular-nums;
@@ -441,7 +456,7 @@ interface Fila {
     .aviso {
       padding: 12px 16px;
       border: 1px dashed var(--accent);
-      border-radius: 12px;
+      border-radius: 2px;
       font-size: 0.9rem;
     }
     .aviso summary {
@@ -461,7 +476,7 @@ interface Fila {
     .boton {
       display: inline-block;
       padding: 10px 18px;
-      border-radius: 8px;
+      border-radius: 2px;
       background: var(--accent);
       color: #15120a;
       font-weight: 600;
@@ -479,7 +494,7 @@ interface Fila {
     .vistas {
       display: flex;
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 2px;
       overflow: hidden;
     }
     .vistas button {
@@ -552,7 +567,7 @@ interface Fila {
       padding: 8px 12px;
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: 2px;
     }
     .miniatura img {
       display: block;

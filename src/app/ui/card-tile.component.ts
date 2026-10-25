@@ -85,7 +85,7 @@ import { QtyControlComponent } from './qty-control.component';
       padding: 8px;
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: 2px;
       transition:
         transform 0.15s ease,
         box-shadow 0.15s ease,
@@ -106,7 +106,7 @@ import { QtyControlComponent } from './qty-control.component';
     .marco {
       position: relative;
       overflow: hidden;
-      border-radius: 6px;
+      border-radius: 2px;
     }
     .imagen {
       display: block;
@@ -208,7 +208,7 @@ import { QtyControlComponent } from './qty-control.component';
       z-index: 1;
       pointer-events: none;
       padding: 1px 7px;
-      border-radius: 6px;
+      border-radius: 2px;
       font-size: 0.72rem;
       font-weight: 700;
       letter-spacing: 0.03em;

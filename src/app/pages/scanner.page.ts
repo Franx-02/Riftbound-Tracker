@@ -302,7 +302,7 @@ interface Resultado {
     .camara {
       position: relative;
       display: none;
-      border-radius: 12px;
+      border-radius: 2px;
       overflow: hidden;
       background: #000;
     }
@@ -323,7 +323,7 @@ interface Resultado {
       height: 64%;
       aspect-ratio: 744 / 1039;
       transform: translate(-50%, -50%);
-      border-radius: 14px;
+      border-radius: 2px;
       box-shadow: 0 0 0 9999px rgb(0 0 0 / 45%);
     }
     /* Solo las esquinas, como un visor. */
@@ -338,34 +338,34 @@ interface Resultado {
       left: -2px;
       border-right: 0;
       border-bottom: 0;
-      border-top-left-radius: 16px;
+      border-top-left-radius: 4px;
     }
     .esquina.ad {
       top: -2px;
       right: -2px;
       border-left: 0;
       border-bottom: 0;
-      border-top-right-radius: 16px;
+      border-top-right-radius: 4px;
     }
     .esquina.bi {
       bottom: -2px;
       left: -2px;
       border-right: 0;
       border-top: 0;
-      border-bottom-left-radius: 16px;
+      border-bottom-left-radius: 4px;
     }
     .esquina.bd {
       bottom: -2px;
       right: -2px;
       border-left: 0;
       border-top: 0;
-      border-bottom-right-radius: 16px;
+      border-bottom-right-radius: 4px;
     }
     .escaneos {
       padding: 12px;
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 16px;
+      border-radius: 2px;
     }
     .cabecera-escaneos {
       display: flex;
@@ -379,7 +379,7 @@ interface Resultado {
     }
     .pastilla {
       padding: 6px 12px;
-      border-radius: 10px;
+      border-radius: 2px;
       background: var(--surface-2);
       font-variant-numeric: tabular-nums;
       white-space: nowrap;
@@ -444,7 +444,7 @@ interface Resultado {
       display: inline-flex;
       align-items: center;
       padding: 8px 16px;
-      border-radius: 8px;
+      border-radius: 2px;
       border: 1px solid var(--border);
       cursor: pointer;
     }
@@ -468,7 +468,7 @@ interface Resultado {
       padding: 12px;
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: 2px;
     }
     .resultado h2 {
       margin: 0 0 8px;
@@ -491,7 +491,7 @@ interface Resultado {
       gap: 12px;
       align-items: start;
       padding: 6px;
-      border-radius: 10px;
+      border-radius: 2px;
     }
     .cartas li.primera {
       outline: 2px solid var(--accent);
@@ -500,7 +500,7 @@ interface Resultado {
       display: block;
       width: 100px;
       height: auto;
-      border-radius: 6px;
+      border-radius: 2px;
     }
     .datos {
       display: grid;
@@ -536,7 +536,7 @@ interface Resultado {
       padding: 20px 16px 16px;
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 16px;
+      border-radius: 2px;
       text-align: center;
     }
     .modal h2 {
@@ -565,7 +565,7 @@ interface Resultado {
     .grande {
       width: min(200px, 50vw);
       height: auto;
-      border-radius: 10px;
+      border-radius: 2px;
     }
     .tienes {
       font-size: 0.9rem;
@@ -604,7 +604,7 @@ interface Resultado {
       padding: 4px;
       background: transparent;
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 2px;
       color: var(--muted);
       font-size: 0.7rem;
     }
@@ -995,10 +995,18 @@ export class ScannerPage implements OnDestroy {
     else if (this.camaraActiva()) this.seguir();
   }
 
-  /** Cierra sin añadir. La cámara queda en pausa hasta "Escanear otra". */
+  /**
+   * Cierra sin añadir y la cámara sigue buscando. La carta que se acaba de enseñar no
+   * vuelve a saltar mientras siga delante (igual que tras añadirla).
+   */
   protected cerrarVentana(): void {
+    const e = this.encontrada();
     this.encontrada.set(null);
     this.descartadas = new Set();
+    if (e?.origen === 'camara' && this.camaraActiva()) {
+      this.recienAnadida = e.cartas[e.elegida]?.cardId ?? null;
+      this.seguir();
+    }
   }
 
   private anadirResultado(r: Resultado): void {

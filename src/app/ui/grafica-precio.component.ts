@@ -259,7 +259,7 @@ const aFecha = (s: string) => new Date(`${s}T12:00:00`);
       font-size: 0.8rem;
       background: var(--bg);
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 2px;
       pointer-events: none;
       white-space: nowrap;
     }

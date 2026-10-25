@@ -1,13 +1,23 @@
+/*
+ * Tema "Hextech": paleta del cliente de League of Legends (azul noche, dorado envejecido,
+ * crema y turquesa), esquinas casi rectas y marcos dorados. Solo estética: ni logos ni
+ * marcas de Riot. Los componentes usan estos tokens; el oro y el turquesa salen de aquí.
+ */
 :root {
-  --bg: #12141a;
-  --surface: #1c1f27;
-  --surface-2: #252935;
-  --border: #2c303b;
-  --text: #e8e9ed;
-  --muted: #9097a6;
-  --accent: #c9a13b;
-  --ok: #5fbf7a;
-  --error: #e06c6c;
+  --bg: #010a13;
+  --surface: #0a1428;
+  --surface-2: #1e2328;
+  --border: #463714;
+  --border-claro: #785a28;
+  --text: #f0e6d2;
+  --muted: #a09b8c;
+  --accent: #c8aa6e;
+  --accent-fuerte: #c89b3c;
+  --hextech: #0ac8b9;
+  --ok: #0acbe6;
+  --error: #e84057;
+  --fuente-titulos: 'Cinzel', 'Times New Roman', serif;
+  --fuente: 'Source Sans 3', system-ui, -apple-system, 'Segoe UI', sans-serif;
   color-scheme: dark;
 }
 
@@ -17,20 +27,24 @@
 
 body {
   margin: 0;
-  background: var(--bg);
   color: var(--text);
-  font-family:
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
+  font-family: var(--fuente);
   line-height: 1.5;
+  /* Fondo con un resplandor azul arriba y dorado tenue abajo, como el cliente. */
+  background:
+    radial-gradient(1200px 600px at 50% -200px, rgb(10 50 60 / 55%), transparent 70%),
+    radial-gradient(900px 500px at 100% 110%, rgb(120 90 40 / 18%), transparent 70%), var(--bg);
+  background-attachment: fixed;
 }
 
 h1,
-h2 {
+h2,
+h3 {
   margin: 0 0 12px;
+  font-family: var(--fuente-titulos);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text);
 }
 h1 {
   font-size: 1.6rem;
@@ -39,23 +53,42 @@ h2 {
   font-size: 1.1rem;
 }
 
+/* Botón principal: marco dorado biselado y fondo azul oscuro, en mayúsculas. */
 button {
   font: inherit;
+  font-family: var(--fuente-titulos);
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   padding: 10px 18px;
-  border-radius: 8px;
-  border: 1px solid var(--accent);
-  background: var(--accent);
-  color: #15120a;
-  font-weight: 600;
-  cursor: pointer;
-}
-button.secondary {
-  background: transparent;
+  border-radius: 2px;
+  border: 2px solid transparent;
+  background:
+    linear-gradient(180deg, #1e2d3a, #0a1428) padding-box,
+    linear-gradient(180deg, #f0e6d2, var(--accent-fuerte) 40%, var(--border-claro)) border-box;
   color: var(--text);
-  border-color: var(--border);
+  cursor: pointer;
+  transition:
+    filter 0.15s ease,
+    box-shadow 0.15s ease;
+}
+button:hover:not(:disabled) {
+  filter: brightness(1.15);
+  box-shadow: 0 0 12px rgb(200 170 110 / 35%);
+}
+button:active:not(:disabled) {
+  filter: brightness(0.9);
+}
+/* Secundario: solo el marco dorado oscuro. */
+button.secondary {
+  background:
+    linear-gradient(180deg, #0a1428, #010a13) padding-box,
+    linear-gradient(180deg, var(--border-claro), var(--border)) border-box;
+  color: var(--accent);
 }
 button:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: default;
 }
 
@@ -87,7 +120,7 @@ button:disabled {
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 2px;
   padding: 16px;
 }
 .card ul {
@@ -115,6 +148,12 @@ button:disabled {
 a {
   color: var(--accent);
 }
+a:hover {
+  color: #f0e6d2;
+}
+::selection {
+  background: rgb(10 200 185 / 35%);
+}
 
 input,
 select {
@@ -122,9 +161,13 @@ select {
   color: var(--text);
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 2px;
   padding: 8px 10px;
   min-width: 0;
+}
+input:focus,
+select:focus {
+  border-color: var(--accent);
 }
 input:focus-visible,
 select:focus-visible,
