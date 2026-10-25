@@ -53,6 +53,9 @@ import { TraduccionService } from '../core/traduccion.service';
           </svg>
           <span>Deseos</span>
         </a>
+        <a routerLink="/intercambios" routerLinkActive="activo" class="solo-escritorio">
+          <span>Intercambios</span>
+        </a>
       </nav>
       <div class="usuario">
         @if (auth.demo) {
@@ -202,6 +205,9 @@ import { TraduccionService } from '../core/traduccion.service';
       }
       .texto-corto {
         display: inline;
+      }
+      nav a.solo-escritorio {
+        display: none;
       }
       .hueco-barra {
         display: block;

@@ -35,6 +35,11 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/import.page').then((m) => m.ImportPage),
       },
       {
+        path: 'intercambios',
+        title: 'Intercambios · Riftbound',
+        loadComponent: () => import('./pages/intercambios.page').then((m) => m.IntercambiosPage),
+      },
+      {
         path: 'deseos',
         title: 'Lista de deseos · Riftbound',
         loadComponent: () => import('./pages/wishlist.page').then((m) => m.WishlistPage),

@@ -514,6 +514,12 @@ La gráfica del valor de la colección se movió de inicio a Mi colección
 - Campos de batalla: se escanean girados en vertical. `build:vectores` los guarda girados 90° a
   cada lado (mismo id dos veces; `puntuarRed` se queda con el mejor). Probados 5 de 5.
 
+### Intercambios (25/10/2026)
+`/intercambios` (menú de escritorio y botón en inicio; en móvil no cabe en la barra): eliges a otra
+persona y salen las cartas de las que tiene N o más copias (4 por defecto, elegible de 2 a 5) y tú
+ninguna ("Puedes pedirle") y al revés ("Puedes ofrecerle"), de más a menos valiosas, con un botón
+que copia un mensaje para WhatsApp. Lee solo la colección de la persona elegida (`loadOther`).
+
 ### Extras del 25/10/2026
 - **Navegación en móvil** (≤ 700 px): las secciones pasan a una barra fija abajo con iconos
   (Colección, Catálogo, Escanear, Deseos); arriba solo quedan la marca y Salir. En escritorio, igual

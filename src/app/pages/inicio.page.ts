@@ -63,6 +63,11 @@ const PRECIO_MINIMO_SUBIDA = 1;
           <span class="titulo">Escanear</span>
           <span class="muted">Añade cartas con la cámara</span>
         </a>
+        <a routerLink="/intercambios" class="acceso">
+          <span class="icono" aria-hidden="true">⇄</span>
+          <span class="titulo">Intercambios</span>
+          <span class="muted">Lo que les sobra a otros</span>
+        </a>
         <a routerLink="/catalogo" class="acceso">
           <span class="icono" aria-hidden="true">⌕</span>
           <span class="titulo">Catálogo</span>
@@ -218,7 +223,7 @@ const PRECIO_MINIMO_SUBIDA = 1;
     }
     .accesos {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
       gap: 12px;
     }
     .acceso {
