@@ -1,0 +1,74 @@
+# Actualización automática del catálogo, una vez por semana (y a mano desde la pestaña
+# Actions de GitHub, con "Run workflow").
+#
+# 1. Regenera el catálogo (RiftHunt) y el mapeo de precios (Cardmarket).
+# 2. Si hay cartas nuevas, quitadas o con otra imagen, regenera las huellas y los vectores
+#    del escáner (para que también reconozca las nuevas).
+# 3. Si algo ha cambiado de verdad (sin contar fechas), hace commit en main. Netlify
+#    despliega solo con ese commit.
+# Los textos de las cartas nuevas salen en inglés hasta que se traduzcan (docs/glosario.md).
+name: Actualizar catálogo
+
+on:
+  schedule:
+    # Los lunes a las 6:00 UTC.
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: actualizar-catalogo
+  cancel-in-progress: false
+
+jobs:
+  actualizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Imágenes de las cartas y modelo de la red: así no se bajan enteros cada semana.
+      - uses: actions/cache@v4
+        with:
+          path: |
+            tools/.cache
+            ~/.cache/huggingface
+            node_modules/@huggingface/transformers/.cache
+          key: datos-escaner-${{ github.run_id }}
+          restore-keys: datos-escaner-
+
+      - name: Regenerar catálogo y mapeo
+        run: npm run build:catalog
+
+      - name: Ver qué ha cambiado
+        id: cambios
+        run: npx tsx tools/cambios-catalogo.mts
+
+      - name: Regenerar huellas y vectores del escáner
+        if: steps.cambios.outputs.imagenes == 'true'
+        run: |
+          npm run build:huellas
+          npm run build:vectores
+
+      - name: Commit
+        if: steps.cambios.outputs.catalogo == 'true' || steps.cambios.outputs.mapeo == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data
+          if [ "${{ steps.cambios.outputs.nuevas }}" != "0" ]; then
+            mensaje="Catálogo: ${{ steps.cambios.outputs.nuevas }} cartas nuevas (actualización automática)"
+          else
+            mensaje="Catálogo y precios: actualización automática"
+          fi
+          git commit -m "$mensaje"
+          git push

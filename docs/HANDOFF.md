@@ -476,6 +476,16 @@ Tesseract). Se quitó el OCR y la dependencia. Lo que hay ahora:
     versión exacta, 3 una gemela que sale al lado), ninguna equivocada; antes 13/16. ~2 s por carta
     en escritorio. **Falta probarlo en el móvil**, donde la red irá más lenta (WebAssembly sin hilos).
 
+### Actualización automática del catálogo (25/10/2026)
+`.github/workflows/actualizar-catalogo.yml` corre los lunes a las 6:00 UTC (y a mano desde la
+pestaña Actions de GitHub con "Run workflow"): `build:catalog`; `tools/cambios-catalogo.mts`
+compara con git sin contar fechas; si hay cartas nuevas, quitadas o con otra imagen, también
+`build:huellas` y `build:vectores`; y si algo cambió, commit en main con el bot de GitHub, que
+Netlify despliega. El mapeo de precios cambia casi todas las semanas (depende de los precios), así
+que lo normal es un commit semanal. Lo único manual que queda con un set nuevo es traducir sus
+textos (`npm run traducir -- pendientes`). Si el workflow falla (RiftHunt caído, formato nuevo),
+GitHub avisa por email al dueño del repo.
+
 ### Extras del 25/10/2026
 - **Navegación en móvil** (≤ 700 px): las secciones pasan a una barra fija abajo con iconos
   (Colección, Catálogo, Escanear, Deseos); arriba solo quedan la marca y Salir. En escritorio, igual
