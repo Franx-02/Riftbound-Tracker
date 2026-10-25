@@ -434,7 +434,30 @@ Tesseract). Se quitó el OCR y la dependencia. Lo que hay ahora:
   sola y no vuelve a proponer la misma carta mientras siga delante. Recuadro de esquinas y panel
   "Tus escaneos" con cuántas cartas y cuánto valen, y una × para deshacer cada una.
 
+- **Mejora de la detección** (25/10/2026, el usuario decía que costaba mucho que la detectara).
+  Causa medida: para enfocar con el móvil hay que alejar la carta y queda al 45-75 % del recuadro,
+  y solo se buscaba desde el 72 %; con la carta así, cada lectura acertaba el 48 % y la cámara no
+  llegaba a pararse en un tercio de los casos. Cambios (todo en `src/app/core/reconocimiento.ts`,
+  código puro que también usa el medidor):
+  - `localizarCarta`: busca rectángulos con proporción de carta cuyo borde coincide con bordes
+    marcados de la imagen (sumas acumuladas del gradiente, miles de rectángulos en milisegundos).
+    La cámara compara en esos y en unos pocos encuadres centrados en la guía; las fotos, también.
+  - `Votacion`: se para si la misma carta sale "segura" dos veces seguidas o primera en 3 de las
+    últimas 5 lecturas con distancia ≤ 0,17 y margen ≥ 0,01.
+  - El recuadro guía es más pequeño (64 % del alto) y el texto dice que no hace falta llenarlo.
+  - `npm run medir:escaner [-- N]` (`tools/medir-escaner.mts`) simula "vídeos" (carta sobre una
+    mesa, perspectiva, giro, dominante de color, reflejos, desenfoque, JPEG, temblor) y cartas que
+    no están en el catálogo. Variables: `ESC_MIN`/`ESC_MAX` (tamaño de la carta respecto a la guía),
+    `MODO`, `TOP_ENC`, `V_*`. Resultado con 200 cartas: carta al 45-75 % de la guía, se para con
+    la buena el 91 % (antes 63 %); al 75-110 %, el 98 %; con la equivocada, ≤ 0,7 %. Con cartas
+    que no están en el catálogo se para el 10 % de las veces (para eso está "No es esta").
+  - En la app, con la cámara simulada: 8 de 10 bien a la primera; 2 de ellas eran la firmada en vez
+    de la normal o la promo en vez de la normal (misma ilustración, salen juntas en la ventana).
+
 ### Extras del 25/10/2026
+- **Navegación en móvil** (≤ 700 px): las secciones pasan a una barra fija abajo con iconos
+  (Colección, Catálogo, Escanear, Deseos); arriba solo quedan la marca y Salir. En escritorio, igual
+  que antes. Todo en `shell.component.ts`; el botón de volver arriba sube en móvil para no taparse.
 - **Volver arriba**: `src/app/ui/volver-arriba.component.ts`, botón flotante en Mi colección y
   Catálogo a partir de 800 px de scroll.
 - **Enlace a Cardmarket** en la ficha. Los JSON públicos no traen la URL del producto, así que

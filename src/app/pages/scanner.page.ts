@@ -15,7 +15,9 @@ import { PROPORCION_CARTA, Pixeles } from '../core/huella';
 import {
   Encuadre,
   ReconocimientoService,
+  Votacion,
   encuadresAlrededor,
+  localizarCarta,
 } from '../core/reconocimiento.service';
 import { cartasDelCodigo, parseCodigos } from '../core/scanner';
 import { TraduccionService } from '../core/traduccion.service';
@@ -60,8 +62,8 @@ interface Resultado {
       <header>
         <h1>Escanear cartas</h1>
         <p class="muted">
-          Encaja la carta en el recuadro, de frente y entera. Funciona mejor con buena luz, sobre un
-          fondo liso y sin reflejos.
+          Pon la carta dentro del recuadro, entera y de frente (no hace falta que lo llene).
+          Funciona mejor con buena luz, sobre un fondo liso y sin reflejos.
         </p>
       </header>
 
@@ -313,10 +315,10 @@ interface Resultado {
     .guia {
       position: absolute;
       left: 50%;
-      top: 5%;
-      height: 82%;
+      top: 50%;
+      height: 64%;
       aspect-ratio: 744 / 1039;
-      transform: translateX(-50%);
+      transform: translate(-50%, -50%);
       border-radius: 14px;
       box-shadow: 0 0 0 9999px rgb(0 0 0 / 45%);
     }
@@ -645,8 +647,8 @@ export class ScannerPage implements OnDestroy {
 
   private stream: MediaStream | null = null;
   private temporizador: ReturnType<typeof setTimeout> | null = null;
-  /** La carta segura del fotograma anterior: hace falta la misma dos veces seguidas. */
-  private anterior: string | null = null;
+  /** Decide cuándo hay carta a partir de varias lecturas seguidas. */
+  private readonly votacion = new Votacion();
   private readonly lienzo = document.createElement('canvas');
 
   private readonly setsValidos = computed(() => new Set(this.catalog.sets().map((s) => s.id)));
@@ -709,7 +711,7 @@ export class ScannerPage implements OnDestroy {
 
   protected seguir(): void {
     this.pausado.set(false);
-    this.anterior = null;
+    this.votacion.reiniciar();
     this.programar(0);
   }
 
@@ -718,37 +720,45 @@ export class ScannerPage implements OnDestroy {
     this.temporizador = setTimeout(() => this.leerFotograma(), ms);
   }
 
+  /** Dónde buscar la carta en la captura: donde se ve su borde y, por si acaso, en la guía. */
+  private encuadresCamara(px: Pixeles, guia: Encuadre): Encuadre[] {
+    return [...localizarCarta(px, guia, 6), ...encuadresAlrededor(guia, [0.6, 0.8, 1])];
+  }
+
   /**
-   * Reconoce la carta del recuadro. Se para sola cuando el resultado es seguro dos
-   * fotogramas seguidos (con uno solo saltaría con la carta aún moviéndose).
+   * Reconoce la carta del recuadro y vota entre lecturas seguidas (ver `Votacion`): se
+   * para sola cuando varias coinciden, no con una lectura suelta.
    */
   private leerFotograma(): void {
     if (!this.camaraActiva() || this.pausado()) return;
     const captura = this.reco.listo() ? this.recuadro() : null;
     if (captura) {
-      const r = this.reco.reconocer(captura.px, encuadresAlrededor(captura.guia), this.descartadas);
-      const primera = r.candidatas[0]?.cardId ?? null;
-      if (r.segura && primera === this.recienAnadida) {
+      const r = this.reco.reconocer(
+        captura.px,
+        this.encuadresCamara(captura.px, captura.guia),
+        this.descartadas,
+      );
+      const ganadora = this.votacion.anadir(r);
+      const provisional = this.votacion.provisional();
+      if (provisional && provisional !== this.recienAnadida) this.recienAnadida = null;
+      if (ganadora && ganadora === this.recienAnadida) {
         // Sigue delante la que se acaba de añadir: se espera a que cambien de carta.
+        this.votacion.reiniciar();
         this.provisional.set(null);
-        this.anterior = null;
-        this.programar(PAUSA_MS);
-        return;
-      }
-      if (r.segura) this.recienAnadida = null;
-      if (r.segura && primera === this.anterior) {
-        this.mostrar(
-          r.candidatas.map((c) => c.cardId),
-          null,
-          'camara',
-        );
+      } else if (ganadora) {
+        const resto = r.candidatas.map((c) => c.cardId).filter((id) => id !== ganadora);
+        this.mostrar([ganadora, ...resto], null, 'camara');
         this.pausado.set(true);
         this.provisional.set(null);
         navigator.vibrate?.(60);
         return;
+      } else {
+        this.provisional.set(
+          provisional && provisional !== this.recienAnadida
+            ? (this.catalog.card(provisional)?.name ?? null)
+            : null,
+        );
       }
-      this.anterior = r.segura ? primera : null;
-      this.provisional.set(r.segura && primera ? (this.catalog.card(primera)?.name ?? null) : null);
     }
     this.programar(PAUSA_MS);
   }
@@ -757,7 +767,11 @@ export class ScannerPage implements OnDestroy {
   protected usarFotograma(): void {
     const captura = this.reco.listo() ? this.recuadro() : null;
     if (!captura) return;
-    const r = this.reco.reconocer(captura.px, encuadresAlrededor(captura.guia), this.descartadas);
+    const r = this.reco.reconocer(
+      captura.px,
+      this.encuadresCamara(captura.px, captura.guia),
+      this.descartadas,
+    );
     this.mostrar(
       r.candidatas.map((c) => c.cardId),
       r.segura ? null : 'No está claro: si no es esta, mira las de abajo.',
@@ -824,7 +838,8 @@ export class ScannerPage implements OnDestroy {
       ctx.drawImage(bitmap, 0, 0, W, H);
       bitmap.close();
       this.descartadas = new Set();
-      this.ultimaFoto = { px: ctx.getImageData(0, 0, W, H), encuadres: encuadresDeFoto(W, H) };
+      const px = ctx.getImageData(0, 0, W, H);
+      this.ultimaFoto = { px, encuadres: encuadresDeFoto(px) };
       this.aviso.set(null);
       this.buscarEnFoto();
     } catch (e) {
@@ -955,8 +970,17 @@ export class ScannerPage implements OnDestroy {
  * centrados y de varios tamaños, con pequeños desplazamientos, y gana el que más se
  * parezca a alguna.
  */
-function encuadresDeFoto(W: number, H: number): Encuadre[] {
-  const salida: Encuadre[] = [];
+function encuadresDeFoto(px: Pixeles): Encuadre[] {
+  const W = px.width;
+  const H = px.height;
+  // La carta más grande que cabe centrada, como referencia de tamaño para localizarla.
+  let gh = H;
+  let gw = gh * PROPORCION_CARTA;
+  if (gw > W) {
+    gw = W;
+    gh = gw / PROPORCION_CARTA;
+  }
+  const salida = localizarCarta(px, { x: (W - gw) / 2, y: (H - gh) / 2, w: gw, h: gh }, 6, 0.25, 1);
   for (const f of [1, 0.85, 0.7, 0.55]) {
     let h = H * f;
     let w = h * PROPORCION_CARTA;

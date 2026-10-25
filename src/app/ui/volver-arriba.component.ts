@@ -39,6 +39,12 @@ const UMBRAL_PX = 800;
       border-radius: 50%;
       box-shadow: 0 4px 14px rgb(0 0 0 / 45%);
     }
+    /* En móvil, por encima de la barra de navegación inferior (ver shell.component). */
+    @media (max-width: 700px) {
+      button {
+        bottom: calc(80px + env(safe-area-inset-bottom));
+      }
+    }
   `,
 })
 export class VolverArribaComponent {

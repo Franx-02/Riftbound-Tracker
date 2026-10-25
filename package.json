@@ -12,7 +12,8 @@
     "check:import": "tsx tools/check-import.mts",
     "start:demo": "netlify dev --command \"npx ng serve --port 4200 --configuration demo\"",
     "traducir": "tsx tools/traducir.mts",
-    "build:huellas": "tsx tools/build-huellas.mts"
+    "build:huellas": "tsx tools/build-huellas.mts",
+    "medir:escaner": "tsx tools/medir-escaner.mts"
   },
   "private": true,
   "packageManager": "npm@10.9.9",

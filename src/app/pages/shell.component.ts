@@ -14,11 +14,38 @@ import { TraduccionService } from '../core/traduccion.service';
   template: `
     <header class="barra">
       <a class="marca" routerLink="/coleccion">Riftbound</a>
-      <nav>
-        <a routerLink="/coleccion" routerLinkActive="activo">Mi colección</a>
-        <a routerLink="/catalogo" routerLinkActive="activo">Catálogo</a>
-        <a routerLink="/deseos" routerLinkActive="activo">Deseos</a>
-        <a routerLink="/escanear" routerLinkActive="activo">Escanear</a>
+      <!-- En móvil esta misma navegación baja a una barra fija con iconos. -->
+      <nav aria-label="Secciones">
+        <a routerLink="/coleccion" routerLinkActive="activo">
+          <svg class="icono" viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="3" y="4" width="7" height="9" rx="1.5" />
+            <rect x="14" y="4" width="7" height="9" rx="1.5" />
+            <rect x="3" y="15" width="18" height="5" rx="1.5" />
+          </svg>
+          <span class="texto-largo">Mi colección</span><span class="texto-corto">Colección</span>
+        </a>
+        <a routerLink="/catalogo" routerLinkActive="activo">
+          <svg class="icono" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="11" cy="11" r="6.5" />
+            <path d="M16 16l4.5 4.5" />
+          </svg>
+          <span>Catálogo</span>
+        </a>
+        <a routerLink="/escanear" routerLinkActive="activo" class="escanear">
+          <svg class="icono" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16"
+            />
+            <rect x="8.5" y="7.5" width="7" height="9" rx="1" />
+          </svg>
+          <span>Escanear</span>
+        </a>
+        <a routerLink="/deseos" routerLinkActive="activo">
+          <svg class="icono" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" />
+          </svg>
+          <span>Deseos</span>
+        </a>
       </nav>
       <div class="usuario">
         @if (auth.demo) {
@@ -38,6 +65,8 @@ import { TraduccionService } from '../core/traduccion.service';
     }
 
     <router-outlet />
+    <!-- Hueco para que la barra inferior del móvil no tape el final de la página. -->
+    <div class="hueco-barra" aria-hidden="true"></div>
   `,
   styles: `
     .barra {
@@ -92,17 +121,69 @@ import { TraduccionService } from '../core/traduccion.service';
       margin: 8px 16px;
     }
 
-    @media (max-width: 600px) {
+    .icono,
+    .texto-corto,
+    .hueco-barra {
+      display: none;
+    }
+
+    /* Móvil: arriba solo la marca y Salir; las secciones, en una barra fija abajo. */
+    @media (max-width: 700px) {
       .barra {
         gap: 8px;
         padding: 8px 12px;
       }
-      .marca,
+      .marca {
+        flex: 1;
+      }
       .nombre {
         display: none;
       }
+      nav {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 15;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0;
+        overflow: visible;
+        padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+        background: var(--bg);
+        border-top: 1px solid var(--border);
+      }
       nav a {
-        padding: 6px 8px;
+        display: grid;
+        justify-items: center;
+        gap: 2px;
+        padding: 6px 2px;
+        font-size: 0.72rem;
+        border-radius: 10px;
+      }
+      nav a.activo {
+        background: transparent;
+        color: var(--accent);
+      }
+      .icono {
+        display: block;
+        width: 24px;
+        height: 24px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .texto-largo {
+        display: none;
+      }
+      .texto-corto {
+        display: inline;
+      }
+      .hueco-barra {
+        display: block;
+        height: calc(68px + env(safe-area-inset-bottom));
       }
     }
   `,
