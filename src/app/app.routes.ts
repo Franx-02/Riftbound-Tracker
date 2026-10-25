@@ -12,7 +12,12 @@ export const routes: Routes = [
     canActivate: [signedInGuard],
     loadComponent: () => import('./pages/shell.component').then((m) => m.ShellComponent),
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'coleccion' },
+      { path: '', pathMatch: 'full', redirectTo: 'inicio' },
+      {
+        path: 'inicio',
+        title: 'Inicio · Riftbound',
+        loadComponent: () => import('./pages/inicio.page').then((m) => m.InicioPage),
+      },
       {
         path: 'coleccion',
         title: 'Mi colección · Riftbound',

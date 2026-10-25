@@ -14,9 +14,15 @@ import { TraduccionService } from '../core/traduccion.service';
   imports: [RouterOutlet, RouterLink, RouterLinkActive],
   template: `
     <header class="barra">
-      <a class="marca" routerLink="/coleccion">Riftbound</a>
+      <a class="marca" routerLink="/inicio">Riftbound</a>
       <!-- En móvil esta misma navegación baja a una barra fija con iconos. -->
       <nav aria-label="Secciones">
+        <a routerLink="/inicio" routerLinkActive="activo">
+          <svg class="icono" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 11l8-7 8 7v8.5a1.5 1.5 0 0 1-1.5 1.5H15v-6H9v6H5.5A1.5 1.5 0 0 1 4 19.5z" />
+          </svg>
+          <span>Inicio</span>
+        </a>
         <a routerLink="/coleccion" routerLinkActive="activo">
           <svg class="icono" viewBox="0 0 24 24" aria-hidden="true">
             <rect x="3" y="4" width="7" height="9" rx="1.5" />
@@ -147,7 +153,7 @@ import { TraduccionService } from '../core/traduccion.service';
         bottom: 0;
         z-index: 15;
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(5, 1fr);
         gap: 0;
         overflow: visible;
         padding: 6px 4px calc(6px + env(safe-area-inset-bottom));

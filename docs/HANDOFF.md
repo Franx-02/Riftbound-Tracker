@@ -486,6 +486,14 @@ que lo normal es un commit semanal. Lo único manual que queda con un set nuevo 
 textos (`npm run traducir -- pendientes`). Si el workflow falla (RiftHunt caído, formato nuevo),
 GitHub avisa por email al dueño del repo.
 
+### Página de inicio (25/10/2026, idea de un amigo del usuario)
+`/inicio` (ahora la ruta por defecto y primer botón de la barra): valor de tu colección en grande,
+accesos a colección, deseos (con lo que cuesta lo que falta), escáner y catálogo, tus 10 cartas más
+valiosas y dos filas de Cardmarket: "Subiendo esta semana" (tendencia ≥ 1 € y al menos un 10 % por
+encima de la media de 7 días) y "Las más caras". Cardmarket no publica ventas en sus datos públicos,
+así que no hay "más vendidas". Pendiente que pidieron: una gráfica del valor de la colección en el
+tiempo (habría que guardar el valor cada día) y, más adelante, mejorar el aspecto general.
+
 ### Extras del 25/10/2026
 - **Navegación en móvil** (≤ 700 px): las secciones pasan a una barra fija abajo con iconos
   (Colección, Catálogo, Escanear, Deseos); arriba solo quedan la marca y Salir. En escritorio, igual
