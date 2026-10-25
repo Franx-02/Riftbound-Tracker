@@ -14,6 +14,7 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../core/auth.service';
 import { CatalogCard, CatalogService } from '../core/catalog.service';
 import { CardQty, CollectionMap, CollectionService, totalsOf } from '../core/collection.service';
+import { DescartadasService } from '../core/descartadas.service';
 import { PricesService } from '../core/prices.service';
 import { UsersService } from '../core/users.service';
 import { CardPricing, ValuationService } from '../core/valuation.service';
@@ -26,7 +27,7 @@ import { QtyControlComponent } from '../ui/qty-control.component';
 
 type Orden = 'valor' | 'nombre' | 'set';
 type Vista = 'carpeta' | 'lista';
-type Mostrar = 'todas' | 'tengo' | 'faltan';
+type Mostrar = 'todas' | 'tengo' | 'faltan' | 'descartadas';
 
 const POR_PAGINA = 60;
 
@@ -208,6 +209,9 @@ interface Fila {
             >
               <option value="todas">Todas las cartas</option>
               <option value="tengo">{{ propia() ? 'Las que tengo' : 'Las que tiene' }}</option>
+              @if (propia()) {
+                <option value="descartadas">Las que no quiero</option>
+              }
               <option value="faltan">
                 {{ propia() ? 'Las que me faltan' : 'Las que le faltan' }}
               </option>
@@ -249,6 +253,9 @@ interface Fila {
               <span>
                 <strong>{{ c.tengo }}</strong> de {{ c.total }} cartas de {{ c.nombre }} ·
                 <strong>{{ c.porcentaje }}&nbsp;%</strong>
+                @if (c.sinContar) {
+                  <span class="muted"> · sin contar {{ c.sinContar }} que no quieres </span>
+                }
               </span>
               <span class="barra-progreso"><span [style.width.%]="c.porcentaje"></span></span>
             </div>
@@ -620,6 +627,7 @@ export class CollectionPage implements OnInit {
   protected readonly col = inject(CollectionService);
   protected readonly prices = inject(PricesService);
   private readonly valuation = inject(ValuationService);
+  private readonly descartadas = inject(DescartadasService);
   private readonly users = inject(UsersService);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
@@ -670,11 +678,15 @@ export class CollectionPage implements OnInit {
       texto: this.v.texto(),
       sets: this.v.set() ? [this.v.set()] : [],
     });
+    // "No la quiero" solo cuenta en la colección propia: es una preferencia personal.
+    const descartadas = this.propia() ? this.descartadas.ids() : new Set<string>();
     switch (this.v.mostrar()) {
       case 'tengo':
         return cartas.filter((c) => tiene(c.cardId));
       case 'faltan':
-        return cartas.filter((c) => !tiene(c.cardId));
+        return cartas.filter((c) => !tiene(c.cardId) && !descartadas.has(c.cardId));
+      case 'descartadas':
+        return cartas.filter((c) => descartadas.has(c.cardId));
       default:
         return cartas;
     }
@@ -687,15 +699,20 @@ export class CollectionPage implements OnInit {
     const set = this.v.set();
     if (!set) return null;
     const fuente = this.fuente() ?? new Map<string, CardQty>();
-    const delSet = this.catalog.filter({ sets: [set] });
-    const tengo = delSet.filter((c) => {
-      const q = fuente.get(c.cardId);
+    const tiene = (id: string) => {
+      const q = fuente.get(id);
       return !!q && q.normal + q.foil > 0;
-    }).length;
+    };
+    // Las que no quieres no cuentan para completar el set (salvo que las tengas igualmente).
+    const descartadas = this.propia() ? this.descartadas.ids() : new Set<string>();
+    const todas = this.catalog.filter({ sets: [set] });
+    const delSet = todas.filter((c) => tiene(c.cardId) || !descartadas.has(c.cardId));
+    const tengo = delSet.filter((c) => tiene(c.cardId)).length;
     return {
       nombre: this.catalog.setName(set),
       tengo,
       total: delSet.length,
+      sinContar: todas.length - delSet.length,
       porcentaje: delSet.length ? Math.floor((tengo / delSet.length) * 100) : 0,
     };
   });

@@ -62,6 +62,17 @@ service cloud.firestore {
         && (!('nota' in request.resource.data) || shortString(request.resource.data.nota, 200));
     }
 
+    // Preferencias propias: users/{uid}/preferencias/descartadas = { cardIds: [...] }, las
+    // cartas que el usuario ha marcado como "No la quiero". Solo las lee y escribe el dueño.
+    match /users/{uid}/preferencias/{documento} {
+      allow read, delete: if owner(uid);
+      allow create, update: if owner(uid)
+        && documento == 'descartadas'
+        && request.resource.data.keys().hasOnly(['cardIds'])
+        && request.resource.data.cardIds is list
+        && request.resource.data.cardIds.size() <= 3000;
+    }
+
     // Correcciones de mapeo compartidas: cualquiera lee y corrige, y vale para todos.
     // Las reglas no pueden comprobar que `by` sea de verdad el nombre de quien escribe,
     // pero sí que el documento tenga solo estos campos y con tamaños razonables.

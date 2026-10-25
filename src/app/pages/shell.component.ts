@@ -3,6 +3,7 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 import { AuthService } from '../core/auth.service';
 import { CatalogService } from '../core/catalog.service';
 import { CollectionService } from '../core/collection.service';
+import { DescartadasService } from '../core/descartadas.service';
 import { MappingOverridesService } from '../core/mapping-overrides.service';
 import { PricesService } from '../core/prices.service';
 import { TraduccionService } from '../core/traduccion.service';
@@ -195,6 +196,7 @@ export class ShellComponent implements OnInit {
   private readonly overrides = inject(MappingOverridesService);
   private readonly collection = inject(CollectionService);
   private readonly traduccion = inject(TraduccionService);
+  private readonly descartadas = inject(DescartadasService);
   private readonly router = inject(Router);
 
   /** Lo que impide usar la app, en una frase. Los errores de guardado los enseña cada pantalla. */
@@ -214,6 +216,7 @@ export class ShellComponent implements OnInit {
     void this.overrides.load();
     void this.collection.loadMine();
     void this.traduccion.load();
+    void this.descartadas.load();
   }
 
   async logout(): Promise<void> {

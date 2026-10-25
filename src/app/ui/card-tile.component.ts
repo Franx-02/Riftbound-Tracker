@@ -2,6 +2,7 @@ import { Component, computed, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CatalogCard } from '../core/catalog.service';
 import { CardQty } from '../core/collection.service';
+import { DescartadasService } from '../core/descartadas.service';
 import { ValuationService } from '../core/valuation.service';
 import { ConfidenceBadgeComponent } from './confidence-badge.component';
 import { EurPipe, ThumbPipe } from './pipes';
@@ -33,6 +34,8 @@ import { QtyControlComponent } from './qty-control.component';
       </a>
       @if (copias() > 0) {
         <span class="etiqueta tengo" [title]="detalleCopias()">×{{ copias() }}</span>
+      } @else if (descartada()) {
+        <span class="etiqueta falta">no la quiero</span>
       } @else if (dim()) {
         <span class="etiqueta falta">falta</span>
       }
@@ -42,6 +45,17 @@ import { QtyControlComponent } from './qty-control.component';
           [fixed]="readonly() ? owned() : null"
           [overlay]="true"
         />
+        @if (!readonly() && descartadas.lista()) {
+          <button
+            type="button"
+            class="descartar"
+            [attr.aria-pressed]="descartada()"
+            [attr.aria-label]="(descartada() ? 'Volver a querer ' : 'No quiero ') + card().name"
+            (click)="descartadas.alternar(card().cardId)"
+          >
+            {{ descartada() ? 'La quiero' : 'No la quiero' }}
+          </button>
+        }
       </div>
     </div>
     <a [routerLink]="['/carta', card().cardId]" class="enlace-carta">
@@ -111,6 +125,20 @@ import { QtyControlComponent } from './qty-control.component';
     /* La que no tienes se ve apagada, como un hueco en la carpeta, pero reconocible. */
     :host(.apagada) img {
       filter: grayscale(0.85) brightness(0.4);
+    }
+    /* La que no quieres, más apagada todavía: no es un hueco que haya que llenar. */
+    :host(.descartada) {
+      opacity: 0.55;
+    }
+    .descartar {
+      display: block;
+      width: 100%;
+      margin-top: 6px;
+      padding: 3px 6px;
+      font-size: 0.72rem;
+      background: rgb(255 255 255 / 0.08);
+      color: var(--muted);
+      border: 1px solid rgb(255 255 255 / 0.15);
     }
 
     /* El panel del +/−: degradado oscuro sobre la parte de abajo de la imagen. */
@@ -219,10 +247,12 @@ import { QtyControlComponent } from './qty-control.component';
   host: {
     '[class.tengo]': 'copias() > 0',
     '[class.apagada]': 'dim() && copias() === 0',
+    '[class.descartada]': 'descartada() && copias() === 0',
   },
 })
 export class CardTileComponent {
   private readonly valuation = inject(ValuationService);
+  protected readonly descartadas = inject(DescartadasService);
 
   readonly card = input.required<CatalogCard>();
   /** Copias que se enseñan: las tuyas, o las de otro usuario si `readonly`. */
@@ -234,6 +264,10 @@ export class CardTileComponent {
 
   protected readonly pricing = computed(() => this.valuation.pricing(this.card().cardId));
   protected readonly copias = computed(() => this.owned().normal + this.owned().foil);
+  /** Marcada como "No la quiero". Solo en la colección propia: es una preferencia personal. */
+  protected readonly descartada = computed(
+    () => !this.readonly() && this.descartadas.ids().has(this.card().cardId),
+  );
   protected readonly detalleCopias = computed(() => {
     const { normal, foil } = this.owned();
     return `${normal} ${normal === 1 ? 'normal' : 'normales'}, ${foil} foil`;

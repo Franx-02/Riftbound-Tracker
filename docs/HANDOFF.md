@@ -458,6 +458,14 @@ Tesseract). Se quitó el OCR y la dependencia. Lo que hay ahora:
 - **Navegación en móvil** (≤ 700 px): las secciones pasan a una barra fija abajo con iconos
   (Colección, Catálogo, Escanear, Deseos); arriba solo quedan la marca y Salir. En escritorio, igual
   que antes. Todo en `shell.component.ts`; el botón de volver arriba sube en móvil para no taparse.
+- **"No la quiero"**: `DescartadasService` (`src/app/core/descartadas.service.ts`) guarda en un solo
+  documento `users/{uid}/preferencias/descartadas = { cardIds: [...] }` (con su modo demo) las
+  cartas que el usuario no quiere coleccionar. Se marcan con el botón del panel de cada carta
+  (carpeta y catálogo) o con la casilla de "Mis copias" en la ficha. No cuentan en "Las que me
+  faltan" ni en el porcentaje completado del set (salvo que las tengas igualmente), salen más
+  apagadas con la etiqueta "no la quiero" y hay un filtro "Las que no quiero". Solo afectan a la
+  colección propia. **Regla nueva en `firestore.rules`** (solo el dueño lee y escribe, máximo 3000
+  ids): hay que publicarla.
 - **Volver arriba**: `src/app/ui/volver-arriba.component.ts`, botón flotante en Mi colección y
   Catálogo a partir de 800 px de scroll.
 - **Enlace a Cardmarket** en la ficha. Los JSON públicos no traen la URL del producto, así que

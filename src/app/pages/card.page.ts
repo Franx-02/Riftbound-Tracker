@@ -9,6 +9,7 @@ import { PricesService } from '../core/prices.service';
 import { TraduccionService } from '../core/traduccion.service';
 import { ValuationService } from '../core/valuation.service';
 import { WishlistService } from '../core/wishlist.service';
+import { DescartadasService } from '../core/descartadas.service';
 import { ConfidenceBadgeComponent } from '../ui/confidence-badge.component';
 import { EurPipe, ThumbPipe } from '../ui/pipes';
 import { QtyControlComponent } from '../ui/qty-control.component';
@@ -81,6 +82,20 @@ import { GraficaPrecioComponent, PuntoPrecio } from '../ui/grafica-precio.compon
               }
               @if (col.error()) {
                 <p class="error" role="alert">No se pudo guardar: {{ col.error() }}</p>
+              }
+              @if (descartadas.lista()) {
+                <label class="no-la-quiero">
+                  <input
+                    type="checkbox"
+                    [checked]="descartadas.tiene(c.cardId)"
+                    (change)="descartadas.alternar(c.cardId)"
+                  />
+                  No la quiero en mi colección
+                  <span class="muted">(no cuenta como que te falta)</span>
+                </label>
+              }
+              @if (descartadas.error()) {
+                <p class="error" role="alert">{{ descartadas.error() }}</p>
               }
             </section>
 
@@ -335,6 +350,17 @@ import { GraficaPrecioComponent, PuntoPrecio } from '../ui/grafica-precio.compon
       border-radius: 12px;
       padding: 16px;
     }
+    .no-la-quiero {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      margin-top: 12px;
+      font-size: 0.9rem;
+    }
+    .no-la-quiero .muted {
+      font-size: 0.8rem;
+    }
     .deseo {
       display: flex;
       flex-wrap: wrap;
@@ -504,6 +530,7 @@ export class CardPage {
   private readonly router = inject(Router);
   protected readonly t = inject(TraduccionService);
   protected readonly wish = inject(WishlistService);
+  protected readonly descartadas = inject(DescartadasService);
 
   /** De la ruta `/carta/:cardId`. */
   readonly cardId = input.required<string>();
