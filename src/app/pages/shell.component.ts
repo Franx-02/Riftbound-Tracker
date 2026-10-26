@@ -236,6 +236,9 @@ export class ShellComponent implements OnInit {
       e.push(`No se pudieron cargar los precios de Cardmarket: ${this.prices.error()}`);
     if (this.overrides.error())
       e.push(`No se pudieron cargar las correcciones de precio: ${this.overrides.error()}`);
+    // Sin cargar, el botón "Para cambiar" no sale: mejor decir por qué.
+    if (this.intercambiables.error() && !this.intercambiables.lista())
+      e.push(this.intercambiables.error()!);
     return e;
   });
 
