@@ -15,7 +15,7 @@ import { TraduccionService } from '../core/traduccion.service';
   imports: [RouterOutlet, RouterLink, RouterLinkActive],
   template: `
     <header class="barra">
-      <a class="marca" routerLink="/inicio">Riftbound</a>
+      <a class="marca" routerLink="/inicio">Riftbound <span class="marca-sub">Tracker</span></a>
       <!-- En móvil esta misma navegación baja a una barra fija con iconos. -->
       <nav aria-label="Secciones">
         <a routerLink="/inicio" routerLinkActive="activo">
@@ -98,15 +98,21 @@ import { TraduccionService } from '../core/traduccion.service';
     }
     .marca {
       font-family: var(--fuente-marca);
-      font-weight: 800;
-      font-size: 1.1rem;
-      letter-spacing: 0.16em;
+      font-weight: 400;
+      font-size: 1.15rem;
+      letter-spacing: 0.12em;
+      white-space: nowrap;
       text-transform: uppercase;
       text-decoration: none;
       background: linear-gradient(180deg, #f5dca4, var(--accent-fuerte));
       -webkit-background-clip: text;
       background-clip: text;
       color: transparent;
+    }
+    .marca-sub {
+      font-size: 0.72em;
+      letter-spacing: 0.28em;
+      color: var(--muted);
     }
     nav {
       display: flex;
@@ -253,8 +259,10 @@ import { TraduccionService } from '../core/traduccion.service';
         -webkit-backdrop-filter: none;
       }
       .marca {
-        font-size: 1.7rem;
-        letter-spacing: 0.06em;
+        display: grid;
+        font-size: 1.75rem;
+        line-height: 1.05;
+        letter-spacing: 0.08em;
         padding: 0 8px;
         filter: drop-shadow(0 2px 10px rgb(245 184 28 / 25%));
       }

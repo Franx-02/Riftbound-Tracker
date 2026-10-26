@@ -645,7 +645,7 @@ export class CardPage {
     void this.wish.load();
     effect(() => {
       const c = this.card();
-      this.title.setTitle(c ? `${c.name} · Riftbound` : 'Carta · Riftbound');
+      this.title.setTitle(c ? `${c.name} · Riftbound Tracker` : 'Carta · Riftbound Tracker');
     });
   }
 

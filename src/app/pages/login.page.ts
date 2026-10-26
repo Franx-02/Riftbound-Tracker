@@ -6,7 +6,7 @@ import { AuthService } from '../core/auth.service';
   selector: 'app-login-page',
   template: `
     <main class="center">
-      <h1>Riftbound Collection</h1>
+      <h1 class="marca">Riftbound <span>Tracker</span></h1>
 
       @switch (auth.access()) {
         @case ('loading') {
@@ -25,6 +25,26 @@ import { AuthService } from '../core/auth.service';
         <p class="error">{{ error() }}</p>
       }
     </main>
+  `,
+  styles: `
+    .marca {
+      display: grid;
+      margin-bottom: 8px;
+      font-family: var(--fuente-marca);
+      font-weight: 400;
+      font-size: clamp(2.2rem, 8vw, 3.2rem);
+      line-height: 1.05;
+      letter-spacing: 0.08em;
+      background: linear-gradient(180deg, #f5dca4, var(--accent-fuerte));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .marca span {
+      font-size: 0.42em;
+      letter-spacing: 0.4em;
+      color: var(--muted);
+    }
   `,
 })
 export class LoginPage {
