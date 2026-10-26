@@ -87,24 +87,27 @@ import { TraduccionService } from '../core/traduccion.service';
       display: flex;
       align-items: center;
       gap: 16px;
-      padding: 8px 16px;
-      background: linear-gradient(180deg, #091428, #010a13);
-      border-bottom: 1px solid transparent;
-      border-image: linear-gradient(90deg, transparent, var(--accent-fuerte), transparent) 1;
+      padding: 10px 20px;
+      background: rgb(7 11 20 / 72%);
+      backdrop-filter: saturate(160%) blur(14px);
+      -webkit-backdrop-filter: saturate(160%) blur(14px);
+      border-bottom: 1px solid var(--border);
     }
     .marca {
-      font-family: var(--fuente-titulos);
+      font-family: var(--fuente-marca);
       font-weight: 700;
-      font-size: 1.15rem;
-      letter-spacing: 0.12em;
+      font-size: 1.1rem;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: var(--accent);
       text-decoration: none;
-      text-shadow: 0 0 12px rgb(200 155 60 / 35%);
+      background: linear-gradient(180deg, #f5dca4, var(--accent-fuerte));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
     }
     nav {
       display: flex;
-      gap: 4px;
+      gap: 2px;
       flex: 1;
       min-width: 0;
       overflow-x: auto;
@@ -113,21 +116,22 @@ import { TraduccionService } from '../core/traduccion.service';
     nav a {
       color: var(--muted);
       text-decoration: none;
-      padding: 6px 10px;
+      padding: 7px 12px;
       white-space: nowrap;
-      font-family: var(--fuente-titulos);
-      font-size: 0.85rem;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      border-bottom: 2px solid transparent;
+      font-size: 0.9rem;
+      font-weight: 500;
+      border-radius: 999px;
+      transition:
+        color 0.15s ease,
+        background-color 0.15s ease;
     }
     nav a:hover {
       color: var(--text);
+      background: rgb(255 255 255 / 5%);
     }
     nav a.activo {
       color: var(--accent);
-      border-bottom-color: var(--accent);
+      background: var(--accent-suave);
     }
     .usuario {
       flex-shrink: 0;
@@ -154,9 +158,14 @@ import { TraduccionService } from '../core/traduccion.service';
 
     /* Móvil: arriba solo la marca y Salir; las secciones, en una barra fija abajo. */
     @media (max-width: 700px) {
+      /* Sin desenfoque: backdrop-filter haría que la barra fija de abajo se colocara
+         respecto a la cabecera en vez de a la pantalla. */
       .barra {
         gap: 8px;
         padding: 8px 12px;
+        background: rgb(7 11 20 / 96%);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
       }
       .marca {
         flex: 1;
@@ -175,7 +184,9 @@ import { TraduccionService } from '../core/traduccion.service';
         gap: 0;
         overflow: visible;
         padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
-        background: var(--bg);
+        background: rgb(7 11 20 / 82%);
+        backdrop-filter: saturate(160%) blur(14px);
+        -webkit-backdrop-filter: saturate(160%) blur(14px);
         border-top: 1px solid var(--border);
       }
       nav a {
@@ -183,9 +194,8 @@ import { TraduccionService } from '../core/traduccion.service';
         justify-items: center;
         gap: 2px;
         padding: 6px 2px;
-        font-size: 0.62rem;
-        letter-spacing: 0.04em;
-        border-bottom: 0;
+        font-size: 0.68rem;
+        border-radius: 12px;
       }
       nav a.activo {
         background: transparent;

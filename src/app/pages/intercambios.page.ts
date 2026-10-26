@@ -205,7 +205,7 @@ interface Oferta {
     .cartas img {
       width: 100%;
       height: auto;
-      border-radius: 2px;
+      border-radius: var(--radio-s);
     }
     .nombre {
       font-size: 0.8rem;

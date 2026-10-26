@@ -35,6 +35,16 @@
   ],
   "dataGroups": [
     {
+      "name": "precios",
+      "urls": ["/api/prices"],
+      "cacheConfig": {
+        "strategy": "freshness",
+        "timeout": "2s",
+        "maxSize": 1,
+        "maxAge": "1d"
+      }
+    },
+    {
       "name": "imagenes-cartas",
       "urls": ["https://cmsassets.rgpub.io/**"],
       "cacheConfig": {

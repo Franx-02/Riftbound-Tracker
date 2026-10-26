@@ -536,7 +536,7 @@ interface Fila {
     }
     .evolucion {
       padding: 16px;
-      border-radius: 2px;
+      border-radius: var(--radio-s);
       background: var(--surface);
       border: 1px solid var(--border);
     }
@@ -552,7 +552,7 @@ interface Fila {
       padding: 14px 16px;
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 2px;
+      border-radius: var(--radio-s);
     }
     .etiqueta {
       font-size: 0.8rem;
@@ -574,7 +574,7 @@ interface Fila {
     .aviso {
       padding: 12px 16px;
       border: 1px dashed var(--accent);
-      border-radius: 2px;
+      border-radius: var(--radio-s);
       font-size: 0.9rem;
     }
     .aviso summary {
@@ -594,7 +594,7 @@ interface Fila {
     .boton {
       display: inline-block;
       padding: 10px 18px;
-      border-radius: 2px;
+      border-radius: var(--radio-s);
       background: var(--accent);
       color: #15120a;
       font-weight: 600;
@@ -645,7 +645,7 @@ interface Fila {
     .vistas {
       display: flex;
       border: 1px solid var(--border);
-      border-radius: 2px;
+      border-radius: var(--radio-s);
       overflow: hidden;
     }
     .vistas button {
@@ -718,7 +718,7 @@ interface Fila {
       padding: 8px 12px;
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 2px;
+      border-radius: var(--radio-s);
     }
     .miniatura img {
       display: block;
@@ -726,7 +726,7 @@ interface Fila {
       height: auto;
       aspect-ratio: 744 / 1039;
       object-fit: contain;
-      border-radius: 4px;
+      border-radius: var(--radio-s);
       background: var(--surface-2);
     }
     .info {

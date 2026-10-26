@@ -97,7 +97,10 @@ import { QtyControlComponent } from './qty-control.component';
       padding: 8px;
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 2px;
+      border-radius: var(--radio);
+      /* Las que quedan fuera de pantalla no se pintan: las carpetas tienen cientos. */
+      content-visibility: auto;
+      contain-intrinsic-size: auto 320px;
       transition:
         transform 0.15s ease,
         box-shadow 0.15s ease,
@@ -118,7 +121,7 @@ import { QtyControlComponent } from './qty-control.component';
     .marco {
       position: relative;
       overflow: hidden;
-      border-radius: 2px;
+      border-radius: var(--radio-s);
     }
     .imagen {
       display: block;
@@ -154,11 +157,13 @@ import { QtyControlComponent } from './qty-control.component';
       display: block;
       width: 100%;
       margin-top: 6px;
-      padding: 3px 6px;
+      padding: 4px 6px;
       font-size: 0.72rem;
       background: rgb(255 255 255 / 0.08);
       color: var(--muted);
       border: 1px solid rgb(255 255 255 / 0.15);
+      box-shadow: none;
+      backdrop-filter: blur(6px);
     }
 
     .descartar.activo {
@@ -193,8 +198,10 @@ import { QtyControlComponent } from './qty-control.component';
       }
       :host(:hover) {
         transform: translateY(-4px);
-        box-shadow: 0 12px 28px rgb(0 0 0 / 0.5);
-        border-color: var(--accent);
+        box-shadow:
+          0 14px 32px rgb(0 0 0 / 0.5),
+          0 0 0 1px var(--accent-suave);
+        border-color: color-mix(in srgb, var(--accent) 70%, transparent);
       }
       :host(:hover) img {
         transform: scale(1.03);
@@ -225,7 +232,7 @@ import { QtyControlComponent } from './qty-control.component';
       z-index: 1;
       pointer-events: none;
       padding: 1px 7px;
-      border-radius: 2px;
+      border-radius: var(--radio-s);
       font-size: 0.72rem;
       font-weight: 700;
       letter-spacing: 0.03em;

@@ -166,35 +166,15 @@ const PRECIO_MINIMO_SUBIDA = 1;
     }
     .hero {
       position: relative;
-      padding: 24px 20px;
+      padding: 28px 24px;
+      border-radius: 20px;
       border: 1px solid var(--border-claro);
       background:
-        radial-gradient(circle at 85% 0%, rgb(10 200 185 / 18%), transparent 55%),
-        linear-gradient(180deg, #0e1d33, #0a1428);
-      box-shadow:
-        inset 0 0 0 1px rgb(1 10 19 / 80%),
-        0 0 24px rgb(0 0 0 / 40%);
-    }
-    /* Remates dorados en las esquinas, como los marcos del cliente. */
-    .hero::before,
-    .hero::after {
-      content: '';
-      position: absolute;
-      width: 18px;
-      height: 18px;
-      border: 2px solid var(--accent);
-    }
-    .hero::before {
-      top: -1px;
-      left: -1px;
-      border-right: 0;
-      border-bottom: 0;
-    }
-    .hero::after {
-      bottom: -1px;
-      right: -1px;
-      border-left: 0;
-      border-top: 0;
+        radial-gradient(circle at 90% -10%, rgb(45 212 191 / 22%), transparent 50%),
+        radial-gradient(circle at 0% 120%, rgb(226 184 102 / 14%), transparent 50%),
+        linear-gradient(180deg, var(--surface-2), var(--surface));
+      box-shadow: var(--sombra);
+      overflow: hidden;
     }
     .hero p {
       margin: 0;
@@ -212,8 +192,11 @@ const PRECIO_MINIMO_SUBIDA = 1;
       font-family: var(--fuente-titulos);
       font-size: clamp(2.2rem, 9vw, 3.4rem);
       font-weight: 700;
-      text-shadow: 0 0 18px rgb(200 155 60 / 30%);
-      color: var(--accent);
+      letter-spacing: -0.02em;
+      background: linear-gradient(180deg, #f5dca4, var(--accent-fuerte));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
       font-variant-numeric: tabular-nums;
       line-height: 1.1;
     }
@@ -229,19 +212,21 @@ const PRECIO_MINIMO_SUBIDA = 1;
     .acceso {
       display: grid;
       gap: 4px;
-      padding: 16px;
-      border-radius: 2px;
-      background: linear-gradient(180deg, #0e1d33, #0a1428);
+      padding: 18px;
+      border-radius: var(--radio);
+      background: linear-gradient(180deg, var(--surface-2), var(--surface));
       border: 1px solid var(--border);
       color: var(--text);
       text-decoration: none;
       transition:
         border-color 0.15s ease,
-        transform 0.15s ease;
+        transform 0.15s ease,
+        box-shadow 0.15s ease;
     }
     .acceso:hover {
-      border-color: var(--accent);
+      border-color: color-mix(in srgb, var(--accent) 60%, transparent);
       transform: translateY(-2px);
+      box-shadow: var(--sombra);
     }
     .acceso .icono {
       font-size: 1.5rem;
@@ -249,8 +234,7 @@ const PRECIO_MINIMO_SUBIDA = 1;
     }
     .acceso .titulo {
       font-family: var(--fuente-titulos);
-      font-weight: 700;
-      letter-spacing: 0.05em;
+      font-weight: 600;
     }
     .acceso .muted {
       font-size: 0.8rem;
@@ -286,7 +270,7 @@ const PRECIO_MINIMO_SUBIDA = 1;
     .fila-cartas img {
       width: 132px;
       height: auto;
-      border-radius: 2px;
+      border-radius: var(--radio-s);
     }
     .nombre {
       font-size: 0.8rem;

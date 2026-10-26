@@ -241,7 +241,7 @@ interface Fila {
       padding: 14px 16px;
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 2px;
+      border-radius: var(--radio-s);
     }
     .etiqueta {
       font-size: 0.8rem;
@@ -273,7 +273,7 @@ interface Fila {
       margin: 0;
       padding: 0;
       border: 1px solid var(--border);
-      border-radius: 2px;
+      border-radius: var(--radio-s);
       overflow: hidden;
     }
     .resultados li {
@@ -320,7 +320,7 @@ interface Fila {
       padding: 10px;
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 2px;
+      border-radius: var(--radio-s);
     }
     .fila.conseguida {
       opacity: 0.65;
@@ -329,7 +329,7 @@ interface Fila {
       display: block;
       width: 60px;
       height: auto;
-      border-radius: 4px;
+      border-radius: var(--radio-s);
     }
     .info {
       display: grid;

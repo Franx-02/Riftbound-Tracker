@@ -341,7 +341,7 @@ import { GraficaPrecioComponent, PuntoPrecio } from '../ui/grafica-precio.compon
       height: auto;
       aspect-ratio: 744 / 1039;
       object-fit: contain;
-      border-radius: 2px;
+      border-radius: var(--radio-s);
       background: var(--surface-2);
       position: sticky;
       top: 72px;
@@ -362,7 +362,7 @@ import { GraficaPrecioComponent, PuntoPrecio } from '../ui/grafica-precio.compon
     .bloque {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 2px;
+      border-radius: var(--radio-s);
       padding: 16px;
     }
     .no-la-quiero {
@@ -459,7 +459,7 @@ import { GraficaPrecioComponent, PuntoPrecio } from '../ui/grafica-precio.compon
       align-items: center;
       padding: 8px 10px;
       border: 1px solid var(--border);
-      border-radius: 2px;
+      border-radius: var(--radio-s);
     }
     .corregir li.actual {
       border-color: var(--ok);
@@ -495,7 +495,7 @@ import { GraficaPrecioComponent, PuntoPrecio } from '../ui/grafica-precio.compon
       margin-left: auto;
       display: inline-flex;
       border: 1px solid var(--border);
-      border-radius: 2px;
+      border-radius: var(--radio-s);
       overflow: hidden;
     }
     .idiomas button {

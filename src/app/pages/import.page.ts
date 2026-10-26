@@ -249,7 +249,7 @@ const MUESTRA = 20;
     .bloque {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 2px;
+      border-radius: var(--radio-s);
       padding: 16px;
       display: grid;
       grid-template-columns: minmax(0, 1fr);
@@ -275,7 +275,7 @@ const MUESTRA = 20;
       color: var(--text);
       background: var(--bg);
       border: 1px solid var(--border);
-      border-radius: 2px;
+      border-radius: var(--radio-s);
       padding: 8px;
       margin: 8px 0;
     }
@@ -309,7 +309,7 @@ const MUESTRA = 20;
     }
     .modo {
       border: 1px solid var(--border);
-      border-radius: 2px;
+      border-radius: var(--radio-s);
       padding: 8px 12px 12px;
       display: grid;
       gap: 8px;
@@ -331,7 +331,7 @@ const MUESTRA = 20;
     .boton {
       display: inline-block;
       padding: 10px 18px;
-      border-radius: 2px;
+      border-radius: var(--radio-s);
       background: var(--accent);
       color: #15120a;
       font-weight: 600;

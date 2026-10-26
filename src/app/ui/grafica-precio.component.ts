@@ -198,7 +198,7 @@ const aFecha = (s: string) => new Date(`${s}T12:00:00`);
     .muestra {
       width: 14px;
       height: 3px;
-      border-radius: 2px;
+      border-radius: var(--radio-s);
     }
     .rangos {
       display: flex;
@@ -259,7 +259,7 @@ const aFecha = (s: string) => new Date(`${s}T12:00:00`);
       font-size: 0.8rem;
       background: var(--bg);
       border: 1px solid var(--border);
-      border-radius: 2px;
+      border-radius: var(--radio-s);
       pointer-events: none;
       white-space: nowrap;
     }

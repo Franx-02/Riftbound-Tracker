@@ -304,7 +304,7 @@ interface Resultado {
     .camara {
       position: relative;
       display: none;
-      border-radius: 2px;
+      border-radius: var(--radio-s);
       overflow: hidden;
       background: #000;
     }
@@ -325,7 +325,7 @@ interface Resultado {
       height: 64%;
       aspect-ratio: 744 / 1039;
       transform: translate(-50%, -50%);
-      border-radius: 2px;
+      border-radius: var(--radio-s);
       box-shadow: 0 0 0 9999px rgb(0 0 0 / 45%);
     }
     /* Solo las esquinas, como un visor. */
@@ -367,7 +367,7 @@ interface Resultado {
       padding: 12px;
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 2px;
+      border-radius: var(--radio-s);
     }
     .cabecera-escaneos {
       display: flex;
@@ -381,7 +381,7 @@ interface Resultado {
     }
     .pastilla {
       padding: 6px 12px;
-      border-radius: 2px;
+      border-radius: var(--radio-s);
       background: var(--surface-2);
       font-variant-numeric: tabular-nums;
       white-space: nowrap;
@@ -407,7 +407,7 @@ interface Resultado {
       display: block;
       width: 40px;
       height: auto;
-      border-radius: 4px;
+      border-radius: var(--radio-s);
     }
     .lista-escaneos .nombre {
       overflow: hidden;
@@ -446,7 +446,7 @@ interface Resultado {
       display: inline-flex;
       align-items: center;
       padding: 8px 16px;
-      border-radius: 2px;
+      border-radius: var(--radio-s);
       border: 1px solid var(--border);
       cursor: pointer;
     }
@@ -470,7 +470,7 @@ interface Resultado {
       padding: 12px;
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 2px;
+      border-radius: var(--radio-s);
     }
     .resultado h2 {
       margin: 0 0 8px;
@@ -493,7 +493,7 @@ interface Resultado {
       gap: 12px;
       align-items: start;
       padding: 6px;
-      border-radius: 2px;
+      border-radius: var(--radio-s);
     }
     .cartas li.primera {
       outline: 2px solid var(--accent);
@@ -502,7 +502,7 @@ interface Resultado {
       display: block;
       width: 100px;
       height: auto;
-      border-radius: 2px;
+      border-radius: var(--radio-s);
     }
     .datos {
       display: grid;
@@ -538,7 +538,7 @@ interface Resultado {
       padding: 20px 16px 16px;
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 2px;
+      border-radius: var(--radio-s);
       text-align: center;
     }
     .modal h2 {
@@ -567,7 +567,7 @@ interface Resultado {
     .grande {
       width: min(200px, 50vw);
       height: auto;
-      border-radius: 2px;
+      border-radius: var(--radio-s);
     }
     .tienes {
       font-size: 0.9rem;
@@ -606,14 +606,14 @@ interface Resultado {
       padding: 4px;
       background: transparent;
       border: 1px solid var(--border);
-      border-radius: 2px;
+      border-radius: var(--radio-s);
       color: var(--muted);
       font-size: 0.7rem;
     }
     .otra img {
       width: 60px;
       height: auto;
-      border-radius: 4px;
+      border-radius: var(--radio-s);
     }
   `,
 })
