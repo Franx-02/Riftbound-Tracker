@@ -170,8 +170,9 @@ const PRECIO_MINIMO_SUBIDA = 1;
       border-radius: 20px;
       border: 1px solid var(--border-claro);
       background:
-        radial-gradient(circle at 90% -10%, rgb(45 212 191 / 22%), transparent 50%),
-        radial-gradient(circle at 0% 120%, rgb(226 184 102 / 14%), transparent 50%),
+        radial-gradient(circle at 95% -10%, rgb(168 85 247 / 24%), transparent 45%),
+        radial-gradient(circle at 60% -30%, rgb(59 130 246 / 18%), transparent 45%),
+        radial-gradient(circle at 0% 120%, rgb(239 68 68 / 16%), transparent 50%),
         linear-gradient(180deg, var(--surface-2), var(--surface));
       box-shadow: var(--sombra);
       overflow: hidden;

@@ -25,6 +25,7 @@ import { CardTileComponent } from '../ui/card-tile.component';
 import { LoadMoreComponent } from '../ui/load-more.component';
 import { VolverArribaComponent } from '../ui/volver-arriba.component';
 import { ValorColeccionComponent } from '../ui/valor-coleccion.component';
+import { DOMINIOS, colorDominio } from '../core/dominios';
 import { QtyControlComponent } from '../ui/qty-control.component';
 
 type Orden = 'valor' | 'nombre' | 'set' | 'energia';
@@ -164,6 +165,27 @@ interface Fila {
             <app-valor-coleccion />
           </section>
         }
+
+        <section class="dominios" aria-label="Progreso por dominio">
+          @for (d of porDominio(); track d.dominio) {
+            <button
+              type="button"
+              class="dominio"
+              [class.activo]="v.dominio() === d.dominio"
+              [attr.aria-pressed]="v.dominio() === d.dominio"
+              [style.--dom]="d.color"
+              [title]="'Filtrar por ' + t.etiqueta(d.dominio)"
+              (click)="v.dominio.set(v.dominio() === d.dominio ? '' : d.dominio)"
+            >
+              <span class="dominio-cabecera">
+                <span class="dominio-nombre">{{ t.etiqueta(d.dominio) }}</span>
+                <span class="dominio-cifra">{{ d.porcentaje }}&nbsp;%</span>
+              </span>
+              <span class="dominio-barra"><span [style.width.%]="d.porcentaje"></span></span>
+              <span class="dominio-pie">{{ d.tengo }} / {{ d.total }}</span>
+            </button>
+          }
+        </section>
 
         @if (prices.data() && valor().copiasSinPrecio > 0) {
           <details class="aviso">
@@ -571,6 +593,79 @@ interface Fila {
     .pie {
       font-size: 0.75rem;
     }
+    .cifra {
+      border-radius: var(--radio);
+    }
+
+    /* Progreso por dominio: una tarjeta por color, que además filtra la carpeta. */
+    .dominios {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .dominio {
+      --dom: var(--colorless);
+      display: grid;
+      gap: 8px;
+      padding: 12px 14px;
+      text-align: left;
+      font-weight: 500;
+      color: var(--text);
+      border-radius: var(--radio);
+      border: 1px solid color-mix(in srgb, var(--dom) 30%, transparent);
+      background:
+        radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--dom) 22%, transparent), transparent 70%),
+        var(--surface);
+      box-shadow: none;
+    }
+    .dominio:hover:not(:disabled) {
+      filter: none;
+      border-color: var(--dom);
+    }
+    .dominio.activo {
+      border-color: var(--dom);
+      box-shadow: 0 0 0 1px var(--dom), 0 0 22px color-mix(in srgb, var(--dom) 35%, transparent);
+    }
+    .dominio-cabecera {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 6px;
+    }
+    .dominio-nombre {
+      font-family: var(--fuente-titulos);
+      font-weight: 600;
+      color: color-mix(in srgb, var(--dom) 75%, white);
+    }
+    .dominio-cifra {
+      font-family: var(--fuente-titulos);
+      font-weight: 700;
+      font-size: 1.1rem;
+      font-variant-numeric: tabular-nums;
+    }
+    .dominio-barra {
+      height: 6px;
+      border-radius: 999px;
+      background: rgb(255 255 255 / 8%);
+      overflow: hidden;
+    }
+    .dominio-barra > span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--dom);
+      box-shadow: 0 0 10px var(--dom);
+    }
+    .dominio-pie {
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+    @media (max-width: 900px) {
+      .dominios {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
     .aviso {
       padding: 12px 16px;
       border: 1px dashed var(--accent);
@@ -915,6 +1010,33 @@ export class CollectionPage implements OnInit {
       sinContar: todas.length - delSet.length,
       porcentaje: delSet.length ? Math.floor((tengo / delSet.length) * 100) : 0,
     };
+  });
+
+  /**
+   * Cuántas cartas distintas de cada dominio tiene (del set elegido, o de todos). Las de dos
+   * dominios cuentan en los dos. Las que no quieres no cuentan, salvo que las tengas.
+   */
+  protected readonly porDominio = computed(() => {
+    const fuente = this.fuente() ?? new Map<string, CardQty>();
+    const tiene = (id: string) => {
+      const q = fuente.get(id);
+      return !!q && q.normal + q.foil > 0;
+    };
+    const descartadas = this.propia() ? this.descartadas.ids() : new Set<string>();
+    const cartas = this.catalog
+      .filter({ sets: this.v.set() ? [this.v.set()] : [] })
+      .filter((c) => tiene(c.cardId) || !descartadas.has(c.cardId));
+    return DOMINIOS.map((dominio) => {
+      const del = cartas.filter((c) => c.domains.includes(dominio));
+      const tengo = del.filter((c) => tiene(c.cardId)).length;
+      return {
+        dominio,
+        color: colorDominio(dominio),
+        tengo,
+        total: del.length,
+        porcentaje: del.length ? Math.floor((tengo / del.length) * 100) : 0,
+      };
+    });
   });
 
   constructor() {

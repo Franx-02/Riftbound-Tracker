@@ -11,6 +11,7 @@ import { ValuationService } from '../core/valuation.service';
 import { WishlistService } from '../core/wishlist.service';
 import { IntercambiablesService } from '../core/intercambiables.service';
 import { DescartadasService } from '../core/descartadas.service';
+import { colorDominio, estiloDominios } from '../core/dominios';
 import { ConfidenceBadgeComponent } from '../ui/confidence-badge.component';
 import { EurPipe, ThumbPipe } from '../ui/pipes';
 import { QtyControlComponent } from '../ui/qty-control.component';
@@ -44,7 +45,9 @@ import { GraficaPrecioComponent, PuntoPrecio } from '../ui/grafica-precio.compon
       } @else {
         @let c = card()!;
         @let p = pricing();
-        <article class="ficha">
+        <!-- El arte de la carta, muy difuminado, de fondo de toda la página. -->
+        <img class="fondo" [src]="c.imgUrl | thumb: 240" alt="" aria-hidden="true" />
+        <article class="ficha" [style]="colores()">
           <img
             class="imagen"
             [src]="c.imgUrl | thumb: 600"
@@ -57,11 +60,15 @@ import { GraficaPrecioComponent, PuntoPrecio } from '../ui/grafica-precio.compon
             <header>
               <h1>{{ c.name }}</h1>
               <p class="muted">{{ c.cardId }} · {{ c.setName }} · {{ t.etiqueta(c.rarity) }}</p>
+              @if (c.domains.length) {
+                <p class="chips">
+                  @for (d of c.domains; track d) {
+                    <span class="chip-dominio" [style.--dom]="color(d)">{{ t.etiqueta(d) }}</span>
+                  }
+                </p>
+              }
               <p class="tipo">
                 {{ tipo() }}
-                @if (c.domains.length) {
-                  · {{ dominios() }}
-                }
                 @if (c.energy !== null) {
                   · energía {{ c.energy }}
                 }
@@ -336,12 +343,32 @@ import { GraficaPrecioComponent, PuntoPrecio } from '../ui/grafica-precio.compon
       gap: 24px;
       align-items: start;
     }
+    .fondo {
+      position: fixed;
+      inset: -10%;
+      z-index: -1;
+      width: 120%;
+      height: 120%;
+      object-fit: cover;
+      filter: blur(70px) saturate(1.4);
+      opacity: 0.32;
+      pointer-events: none;
+    }
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 8px 0 4px;
+    }
     .imagen {
       width: 100%;
       height: auto;
       aspect-ratio: 744 / 1039;
       object-fit: contain;
-      border-radius: var(--radio-s);
+      border-radius: 18px;
+      box-shadow:
+        0 20px 50px rgb(0 0 0 / 55%),
+        0 0 60px color-mix(in srgb, var(--dom-a, transparent) 35%, transparent);
       background: var(--surface-2);
       position: sticky;
       top: 72px;
@@ -568,9 +595,8 @@ export class CardPage {
     const tipo = this.t.etiqueta(c.type);
     return c.supertype ? `${tipo} · ${this.t.etiqueta(c.supertype)}` : tipo;
   });
-  protected readonly dominios = computed(() =>
-    (this.card()?.domains ?? []).map((d) => this.t.etiqueta(d)).join(', '),
-  );
+  protected readonly colores = computed(() => estiloDominios(this.card()?.domains ?? []));
+  protected readonly color = colorDominio;
   /** Ordenados por precio, como hace el mapeo: así se ve de un vistazo cuál es cuál. */
   protected readonly candidatos = computed(() => {
     const ref = (id: number) => {

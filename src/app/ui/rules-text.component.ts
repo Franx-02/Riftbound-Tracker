@@ -101,25 +101,25 @@ const ICONOS: Record<string, { valor: string; titulo: string }> = {
       border-color: transparent;
     }
     .runa[data-dominio='fury'] {
-      background: #e0605a;
+      background: var(--fury);
     }
     .runa[data-dominio='calm'] {
-      background: #6cc28a;
+      background: var(--calm);
     }
     .runa[data-dominio='mind'] {
-      background: #5f9fe0;
+      background: var(--mind);
     }
     .runa[data-dominio='body'] {
-      background: #e89a4c;
+      background: var(--body);
     }
     .runa[data-dominio='chaos'] {
-      background: #a77ad8;
+      background: var(--chaos);
     }
     .runa[data-dominio='order'] {
-      background: #e5cf5c;
+      background: var(--order);
     }
     .runa[data-dominio='rainbow'] {
-      background: conic-gradient(#e0605a, #e89a4c, #e5cf5c, #6cc28a, #5f9fe0, #a77ad8, #e0605a);
+      background: conic-gradient(var(--fury), var(--body), var(--order), var(--calm), var(--mind), var(--chaos), var(--fury));
     }
   `,
 })

@@ -4,6 +4,7 @@ import { CatalogCard } from '../core/catalog.service';
 import { CardQty } from '../core/collection.service';
 import { IntercambiablesService } from '../core/intercambiables.service';
 import { DescartadasService } from '../core/descartadas.service';
+import { estiloDominios } from '../core/dominios';
 import { ValuationService } from '../core/valuation.service';
 import { ConfidenceBadgeComponent } from './confidence-badge.component';
 import { EurPipe, ThumbPipe } from './pipes';
@@ -89,15 +90,24 @@ import { QtyControlComponent } from './qty-control.component';
     </a>
   `,
   styles: `
+    /* --dom-a y --dom-b: el color de su dominio (o los dos, en degradado). */
     :host {
+      position: relative;
       display: grid;
       min-width: 0;
       gap: 8px;
       align-content: start;
       padding: 8px;
-      background: var(--surface);
-      border: 1px solid var(--border);
+      background:
+        linear-gradient(
+          180deg,
+          color-mix(in srgb, var(--dom-a) 10%, transparent),
+          transparent 45%
+        ),
+        var(--surface);
+      border: 1px solid color-mix(in srgb, var(--dom-a) 22%, var(--border));
       border-radius: var(--radio);
+      overflow: hidden;
       /* Las que quedan fuera de pantalla no se pintan: las carpetas tienen cientos. */
       content-visibility: auto;
       contain-intrinsic-size: auto 320px;
@@ -106,8 +116,24 @@ import { QtyControlComponent } from './qty-control.component';
         box-shadow 0.15s ease,
         border-color 0.15s ease;
     }
+    /* Franja de arriba con el color del dominio. */
+    :host::before {
+      content: '';
+      position: absolute;
+      inset: 0 0 auto;
+      height: 3px;
+      background: linear-gradient(90deg, var(--dom-a), var(--dom-b));
+      opacity: 0.55;
+    }
     :host(.tengo) {
-      border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+      border-color: color-mix(in srgb, var(--dom-a) 60%, transparent);
+      box-shadow: 0 0 18px color-mix(in srgb, var(--dom-a) 18%, transparent);
+    }
+    :host(.tengo)::before {
+      opacity: 1;
+    }
+    :host(.apagada)::before {
+      opacity: 0.25;
     }
     .enlace-carta {
       display: grid;
@@ -116,7 +142,7 @@ import { QtyControlComponent } from './qty-control.component';
       text-decoration: none;
     }
     .enlace-carta:hover .nombre {
-      color: var(--accent);
+      color: color-mix(in srgb, var(--dom-a) 70%, white);
     }
     .marco {
       position: relative;
@@ -200,8 +226,8 @@ import { QtyControlComponent } from './qty-control.component';
         transform: translateY(-4px);
         box-shadow:
           0 14px 32px rgb(0 0 0 / 0.5),
-          0 0 0 1px var(--accent-suave);
-        border-color: color-mix(in srgb, var(--accent) 70%, transparent);
+          0 0 24px color-mix(in srgb, var(--dom-a) 35%, transparent);
+        border-color: var(--dom-a);
       }
       :host(:hover) img {
         transform: scale(1.03);
@@ -212,7 +238,7 @@ import { QtyControlComponent } from './qty-control.component';
       }
     }
     :host(:focus-within) {
-      border-color: var(--accent);
+      border-color: var(--dom-a);
     }
     @media (prefers-reduced-motion: reduce) {
       :host,
@@ -239,8 +265,8 @@ import { QtyControlComponent } from './qty-control.component';
       text-transform: uppercase;
     }
     .etiqueta.tengo {
-      background: var(--accent);
-      color: #15120a;
+      background: var(--dom-a);
+      color: #0d0f13;
     }
     .etiqueta.falta {
       background: rgb(0 0 0 / 0.65);
@@ -280,6 +306,7 @@ import { QtyControlComponent } from './qty-control.component';
     '[class.tengo]': 'copias() > 0',
     '[class.apagada]': 'dim() && copias() === 0',
     '[class.descartada]': 'descartada() && copias() === 0',
+    '[style]': 'colores()',
   },
 })
 export class CardTileComponent {
@@ -299,6 +326,7 @@ export class CardTileComponent {
   readonly dim = input(false);
 
   protected readonly pricing = computed(() => this.valuation.pricing(this.card().cardId));
+  protected readonly colores = computed(() => estiloDominios(this.card().domains));
   protected readonly copias = computed(() => this.owned().normal + this.owned().foil);
   /** Marcada como "No la quiero". Solo en la colección propia: es una preferencia personal. */
   protected readonly descartada = computed(

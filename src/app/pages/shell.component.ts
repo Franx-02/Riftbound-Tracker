@@ -88,7 +88,7 @@ import { TraduccionService } from '../core/traduccion.service';
       align-items: center;
       gap: 16px;
       padding: 10px 20px;
-      background: rgb(7 11 20 / 72%);
+      background: rgb(13 15 19 / 72%);
       backdrop-filter: saturate(160%) blur(14px);
       -webkit-backdrop-filter: saturate(160%) blur(14px);
       border-bottom: 1px solid var(--border);
@@ -163,7 +163,7 @@ import { TraduccionService } from '../core/traduccion.service';
       .barra {
         gap: 8px;
         padding: 8px 12px;
-        background: rgb(7 11 20 / 96%);
+        background: rgb(13 15 19 / 96%);
         backdrop-filter: none;
         -webkit-backdrop-filter: none;
       }
@@ -184,7 +184,7 @@ import { TraduccionService } from '../core/traduccion.service';
         gap: 0;
         overflow: visible;
         padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
-        background: rgb(7 11 20 / 82%);
+        background: rgb(13 15 19 / 82%);
         backdrop-filter: saturate(160%) blur(14px);
         -webkit-backdrop-filter: saturate(160%) blur(14px);
         border-top: 1px solid var(--border);
