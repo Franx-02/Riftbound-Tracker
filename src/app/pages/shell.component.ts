@@ -98,9 +98,9 @@ import { TraduccionService } from '../core/traduccion.service';
     }
     .marca {
       font-family: var(--fuente-marca);
-      font-weight: 700;
+      font-weight: 800;
       font-size: 1.1rem;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.16em;
       text-transform: uppercase;
       text-decoration: none;
       background: linear-gradient(180deg, #f5dca4, var(--accent-fuerte));

@@ -320,13 +320,12 @@ const PRECIO_MINIMO_SUBIDA = 1;
     }
     .titular {
       margin: 6px 0 0;
-      font-family: var(--fuente-pincel);
-      font-weight: 400;
-      font-size: clamp(1.8rem, 4.5vw, 2.8rem);
-      line-height: 1;
-      letter-spacing: 0.01em;
-      transform: rotate(-3deg);
-      transform-origin: left;
+      font-family: var(--fuente-marca);
+      font-weight: 700;
+      font-size: clamp(1.4rem, 3.2vw, 2rem);
+      line-height: 1.1;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
       color: var(--text);
       text-shadow: 0 4px 24px rgb(0 0 0 / 60%);
     }
