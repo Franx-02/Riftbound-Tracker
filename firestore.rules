@@ -85,6 +85,30 @@ service cloud.firestore {
         && request.resource.data.cardIds.size() <= 3000;
     }
 
+    // Mazos: users/{uid}/decks/{id} = { nombre, leyenda, campeon, principal, runas, campos,
+    // banquillo, actualizado }. Los leen todos (como la colección); solo escribe el dueño.
+    // Las zonas son mapas cardId → copias; aquí solo se limita su tamaño.
+    match /users/{uid}/decks/{deckId} {
+      allow read: if signedIn();
+      allow delete: if owner(uid);
+      allow create, update: if owner(uid)
+        && deckId.size() <= 40
+        && request.resource.data.keys().hasOnly(
+          ['nombre', 'leyenda', 'campeon', 'principal', 'runas', 'campos', 'banquillo', 'actualizado'])
+        && shortString(request.resource.data.nombre, 80)
+        && (request.resource.data.leyenda == null || shortString(request.resource.data.leyenda, 20))
+        && (request.resource.data.campeon == null || shortString(request.resource.data.campeon, 20))
+        && request.resource.data.principal is map
+        && request.resource.data.principal.size() <= 100
+        && request.resource.data.runas is map
+        && request.resource.data.runas.size() <= 20
+        && request.resource.data.campos is list
+        && request.resource.data.campos.size() <= 3
+        && request.resource.data.banquillo is map
+        && request.resource.data.banquillo.size() <= 100
+        && shortString(request.resource.data.actualizado, 40);
+    }
+
     // Correcciones de mapeo compartidas: cualquiera lee y corrige, y vale para todos.
     // Las reglas no pueden comprobar que `by` sea de verdad el nombre de quien escribe,
     // pero sí que el documento tenga solo estos campos y con tamaños razonables.

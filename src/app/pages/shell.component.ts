@@ -54,6 +54,13 @@ import { TraduccionService } from '../core/traduccion.service';
           </svg>
           <span>Deseos</span>
         </a>
+        <a routerLink="/mazos" routerLinkActive="activo" class="solo-escritorio">
+          <svg class="icono" viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="7" y="3" width="12" height="16" rx="1.5" />
+            <path d="M4 7v12.5A1.5 1.5 0 0 0 5.5 21H15" />
+          </svg>
+          <span>Mazos</span>
+        </a>
         <a routerLink="/intercambios" routerLinkActive="activo" class="solo-escritorio">
           <svg class="icono" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M4 8h13l-3-3M20 16H7l3 3" />

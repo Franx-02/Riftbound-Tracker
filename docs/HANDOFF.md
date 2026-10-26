@@ -390,8 +390,27 @@ Hecho (25/10/2026):
   consola de Firebase; hasta entonces, en producción la lista da error de permisos.
 - Tests: `wishlist.service.spec.ts` (servicio en demo, `faltan` y `quienTiene`).
 
-### F6 — Mazos
+### F6 — Mazos ← HECHO (27/10/2026)
 Crear mazos; validación básica (leyenda, 40 cartas en el mazo principal, runas, 3 campos de batalla; comprobar reglas oficiales antes de codificarlas); qué falta respecto a tu colección, cuánto cuesta completarlo y enviar lo que falta a la lista de deseos.
+
+Hecho:
+- Reglas en `src/app/core/mazos.ts` (puras, con tests en `mazos.spec.ts`), sacadas de las Core
+  Rules, regla 103 (app.riftjudge.com): Leyenda que fija la identidad de dominio; principal de
+  **al menos** 40 contando el Campeón elegido (unidad de campeón con la etiqueta de la Leyenda);
+  máx. 3 copias por nombre (las variantes "(Alternate Art)", "(Signature)"… cuentan como el mismo
+  nombre, `nombreBase`); máx. 3 cartas con supertipo `Signature`, de la Leyenda; 12 runas; 3 campos
+  sin repetir nombre; las incoloras (`Colorless`) valen en cualquier mazo. Banquillo de torneo 0 u 8
+  (guía de riftbound.gg; otras fuentes dicen 10): solo avisa.
+- Ojo: el campo `signature` del catálogo es la variante de arte firmada, no el supertipo Signature.
+- `MazosService` (`mazos.service.ts`, con modo demo `mazos-{uid}`): un documento por mazo en
+  `users/{uid}/decks/{id}` con `nombre, leyenda, campeon, principal, runas, campos, banquillo,
+  actualizado`. **Regla nueva en `firestore.rules`** (leen todos los que tienen sesión, escribe el
+  dueño; tamaños limitados): hay que publicarla.
+- Páginas `/mazos` (lista con la Leyenda de portada y si es legal) y `/mazos/:id` (editor: zonas a
+  la izquierda, buscador a la derecha que solo enseña lo que cabe en la zona elegida y en los
+  dominios de la Leyenda). Panel "Con tu colección": lo que falta, coste en Cardmarket y botón para
+  pasarlo a la lista de deseos. En el menú lateral de escritorio y como acceso en Inicio (en la
+  barra inferior del móvil no cabe).
 
 ### F7 — Escáner ← HECHO (falta probarlo con cartas físicas)
 Plan original: OCR del código impreso abajo a la izquierda (`SFD • 198/221`). Se hizo así el

@@ -97,6 +97,11 @@ const PRECIO_MINIMO_SUBIDA = 1;
           <span class="titulo">Intercambios</span>
           <span class="muted">Lo que les sobra a otros</span>
         </a>
+        <a routerLink="/mazos" class="acceso" style="--dom: var(--order)">
+          <span class="icono" aria-hidden="true">❖</span>
+          <span class="titulo">Mazos</span>
+          <span class="muted">Crea y completa tus mazos</span>
+        </a>
         <a routerLink="/catalogo" class="acceso" style="--dom: var(--chaos)">
           <span class="icono" aria-hidden="true">⌕</span>
           <span class="titulo">Catálogo</span>
@@ -431,7 +436,7 @@ const PRECIO_MINIMO_SUBIDA = 1;
     /* Accesos: cada uno con el color de un dominio. */
     .accesos {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 12px;
     }
     .acceso {
