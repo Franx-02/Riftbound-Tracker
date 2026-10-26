@@ -55,6 +55,9 @@ import { TraduccionService } from '../core/traduccion.service';
           <span>Deseos</span>
         </a>
         <a routerLink="/intercambios" routerLinkActive="activo" class="solo-escritorio">
+          <svg class="icono" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 8h13l-3-3M20 16H7l3 3" />
+          </svg>
           <span>Intercambios</span>
         </a>
       </nav>
@@ -223,6 +226,94 @@ import { TraduccionService } from '../core/traduccion.service';
       .hueco-barra {
         display: block;
         height: calc(68px + env(safe-area-inset-bottom));
+      }
+    }
+
+    /* Escritorio ancho: barra lateral fija con la marca grande, iconos y una pincelada
+       dorada en la sección activa. */
+    @media (min-width: 1000px) {
+      :host {
+        display: block;
+        padding-left: 236px;
+      }
+      .barra {
+        position: fixed;
+        inset: 0 auto 0 0;
+        width: 236px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 28px;
+        padding: 28px 16px 20px;
+        border-bottom: 0;
+        border-right: 1px solid var(--border);
+        background:
+          radial-gradient(260px 300px at 0% 100%, rgb(168 85 247 / 10%), transparent 70%),
+          linear-gradient(180deg, #12151b, #0b0d11);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+      }
+      .marca {
+        font-size: 1.7rem;
+        letter-spacing: 0.06em;
+        padding: 0 8px;
+        filter: drop-shadow(0 2px 10px rgb(245 184 28 / 25%));
+      }
+      nav {
+        flex-direction: column;
+        flex: 1;
+        gap: 4px;
+        overflow: visible;
+      }
+      nav a {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 11px 14px;
+        font-size: 1rem;
+        border-radius: 10px;
+        isolation: isolate;
+      }
+      nav a.activo {
+        color: #1a1305;
+        font-weight: 600;
+        background: transparent;
+      }
+      /* Pincelada: un degradado dorado con el borde derecho "roto". */
+      nav a.activo::before {
+        content: '';
+        position: absolute;
+        inset: 2px -10px 2px -4px;
+        z-index: -1;
+        background: linear-gradient(90deg, #f7d77a, var(--accent-fuerte) 70%, transparent);
+        clip-path: polygon(0 8%, 4% 0, 92% 4%, 100% 30%, 94% 52%, 100% 76%, 90% 100%, 3% 94%);
+        filter: drop-shadow(0 4px 12px rgb(245 184 28 / 35%));
+      }
+      nav a.activo .icono {
+        stroke: #1a1305;
+      }
+      .icono {
+        display: block;
+        width: 24px;
+        height: 24px;
+        flex-shrink: 0;
+        fill: none;
+        stroke: var(--accent);
+        stroke-width: 1.7;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .usuario {
+        flex-wrap: wrap;
+        padding: 14px 8px 0;
+        border-top: 1px solid var(--border);
+      }
+      .nombre {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
     }
   `,
