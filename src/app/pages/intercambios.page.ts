@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { AuthService } from '../core/auth.service';
 import { CatalogCard, CatalogService } from '../core/catalog.service';
 import { CollectionMap, CollectionService } from '../core/collection.service';
+import { IntercambiablesService } from '../core/intercambiables.service';
 import { UsersService } from '../core/users.service';
 import { ValuationService } from '../core/valuation.service';
 import { EurPipe, ThumbPipe } from '../ui/pipes';
@@ -12,6 +13,8 @@ interface Oferta {
   /** Copias que tiene quien la ofrece (normales + foil). */
   copias: number;
   foil: number;
+  /** La ha marcado "para cambiar". */
+  marcada: boolean;
   precio: number | null;
 }
 
@@ -47,7 +50,7 @@ interface Oferta {
         <label>
           Le sobran si tiene
           <select [value]="minimo()" (change)="minimo.set(+$any($event.target).value)">
-            @for (n of [2, 3, 4, 5]; track n) {
+            @for (n of [1, 2, 3, 4, 5]; track n) {
               <option [value]="n" [selected]="n === minimo()">{{ n }} o más copias</option>
             }
           </select>
@@ -69,7 +72,8 @@ interface Oferta {
             }
           </div>
           <p class="muted nota">
-            Cartas de las que {{ nombreOtro() }} tiene {{ minimo() }} o más copias y tú ninguna.
+            Cartas de las que {{ nombreOtro() }} tiene {{ minimo() }} o más copias, o que ha marcado
+            para cambiar, y tú no tienes.
           </p>
           <ul class="cartas">
             @for (o of pedir(); track o.card.cardId) {
@@ -90,6 +94,9 @@ interface Oferta {
                     }
                     · {{ o.precio | eur: '—' }}
                   </span>
+                  @if (o.marcada) {
+                    <span class="marcada">⇄ para cambiar</span>
+                  }
                 </a>
               </li>
             } @empty {
@@ -108,7 +115,8 @@ interface Oferta {
             }
           </div>
           <p class="muted nota">
-            Cartas de las que tú tienes {{ minimo() }} o más copias y {{ nombreOtro() }} ninguna.
+            Cartas de las que tú tienes {{ minimo() }} o más copias, o que has marcado para cambiar,
+            y {{ nombreOtro() }} no tiene.
           </p>
           <ul class="cartas">
             @for (o of ofrecer(); track o.card.cardId) {
@@ -123,6 +131,9 @@ interface Oferta {
                   />
                   <span class="nombre">{{ o.card.name }}</span>
                   <span class="meta">×{{ o.copias }} · {{ o.precio | eur: '—' }}</span>
+                  @if (o.marcada) {
+                    <span class="marcada">⇄ para cambiar</span>
+                  }
                 </a>
               </li>
             } @empty {
@@ -208,6 +219,10 @@ interface Oferta {
       color: var(--muted);
       font-variant-numeric: tabular-nums;
     }
+    .marcada {
+      font-size: 0.75rem;
+      color: var(--hextech);
+    }
     .vacio {
       grid-column: 1 / -1;
     }
@@ -219,9 +234,10 @@ export class IntercambiosPage implements OnInit {
   private readonly users = inject(UsersService);
   private readonly auth = inject(AuthService);
   private readonly valuation = inject(ValuationService);
+  private readonly intercambiables = inject(IntercambiablesService);
 
   protected readonly otro = signal('');
-  protected readonly minimo = signal(4);
+  protected readonly minimo = signal(1);
   protected readonly copiado = signal<'pedir' | 'ofrecer' | null>(null);
 
   protected readonly otros = computed(() =>
@@ -235,41 +251,53 @@ export class IntercambiosPage implements OnInit {
   );
 
   /** Cartas de las que `de` tiene `minimo` o más copias y `para` ninguna, de más a menos valiosas. */
-  private sobrantes(de: CollectionMap, para: CollectionMap): Oferta[] {
+  private sobrantes(
+    de: CollectionMap,
+    para: CollectionMap,
+    marcadas: ReadonlySet<string>,
+  ): Oferta[] {
     const salida: Oferta[] = [];
     for (const [cardId, q] of de) {
       const copias = q.normal + q.foil;
-      if (copias < this.minimo()) continue;
+      const marcada = marcadas.has(cardId.toUpperCase());
+      if (copias === 0 || (copias < this.minimo() && !marcada)) continue;
       const suyas = para.get(cardId);
       if (suyas && suyas.normal + suyas.foil > 0) continue;
       const card = this.catalog.card(cardId);
       if (!card) continue;
       const p = this.valuation.pricing(cardId);
-      salida.push({ card, copias, foil: q.foil, precio: p.normal ?? p.foil });
+      salida.push({ card, copias, foil: q.foil, marcada, precio: p.normal ?? p.foil });
     }
     return salida.sort(
-      (a, b) => (b.precio ?? 0) - (a.precio ?? 0) || a.card.name.localeCompare(b.card.name),
+      (a, b) =>
+        Number(b.marcada) - Number(a.marcada) ||
+        (b.precio ?? 0) - (a.precio ?? 0) ||
+        a.card.name.localeCompare(b.card.name),
     );
   }
 
   protected readonly pedir = computed(() => {
     const suya = this.suColeccion();
-    return suya ? this.sobrantes(suya, this.col.cards()) : [];
+    return suya ? this.sobrantes(suya, this.col.cards(), this.intercambiables.de(this.otro())) : [];
   });
   protected readonly ofrecer = computed(() => {
     const suya = this.suColeccion();
-    return suya ? this.sobrantes(this.col.cards(), suya) : [];
+    return suya ? this.sobrantes(this.col.cards(), suya, this.intercambiables.ids()) : [];
   });
 
   ngOnInit(): void {
     void this.users.loadProfiles();
     void this.col.loadMine();
+    void this.intercambiables.load();
   }
 
   protected elegir(uid: string): void {
     this.otro.set(uid);
     this.copiado.set(null);
-    if (uid) void this.col.loadOther(uid);
+    if (uid) {
+      void this.col.loadOther(uid);
+      void this.intercambiables.loadDe(uid);
+    }
   }
 
   /** Un mensaje listo para pegar en WhatsApp con la lista de cartas. */

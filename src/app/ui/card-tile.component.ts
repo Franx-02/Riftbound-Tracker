@@ -2,6 +2,7 @@ import { Component, computed, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CatalogCard } from '../core/catalog.service';
 import { CardQty } from '../core/collection.service';
+import { IntercambiablesService } from '../core/intercambiables.service';
 import { DescartadasService } from '../core/descartadas.service';
 import { ValuationService } from '../core/valuation.service';
 import { ConfidenceBadgeComponent } from './confidence-badge.component';
@@ -54,6 +55,17 @@ import { QtyControlComponent } from './qty-control.component';
             (click)="descartadas.alternar(card().cardId)"
           >
             {{ descartada() ? 'La quiero' : 'No la quiero' }}
+          </button>
+        }
+        @if (!readonly() && intercambiables.lista() && copias() > 0) {
+          <button
+            type="button"
+            class="descartar"
+            [class.activo]="paraCambiar()"
+            [attr.aria-pressed]="paraCambiar()"
+            (click)="intercambiables.alternar(card().cardId)"
+          >
+            {{ paraCambiar() ? '⇄ Para cambiar ✓' : '⇄ Para cambiar' }}
           </button>
         }
       </div>
@@ -147,6 +159,11 @@ import { QtyControlComponent } from './qty-control.component';
       background: rgb(255 255 255 / 0.08);
       color: var(--muted);
       border: 1px solid rgb(255 255 255 / 0.15);
+    }
+
+    .descartar.activo {
+      color: var(--hextech);
+      border-color: var(--hextech);
     }
 
     /* El panel del +/−: degradado oscuro sobre la parte de abajo de la imagen. */
@@ -261,6 +278,10 @@ import { QtyControlComponent } from './qty-control.component';
 export class CardTileComponent {
   private readonly valuation = inject(ValuationService);
   protected readonly descartadas = inject(DescartadasService);
+  protected readonly intercambiables = inject(IntercambiablesService);
+  protected readonly paraCambiar = computed(() =>
+    this.intercambiables.ids().has(this.card().cardId.toUpperCase()),
+  );
 
   readonly card = input.required<CatalogCard>();
   /** Copias que se enseñan: las tuyas, o las de otro usuario si `readonly`. */

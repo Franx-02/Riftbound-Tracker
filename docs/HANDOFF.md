@@ -520,6 +520,15 @@ persona y salen las cartas de las que tiene N o más copias (4 por defecto, eleg
 ninguna ("Puedes pedirle") y al revés ("Puedes ofrecerle"), de más a menos valiosas, con un botón
 que copia un mensaje para WhatsApp. Lee solo la colección de la persona elegida (`loadOther`).
 
+**Cartas "para cambiar" (26/10/2026)**: `IntercambiablesService`
+(`src/app/core/intercambiables.service.ts`, con modo demo) guarda en el documento público
+`users/{uid}/publico/intercambiables = { cardIds: [...] }` las cartas que el usuario marca como
+intercambiables aunque tenga una sola copia (botón "⇄ Para cambiar" en el panel de la carta o casilla
+en "Mis copias" de la ficha). En Intercambios salen siempre, primero y con la etiqueta "⇄ para
+cambiar", aunque no lleguen al umbral; el umbral ahora va de 1 a 5 (1 por defecto). **Regla nueva
+en `firestore.rules`** (`match /users/{uid}/publico/{documento}`: leen todos los que tienen sesión,
+escribe solo el dueño): hay que publicarla.
+
 ### Extras del 25/10/2026
 - **Navegación en móvil** (≤ 700 px): las secciones pasan a una barra fija abajo con iconos
   (Colección, Catálogo, Escanear, Deseos); arriba solo quedan la marca y Salir. En escritorio, igual

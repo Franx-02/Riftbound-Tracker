@@ -9,6 +9,7 @@ import { PricesService } from '../core/prices.service';
 import { TraduccionService } from '../core/traduccion.service';
 import { ValuationService } from '../core/valuation.service';
 import { WishlistService } from '../core/wishlist.service';
+import { IntercambiablesService } from '../core/intercambiables.service';
 import { DescartadasService } from '../core/descartadas.service';
 import { ConfidenceBadgeComponent } from '../ui/confidence-badge.component';
 import { EurPipe, ThumbPipe } from '../ui/pipes';
@@ -93,6 +94,20 @@ import { GraficaPrecioComponent, PuntoPrecio } from '../ui/grafica-precio.compon
                   No la quiero en mi colección
                   <span class="muted">(no cuenta como que te falta)</span>
                 </label>
+              }
+              @if (intercambiables.lista()) {
+                <label class="no-la-quiero">
+                  <input
+                    type="checkbox"
+                    [checked]="intercambiables.tiene(c.cardId)"
+                    (change)="intercambiables.alternar(c.cardId)"
+                  />
+                  Para cambiar
+                  <span class="muted">(sale en Intercambios aunque solo tengas una)</span>
+                </label>
+              }
+              @if (intercambiables.error()) {
+                <p class="error" role="alert">{{ intercambiables.error() }}</p>
               }
               @if (descartadas.error()) {
                 <p class="error" role="alert">{{ descartadas.error() }}</p>
@@ -531,6 +546,7 @@ export class CardPage {
   protected readonly t = inject(TraduccionService);
   protected readonly wish = inject(WishlistService);
   protected readonly descartadas = inject(DescartadasService);
+  protected readonly intercambiables = inject(IntercambiablesService);
 
   /** De la ruta `/carta/:cardId`. */
   readonly cardId = input.required<string>();

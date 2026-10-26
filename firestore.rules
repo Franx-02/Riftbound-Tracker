@@ -73,6 +73,18 @@ service cloud.firestore {
         && request.resource.data.cardIds.size() <= 3000;
     }
 
+    // Datos públicos del usuario: users/{uid}/publico/intercambiables = { cardIds: [...] },
+    // las cartas que ofrece para cambiar. Las leen todos (Intercambios); solo escribe el dueño.
+    match /users/{uid}/publico/{documento} {
+      allow read: if signedIn();
+      allow delete: if owner(uid);
+      allow create, update: if owner(uid)
+        && documento == 'intercambiables'
+        && request.resource.data.keys().hasOnly(['cardIds'])
+        && request.resource.data.cardIds is list
+        && request.resource.data.cardIds.size() <= 3000;
+    }
+
     // Correcciones de mapeo compartidas: cualquiera lee y corrige, y vale para todos.
     // Las reglas no pueden comprobar que `by` sea de verdad el nombre de quien escribe,
     // pero sí que el documento tenga solo estos campos y con tamaños razonables.
