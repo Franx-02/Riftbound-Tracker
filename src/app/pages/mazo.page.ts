@@ -72,6 +72,10 @@ interface Linea {
             (change)="renombrar($event)"
           />
           <span class="estado" [class.legal]="legal()">{{ legal() ? 'Legal' : 'Incompleto' }}</span>
+          <button type="button" class="secondary" (click)="copiarTexto()">
+            {{ copiado() ? 'Copiado' : 'Copiar lista' }}
+          </button>
+          <button type="button" class="secondary" (click)="descargar()">Exportar .txt</button>
           <button type="button" class="secondary" (click)="borrar()">Borrar</button>
         </header>
 
@@ -130,7 +134,9 @@ interface Linea {
                 Mazo principal <span>{{ tamano() }}/40</span>
               </button>
               @for (g of principalPorTipo(); track g.nombre) {
-                <h3>{{ g.nombre }} <span class="muted">{{ g.total }}</span></h3>
+                <h3>
+                  {{ g.nombre }} <span class="muted">{{ g.total }}</span>
+                </h3>
                 <ul class="lineas">
                   @for (x of g.lineas; track x.card.cardId) {
                     <ng-container
@@ -153,7 +159,9 @@ interface Linea {
               </button>
               <ul class="lineas">
                 @for (x of lineas(m.runas); track x.card.cardId) {
-                  <ng-container *ngTemplateOutlet="linea; context: { $implicit: x, zona: 'runas' }" />
+                  <ng-container
+                    *ngTemplateOutlet="linea; context: { $implicit: x, zona: 'runas' }"
+                  />
                 }
               </ul>
             </div>
@@ -172,7 +180,12 @@ interface Linea {
                   @if (catalog.card(id); as c) {
                     <li class="linea" [style]="estilo(c)">
                       <span class="linea-nombre">{{ c.name }}</span>
-                      <button type="button" class="mini" (click)="quitarCampo(id)" aria-label="Quitar">
+                      <button
+                        type="button"
+                        class="mini"
+                        (click)="quitarCampo(id)"
+                        aria-label="Quitar"
+                      >
                         ×
                       </button>
                     </li>
@@ -284,7 +297,11 @@ interface Linea {
                 }
               </ul>
               @if (resultados().length > visibles().length) {
-                <button type="button" class="secondary mas" (click)="limite.set(limite() + porPagina)">
+                <button
+                  type="button"
+                  class="secondary mas"
+                  (click)="limite.set(limite() + porPagina)"
+                >
                   Mostrar más ({{ resultados().length - visibles().length }})
                 </button>
               }
@@ -297,7 +314,12 @@ interface Linea {
         <li class="linea" [style]="estilo(x.card)">
           <span class="coste">{{ x.card.energy ?? '–' }}</span>
           <a class="linea-nombre" [routerLink]="['/carta', x.card.cardId]">{{ x.card.name }}</a>
-          <button type="button" class="mini" (click)="cambiar(zona, x.card, -1)" aria-label="Quitar una">
+          <button
+            type="button"
+            class="mini"
+            (click)="cambiar(zona, x.card, -1)"
+            aria-label="Quitar una"
+          >
             −
           </button>
           <span class="n">{{ x.n }}</span>
@@ -333,7 +355,13 @@ interface Linea {
       gap: 12px;
       padding-bottom: 12px;
       border-bottom: 2px solid transparent;
-      border-image: linear-gradient(90deg, var(--dom-a, var(--accent)), var(--dom-b, var(--accent)), transparent) 1;
+      border-image: linear-gradient(
+          90deg,
+          var(--dom-a, var(--accent)),
+          var(--dom-b, var(--accent)),
+          transparent
+        )
+        1;
     }
     .nombre {
       flex: 1 1 240px;
@@ -453,7 +481,8 @@ interface Linea {
       gap: 8px;
       padding: 4px 6px 4px 0;
       border-radius: var(--radio-s);
-      background: linear-gradient(90deg, color-mix(in srgb, var(--dom-a) 22%, transparent), transparent 60%),
+      background:
+        linear-gradient(90deg, color-mix(in srgb, var(--dom-a) 22%, transparent), transparent 60%),
         var(--surface);
       border-left: 3px solid var(--dom-a);
       font-size: 0.9rem;
@@ -530,6 +559,9 @@ interface Linea {
     .faltan {
       max-height: 180px;
       overflow-y: auto;
+    }
+    .faltan .muted {
+      margin-left: 4px;
     }
     .faltan a {
       text-decoration: none;
@@ -683,7 +715,10 @@ export class MazoPage {
         const card = this.catalog.card(id);
         return card ? [{ card, n }] : [];
       })
-      .sort((a, b) => (a.card.energy ?? 99) - (b.card.energy ?? 99) || a.card.name.localeCompare(b.card.name));
+      .sort(
+        (a, b) =>
+          (a.card.energy ?? 99) - (b.card.energy ?? 99) || a.card.name.localeCompare(b.card.name),
+      );
   }
 
   protected readonly principalPorTipo = computed(() => {
@@ -773,7 +808,8 @@ export class MazoPage {
 
   protected sePuedeAnadir(c: CatalogCard): boolean {
     const d = this.destino();
-    if (d === 'campos') return !this.mazo()!.campos.includes(c.cardId) && this.mazo()!.campos.length < NUM_CAMPOS;
+    if (d === 'campos')
+      return !this.mazo()!.campos.includes(c.cardId) && this.mazo()!.campos.length < NUM_CAMPOS;
     if (d === 'principal' || d === 'runas' || d === 'banquillo') return this.sePuedeSumar(d, c);
     return true;
   }
@@ -785,7 +821,11 @@ export class MazoPage {
       case 'leyenda': {
         // Cambiar de Leyenda deja fuera al Campeón si ya no es suyo.
         const campeon = this.campeon();
-        this.guardar({ ...m, leyenda: c.cardId, campeon: campeon && esCampeonDe(campeon, c) ? m.campeon : null });
+        this.guardar({
+          ...m,
+          leyenda: c.cardId,
+          campeon: campeon && esCampeonDe(campeon, c) ? m.campeon : null,
+        });
         this.destino.set('campeon');
         break;
       }
@@ -825,6 +865,59 @@ export class MazoPage {
   protected buscar(e: Event): void {
     this.texto.set((e.target as HTMLInputElement).value);
     this.limite.set(POR_PAGINA);
+  }
+
+  protected readonly copiado = signal(false);
+
+  /**
+   * El mazo como texto: una sección por zona y una línea "N Nombre (ID)" por carta, el
+   * formato que entienden la mayoría de webs de mazos (con el id para no confundir variantes).
+   */
+  protected readonly textoMazo = computed(() => {
+    const m = this.mazo();
+    if (!m) return '';
+    const linea = (id: string, n: number) => {
+      const c = this.catalog.card(id);
+      return `${n} ${c?.name ?? id} (${id})`;
+    };
+    const zona = (titulo: string, z: Record<string, number>) => {
+      const ids = Object.keys(z).filter((id) => z[id] > 0);
+      if (!ids.length) return [];
+      ids.sort((a, b) =>
+        (this.catalog.card(a)?.name ?? a).localeCompare(this.catalog.card(b)?.name ?? b),
+      );
+      return ['', `${titulo}:`, ...ids.map((id) => linea(id, z[id]))];
+    };
+    return [
+      `# ${m.nombre}`,
+      ...(m.leyenda ? ['', 'Legend:', linea(m.leyenda, 1)] : []),
+      ...(m.campeon ? ['', 'Champion:', linea(m.campeon, 1)] : []),
+      ...zona('Main Deck', m.principal),
+      ...zona('Runes', m.runas),
+      ...(m.campos.length ? ['', 'Battlefields:', ...m.campos.map((id) => linea(id, 1))] : []),
+      ...zona('Sideboard', m.banquillo),
+    ].join('\n');
+  });
+
+  protected async copiarTexto(): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(this.textoMazo());
+      this.copiado.set(true);
+      setTimeout(() => this.copiado.set(false), 2000);
+    } catch {
+      this.copiado.set(false);
+    }
+  }
+
+  protected descargar(): void {
+    const m = this.mazo();
+    if (!m) return;
+    const url = URL.createObjectURL(new Blob([this.textoMazo()], { type: 'text/plain' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${m.nombre.replace(/[^\p{L}\p{N} _-]+/gu, '').trim() || 'mazo'}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   protected borrar(): void {
