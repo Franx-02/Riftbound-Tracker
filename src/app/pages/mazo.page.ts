@@ -45,6 +45,17 @@ interface Linea {
   n: number;
 }
 
+interface Falta extends Linea {
+  /** Precio por copia (el más barato que haya), o null si no hay. */
+  precio: number | null;
+}
+
+interface GrupoFaltan {
+  titulo: string;
+  lista: Falta[];
+  cartas: number;
+}
+
 /**
  * Editor de un mazo: a la izquierda el mazo por zonas (Leyenda, Campeón, principal, runas,
  * campos de batalla y banquillo) con la validación y lo que te falta; a la derecha el
@@ -237,14 +248,29 @@ interface Linea {
                     <span class="muted">(sin contar {{ faltan().sinPrecio }} sin precio)</span>
                   }
                 </p>
-                <ul class="faltan">
-                  @for (f of faltan().lista; track f.card.cardId) {
-                    <li>
-                      <a [routerLink]="['/carta', f.card.cardId]">{{ f.card.name }}</a>
-                      <span class="muted">× {{ f.n }}</span>
-                    </li>
-                  }
-                </ul>
+                @for (g of faltan().grupos; track g.titulo) {
+                  <h3 class="grupo-faltan">
+                    {{ g.titulo }} <span class="muted">· {{ g.cartas }}</span>
+                  </h3>
+                  <ul class="faltan">
+                    @for (f of g.lista; track f.card.cardId) {
+                      <li>
+                        <a [routerLink]="['/carta', f.card.cardId]">
+                          <img
+                            [src]="f.card.imgUrl | thumb: 80"
+                            alt=""
+                            width="32"
+                            height="45"
+                            loading="lazy"
+                          />
+                          <span class="copias">×{{ f.n }}</span>
+                          <span class="nombre-falta">{{ f.card.name }}</span>
+                          <span class="precio-falta">{{ f.precio | eur: '—' }}</span>
+                        </a>
+                      </li>
+                    }
+                  </ul>
+                }
                 <button type="button" class="secondary" (click)="aDeseos()">
                   Añadir lo que falta a la lista de deseos
                 </button>
@@ -556,15 +582,46 @@ interface Linea {
     .reglas li.aviso {
       color: var(--order);
     }
-    .faltan {
-      max-height: 180px;
-      overflow-y: auto;
-    }
-    .faltan .muted {
-      margin-left: 4px;
+    .grupo-faltan {
+      margin: 12px 0 6px;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
     }
     .faltan a {
+      display: grid;
+      grid-template-columns: 32px 34px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 6px;
+      border-radius: 6px;
+      color: var(--text);
       text-decoration: none;
+      background: rgb(255 255 255 / 0.03);
+    }
+    .faltan a:hover {
+      background: rgb(255 255 255 / 0.08);
+    }
+    .faltan img {
+      width: 32px;
+      height: auto;
+      border-radius: 3px;
+    }
+    .copias {
+      font-weight: 700;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+    }
+    .nombre-falta {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .precio-falta {
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-variant-numeric: tabular-nums;
     }
     .buscador {
       position: sticky;
@@ -935,32 +992,59 @@ export class MazoPage {
   /** Lo que el mazo necesita (sin banquillo) y no tienes, con su coste en Cardmarket. */
   protected readonly faltan = computed(() => {
     const m = this.mazo();
-    const lista: Linea[] = [];
+    const grupos: GrupoFaltan[] = [];
     let coste = 0;
     let sinPrecio = 0;
     if (m) {
-      for (const [id, necesito] of cartasDelMazo(m)) {
-        const card = this.catalog.card(id);
-        if (!card) continue;
-        const q = this.col.qty(id);
-        const n = necesito - q.normal - q.foil;
-        if (n <= 0) continue;
-        lista.push({ card, n });
-        const p = this.valuation.pricing(id);
-        const precio = p.normal ?? p.foil;
-        if (precio === null) sinPrecio += n;
-        else coste += precio * n;
+      const quedan = new Map<string, number>();
+      const zonas: [string, [string, number][]][] = [
+        [
+          'Leyenda y Campeón',
+          [m.leyenda, m.campeon].filter((x): x is string => !!x).map((id) => [id, 1]),
+        ],
+        ['Mazo principal', Object.entries(m.principal)],
+        ['Runas', Object.entries(m.runas)],
+        ['Campos de batalla', m.campos.map((id) => [id, 1])],
+        ['Banquillo', Object.entries(m.banquillo)],
+      ];
+      for (const [titulo, cartas] of zonas) {
+        const lista: Falta[] = [];
+        for (const [id, necesito] of cartas) {
+          const card = this.catalog.card(id);
+          if (!card || necesito <= 0) continue;
+          if (!quedan.has(id)) {
+            const q = this.col.qty(id);
+            quedan.set(id, q.normal + q.foil);
+          }
+          const tengo = quedan.get(id)!;
+          const usadas = Math.min(tengo, necesito);
+          quedan.set(id, tengo - usadas);
+          const n = necesito - usadas;
+          if (n <= 0) continue;
+          const p = this.valuation.pricing(id);
+          const precio = p.normal ?? p.foil;
+          if (precio === null) sinPrecio += n;
+          else coste += precio * n;
+          const ya = lista.find((x) => x.card.cardId === card.cardId);
+          if (ya) ya.n += n;
+          else lista.push({ card, n, precio });
+        }
+        if (!lista.length) continue;
+        lista.sort(
+          (x, y) =>
+            (y.precio ?? 0) * y.n - (x.precio ?? 0) * x.n || x.card.name.localeCompare(y.card.name),
+        );
+        grupos.push({ titulo, lista, cartas: lista.reduce((s, x) => s + x.n, 0) });
       }
     }
-    lista.sort((a, b) => a.card.name.localeCompare(b.card.name));
-    return { lista, cartas: lista.reduce((a, x) => a + x.n, 0), coste, sinPrecio };
+    return { grupos, cartas: grupos.reduce((s, g) => s + g.cartas, 0), coste, sinPrecio };
   });
 
-  /** Pide en la lista de deseos las copias que te faltan (sin bajar lo que ya pedías). */
+  /** Pide en la lista de deseos las copias que te faltan, banquillo incluido (sin bajar lo que ya pedías). */
   protected aDeseos(): void {
     const m = this.mazo();
     if (!m) return;
-    for (const [id, necesito] of cartasDelMazo(m)) {
+    for (const [id, necesito] of cartasDelMazo(m, true)) {
       const q = this.col.qty(id);
       if (necesito - q.normal - q.foil <= 0) continue;
       const actual = this.wish.get(id);
