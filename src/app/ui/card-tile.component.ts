@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { CatalogCard } from '../core/catalog.service';
 import { CardQty } from '../core/collection.service';
 import { IntercambiablesService } from '../core/intercambiables.service';
+import { WishlistService } from '../core/wishlist.service';
 import { DescartadasService } from '../core/descartadas.service';
 import { estiloDominios } from '../core/dominios';
 import { ValuationService } from '../core/valuation.service';
@@ -38,6 +39,8 @@ import { QtyControlComponent } from './qty-control.component';
         <span class="etiqueta tengo" [title]="detalleCopias()">×{{ copias() }}</span>
       } @else if (descartada()) {
         <span class="etiqueta descartada">no la quiero</span>
+      } @else if (deseo()) {
+        <span class="etiqueta deseada">♥ ×{{ deseo() }}</span>
       } @else if (dim()) {
         <span class="etiqueta falta">falta</span>
       }
@@ -47,6 +50,29 @@ import { QtyControlComponent } from './qty-control.component';
           [fixed]="readonly() ? owned() : null"
           [overlay]="true"
         />
+        @if (!readonly() && wish.editable()) {
+          <div class="deseos">
+            @if (deseo()) {
+              <button
+                type="button"
+                class="descartar activo-deseo quitar"
+                [attr.aria-label]="'Quitar una copia de ' + card().name + ' de la lista de deseos'"
+                (click)="wish.adjust(card().cardId, -1)"
+              >
+                −
+              </button>
+            }
+            <button
+              type="button"
+              class="descartar"
+              [class.activo-deseo]="deseo()"
+              [attr.aria-label]="'Añadir ' + card().name + ' a la lista de deseos'"
+              (click)="wish.adjust(card().cardId, 1)"
+            >
+              {{ deseo() ? '♥ Deseo ×' + deseo() + ' +' : '♡ A deseos' }}
+            </button>
+          </div>
+        }
         @if (!readonly() && descartadas.lista()) {
           <button
             type="button"
@@ -99,11 +125,7 @@ import { QtyControlComponent } from './qty-control.component';
       align-content: start;
       padding: 8px;
       background:
-        linear-gradient(
-          180deg,
-          color-mix(in srgb, var(--dom-a) 10%, transparent),
-          transparent 45%
-        ),
+        linear-gradient(180deg, color-mix(in srgb, var(--dom-a) 10%, transparent), transparent 45%),
         var(--surface);
       border: 1px solid color-mix(in srgb, var(--dom-a) 22%, var(--border));
       border-radius: var(--radio);
@@ -192,6 +214,25 @@ import { QtyControlComponent } from './qty-control.component';
       backdrop-filter: blur(6px);
     }
 
+    .deseos {
+      display: flex;
+      gap: 4px;
+    }
+    .deseos .descartar {
+      flex: 1;
+    }
+    .deseos .quitar {
+      flex: 0 0 30px;
+      order: 1;
+    }
+    .descartar.activo-deseo {
+      color: #fb7185;
+      border-color: #fb7185;
+    }
+    .etiqueta.deseada {
+      background: rgb(225 29 72 / 0.85);
+      color: #fff;
+    }
     .descartar.activo {
       color: var(--hextech);
       border-color: var(--hextech);
@@ -312,6 +353,9 @@ import { QtyControlComponent } from './qty-control.component';
 export class CardTileComponent {
   private readonly valuation = inject(ValuationService);
   protected readonly descartadas = inject(DescartadasService);
+  protected readonly wish = inject(WishlistService);
+  /** Copias que pides en la lista de deseos (0 si no está). */
+  protected readonly deseo = computed(() => this.wish.get(this.card().cardId)?.qty ?? 0);
   protected readonly intercambiables = inject(IntercambiablesService);
   protected readonly paraCambiar = computed(() =>
     this.intercambiables.ids().has(this.card().cardId.toUpperCase()),

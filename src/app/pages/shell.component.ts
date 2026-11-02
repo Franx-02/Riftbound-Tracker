@@ -4,6 +4,7 @@ import { AuthService } from '../core/auth.service';
 import { CatalogService } from '../core/catalog.service';
 import { CollectionService } from '../core/collection.service';
 import { IntercambiablesService } from '../core/intercambiables.service';
+import { WishlistService } from '../core/wishlist.service';
 import { DescartadasService } from '../core/descartadas.service';
 import { MappingOverridesService } from '../core/mapping-overrides.service';
 import { PricesService } from '../core/prices.service';
@@ -341,6 +342,7 @@ export class ShellComponent implements OnInit {
   private readonly collection = inject(CollectionService);
   private readonly traduccion = inject(TraduccionService);
   private readonly descartadas = inject(DescartadasService);
+  private readonly wish = inject(WishlistService);
   private readonly intercambiables = inject(IntercambiablesService);
   private readonly router = inject(Router);
 
@@ -365,6 +367,7 @@ export class ShellComponent implements OnInit {
     void this.collection.loadMine();
     void this.traduccion.load();
     void this.descartadas.load();
+    void this.wish.load();
     void this.intercambiables.load();
   }
 
