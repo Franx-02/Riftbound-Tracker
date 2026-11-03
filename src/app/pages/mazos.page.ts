@@ -1,7 +1,8 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { CatalogService } from '../core/catalog.service';
 import { estiloDominios } from '../core/dominios';
+import { MazoImportado, importarMazo } from '../core/importar-mazo';
 import { esLegal, tamanoPrincipal, validar } from '../core/mazos';
 import { MazosService } from '../core/mazos.service';
 import { ThumbPipe } from '../ui/pipes';
@@ -19,8 +20,54 @@ import { ThumbPipe } from '../ui/pipes';
             Crea mazos con las reglas oficiales y mira qué te falta de tu colección.
           </p>
         </div>
-        <button type="button" (click)="nuevo()">+ Nuevo mazo</button>
+        <div class="acciones">
+          <button type="button" class="secondary" (click)="abierto.set(!abierto())">
+            Importar
+          </button>
+          <button type="button" (click)="nuevo()">+ Nuevo mazo</button>
+        </div>
       </header>
+
+      @if (abierto()) {
+        <section class="importar">
+          <h2>Importar un mazo</h2>
+          <p class="muted">
+            Pega la lista (una carta por línea, como "3 Brawl" o "3x Brawl") o sube un .txt. Vale la
+            que exporta esta app y la de las webs de mazos habituales.
+          </p>
+          <textarea
+            rows="10"
+            aria-label="Lista del mazo"
+            placeholder="Legend:&#10;1 Jinx, Loose Cannon&#10;&#10;Main Deck:&#10;3 Brawl&#10;..."
+            [value]="texto()"
+            (input)="texto.set($any($event.target).value)"
+          ></textarea>
+          <div class="acciones">
+            <label class="secondary fichero">
+              Subir .txt
+              <input type="file" accept=".txt,text/plain" (change)="leerFichero($event)" />
+            </label>
+            <button type="button" [disabled]="!texto().trim()" (click)="importar()">
+              Importar
+            </button>
+          </div>
+          @if (resultado(); as r) {
+            @if (r.cartas === 0) {
+              <p class="error" role="alert">No se ha reconocido ninguna carta.</p>
+            } @else {
+              <p class="error" role="alert">
+                Importadas {{ r.cartas }} cartas, pero no se han encontrado estas líneas:
+              </p>
+              <ul class="no-encontradas">
+                @for (l of r.noEncontradas; track $index) {
+                  <li>{{ l }}</li>
+                }
+              </ul>
+              <button type="button" (click)="abrir(r.mazo.id)">Abrir el mazo</button>
+            }
+          }
+        </section>
+      }
 
       @if (mazos.error()) {
         <p class="error" role="alert">{{ mazos.error() }}</p>
@@ -71,6 +118,49 @@ import { ThumbPipe } from '../ui/pipes';
       align-items: flex-end;
       gap: 16px;
       flex-wrap: wrap;
+    }
+    .acciones {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .importar {
+      display: grid;
+      gap: 10px;
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface);
+    }
+    .importar h2,
+    .importar p {
+      margin: 0;
+    }
+    .importar textarea {
+      width: 100%;
+      font-family: ui-monospace, monospace;
+      font-size: 0.85rem;
+      resize: vertical;
+    }
+    .fichero {
+      position: relative;
+      cursor: pointer;
+      padding: 8px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    .fichero input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+    .no-encontradas {
+      margin: 0;
+      font-family: ui-monospace, monospace;
+      font-size: 0.8rem;
+      color: var(--muted);
     }
     .cabecera p {
       margin: 0;
@@ -192,6 +282,28 @@ export class MazosPage {
       };
     }),
   );
+
+  protected readonly abierto = signal(false);
+  protected readonly texto = signal('');
+  protected readonly resultado = signal<MazoImportado | null>(null);
+
+  protected async leerFichero(e: Event): Promise<void> {
+    const fichero = (e.target as HTMLInputElement).files?.[0];
+    if (fichero) this.texto.set(await fichero.text());
+  }
+
+  protected importar(): void {
+    const id = crypto.randomUUID().replace(/-/g, '').slice(0, 20);
+    const r = importarMazo(this.texto(), this.catalog.cards(), id);
+    this.resultado.set(r);
+    if (r.cartas === 0) return;
+    this.mazos.guardar(r.mazo);
+    if (!r.noEncontradas.length) this.abrir(id);
+  }
+
+  protected abrir(id: string): void {
+    void this.router.navigate(['/mazos', id]);
+  }
 
   protected nuevo(): void {
     const id = this.mazos.crear();
