@@ -84,11 +84,16 @@ interface GrupoFaltan {
           />
           <span class="estado" [class.legal]="legal()">{{ legal() ? 'Legal' : 'Incompleto' }}</span>
           <a class="boton-simular" [routerLink]="['/mazos', m.id, 'simular']">▶ Probar</a>
-          <button type="button" class="secondary" (click)="copiarTexto()">
-            {{ copiado() ? 'Copiado' : 'Copiar lista' }}
-          </button>
-          <button type="button" class="secondary" (click)="descargar()">Exportar .txt</button>
-          <button type="button" class="secondary" (click)="borrar()">Borrar</button>
+          <details class="mas">
+            <summary class="secondary" aria-label="Más acciones">⋯</summary>
+            <div class="menu-mas">
+              <button type="button" (click)="copiarTexto()">
+                {{ copiado() ? 'Copiado' : 'Copiar lista' }}
+              </button>
+              <button type="button" (click)="descargar()">Exportar .txt</button>
+              <button type="button" class="peligro" (click)="borrar()">Borrar mazo</button>
+            </div>
+          </details>
         </header>
 
         @if (mazos.error()) {
@@ -490,6 +495,55 @@ interface GrupoFaltan {
       width: 100%;
       border-radius: 6px;
       box-shadow: 0 4px 10px rgb(0 0 0 / 0.45);
+    }
+    .mas {
+      position: relative;
+    }
+    .mas summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-weight: 700;
+      line-height: 1;
+    }
+    .mas summary::-webkit-details-marker {
+      display: none;
+    }
+    .menu-mas {
+      position: absolute;
+      right: 0;
+      top: calc(100% + 6px);
+      z-index: 20;
+      display: grid;
+      gap: 4px;
+      min-width: 180px;
+      padding: 6px;
+      border-radius: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      box-shadow: 0 16px 40px rgb(0 0 0 / 0.5);
+      animation: menu-entra 0.15s ease both;
+    }
+    @keyframes menu-entra {
+      from {
+        opacity: 0;
+        transform: translateY(-4px);
+      }
+    }
+    .menu-mas button {
+      justify-content: flex-start;
+      text-align: left;
+      background: transparent;
+      color: var(--text);
+      border: 0;
+    }
+    .menu-mas button:hover {
+      background: rgb(255 255 255 / 0.06);
+    }
+    .menu-mas .peligro {
+      color: #fb7185;
     }
     .boton-simular {
       padding: 8px 14px;

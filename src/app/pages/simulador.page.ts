@@ -1,7 +1,7 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { Component, computed, effect, inject, input, signal } from '@angular/core';
+import { Component, HostListener, computed, effect, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { CatalogService } from '../core/catalog.service';
+import { CatalogCard, CatalogService } from '../core/catalog.service';
 import { estiloDominios } from '../core/dominios';
 import { MazosService } from '../core/mazos.service';
 import {
@@ -43,7 +43,7 @@ type Destino = 'base' | 'campo0' | 'campo1' | 'cementerio' | 'mano';
   imports: [RouterLink, NgTemplateOutlet, ThumbPipe, InclinarDirective],
   template: `
     @if (mazo(); as m) {
-      <main class="mesa" [style]="colores()">
+      <main class="mesa" [style]="colores()" [class.arrastrando]="arrastrando()">
         <header class="barra">
           <a [routerLink]="['/mazos', m.id]" class="volver">← {{ m.nombre }}</a>
           <ol class="fases" aria-label="Fase del turno">
@@ -76,9 +76,32 @@ type Destino = 'base' | 'campo0' | 'campo1' | 'cementerio' | 'mano';
             <button type="button" class="secondary" (click)="aplicar(robar1)">Robar</button>
             <button type="button" class="secondary" (click)="aplicar(canalizar1)">Canalizar</button>
             <button type="button" class="secondary" (click)="aplicar(barajarMazo)">Barajar</button>
+            <button
+              type="button"
+              class="secondary"
+              [disabled]="!historial().length"
+              (click)="deshacer()"
+              title="Ctrl+Z"
+            >
+              ↶ Deshacer
+            </button>
+            <button
+              type="button"
+              class="secondary"
+              (click)="logAbierto.set(!logAbierto())"
+              [attr.aria-expanded]="logAbierto()"
+            >
+              Historial
+            </button>
             <button type="button" class="secondary" (click)="reiniciar()">Reiniciar</button>
           </span>
         </header>
+        <p class="ultimo muted" aria-live="polite">
+          {{ ultimo() }}
+          <span class="atajos"
+            >· atajos: D robar · C canalizar · E terminar turno · Ctrl+Z deshacer</span
+          >
+        </p>
 
         @if (p().aviso; as a) {
           <p class="aviso error" role="alert">{{ a }}</p>
@@ -250,6 +273,9 @@ type Destino = 'base' | 'campo0' | 'campo1' | 'cementerio' | 'mano';
             </div>
             <div class="zona">
               <span class="etiqueta">
+                <span class="pozo" title="Runas preparadas: energía disponible"
+                  >⚡ {{ runasListas() }}</span
+                >
                 Runas · {{ runasListas() }} preparadas de {{ p().runas.length }}
                 <label class="opcion">
                   <input type="checkbox" [checked]="p().pagarCostes" (change)="alternarPago()" />
@@ -374,11 +400,26 @@ type Destino = 'base' | 'campo0' | 'campo1' | 'cementerio' | 'mano';
           }
         </section>
 
-        <ol class="log" aria-label="Historial">
-          @for (l of ultimas(); track $index) {
-            <li>{{ l }}</li>
-          }
-        </ol>
+        @if (logAbierto()) {
+          <aside class="log-cajon" aria-label="Historial de la partida">
+            <div class="cajon-cabecera">
+              <strong>Historial</strong>
+              <button type="button" class="mini" (click)="logAbierto.set(false)">Cerrar</button>
+            </div>
+            <ol class="log">
+              @for (l of p().log; track $index) {
+                <li>{{ l }}</li>
+              }
+            </ol>
+          </aside>
+        }
+
+        @if (vistaPrevia(); as vp) {
+          <aside class="vista-previa" aria-hidden="true">
+            <img [src]="vp.imgUrl | thumb: 600" [alt]="vp.name" />
+            <span class="nombre-vp">{{ vp.name }}</span>
+          </aside>
+        }
 
         @if (seleccion(); as s) {
           <div class="menu" role="dialog" aria-label="Acciones de la carta">
@@ -417,7 +458,9 @@ type Destino = 'base' | 'campo0' | 'campo1' | 'cementerio' | 'mano';
             [title]="carta(c.id)?.name ?? c.id"
             draggable="true"
             (dragstart)="arrastrar($event, c)"
-            (dragend)="sobre.set(null)"
+            (dragend)="sobre.set(null); arrastrando.set(false)"
+            (mouseenter)="vistaPrevia.set(carta(c.id) ?? null)"
+            (mouseleave)="vistaPrevia.set(null)"
             (click)="pulsar(c)"
           >
             <img
@@ -435,10 +478,12 @@ type Destino = 'base' | 'campo0' | 'campo1' | 'cementerio' | 'mano';
   styles: `
     .mesa {
       --dom-a: var(--colorless);
-      padding: 10px 16px 24px;
+      padding: 8px 14px 6px;
       display: grid;
-      gap: 10px;
-      min-height: calc(100dvh - 60px);
+      gap: 8px;
+      grid-template-rows: auto auto auto minmax(0, 1.1fr) minmax(0, 1fr) auto;
+      height: calc(100dvh - 56px);
+      overflow: hidden;
       background:
         radial-gradient(
           ellipse at 50% 100%,
@@ -446,6 +491,83 @@ type Destino = 'base' | 'campo0' | 'campo1' | 'cementerio' | 'mano';
           transparent 55%
         ),
         radial-gradient(ellipse at 50% 0%, rgb(220 60 60 / 0.12), transparent 50%);
+    }
+    .ultimo {
+      margin: 0;
+      font-size: 0.8rem;
+      min-height: 1.2em;
+    }
+    .atajos {
+      opacity: 0.6;
+      font-size: 0.72rem;
+    }
+    .pozo {
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--accent);
+      letter-spacing: 0;
+      text-transform: none;
+    }
+    .arrastrando .zona,
+    .arrastrando .campo,
+    .arrastrando .cementerio,
+    .arrastrando .mano {
+      border-color: color-mix(in srgb, var(--hextech, #0ac8b9) 55%, transparent);
+    }
+    .log-cajon {
+      position: fixed;
+      top: 56px;
+      right: 0;
+      bottom: 0;
+      z-index: 45;
+      width: min(340px, 90vw);
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 8px;
+      padding: 12px;
+      background: color-mix(in srgb, var(--surface) 95%, transparent);
+      backdrop-filter: blur(10px);
+      border-left: 1px solid var(--border);
+      box-shadow: -20px 0 50px rgb(0 0 0 / 0.5);
+      animation: entra-lado 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+    @keyframes entra-lado {
+      from {
+        transform: translateX(30px);
+        opacity: 0;
+      }
+    }
+    .cajon-cabecera {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .vista-previa {
+      position: fixed;
+      left: calc(var(--ancho-nav, 180px) + 16px);
+      bottom: 16px;
+      z-index: 44;
+      width: 230px;
+      pointer-events: none;
+      display: grid;
+      gap: 4px;
+      animation: entra-carta 0.15s ease both;
+    }
+    .vista-previa img {
+      width: 100%;
+      border-radius: 12px;
+      box-shadow: 0 20px 50px rgb(0 0 0 / 0.7);
+    }
+    .nombre-vp {
+      font-size: 0.8rem;
+      text-align: center;
+      color: var(--muted);
+    }
+    @media (hover: none) {
+      .vista-previa,
+      .atajos {
+        display: none;
+      }
     }
     .barra {
       display: flex;
@@ -592,7 +714,11 @@ type Destino = 'base' | 'campo0' | 'campo1' | 'cementerio' | 'mano';
     .campos {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
+      gap: 10px;
+      min-height: 0;
+    }
+    .campo {
+      overflow: auto;
     }
     .campo {
       display: grid;
@@ -627,6 +753,14 @@ type Destino = 'base' | 'campo0' | 'campo1' | 'cementerio' | 'mano';
       gap: 8px;
       align-items: center;
     }
+    .mesa-mia {
+      min-height: 0;
+    }
+    .centro,
+    .columna {
+      min-height: 0;
+      overflow: auto;
+    }
     .mio-txt {
       color: var(--accent);
     }
@@ -647,7 +781,7 @@ type Destino = 'base' | 'campo0' | 'campo1' | 'cementerio' | 'mano';
     }
     .campo-img {
       grid-row: 1 / 3;
-      height: 150px;
+      height: 118px;
       width: auto;
       border-radius: 8px;
       box-shadow: 0 6px 16px rgb(0 0 0 / 0.5);
@@ -704,7 +838,7 @@ type Destino = 'base' | 'campo0' | 'campo1' | 'cementerio' | 'mano';
       border-radius: 12px;
       border: 2px dashed color-mix(in srgb, var(--dom-a) 30%, var(--border));
       background: rgb(0 0 0 / 0.18);
-      min-height: 130px;
+      min-height: 0;
       align-content: start;
       transition:
         border-color 0.2s ease,
@@ -726,10 +860,10 @@ type Destino = 'base' | 'campo0' | 'campo1' | 'cementerio' | 'mano';
       box-shadow: 0 4px 12px rgb(0 0 0 / 0.45);
     }
     .fila .carta {
-      width: 84px;
+      width: 72px;
     }
     .runas .carta {
-      width: 50px;
+      width: 40px;
     }
     .dorso {
       width: 84px;
@@ -802,8 +936,8 @@ type Destino = 'base' | 'campo0' | 'campo1' | 'cementerio' | 'mano';
       display: flex;
       justify-content: center;
       align-items: flex-end;
-      min-height: 190px;
-      padding: 16px 0 6px;
+      min-height: 150px;
+      padding: 12px 0 0;
       border-radius: 14px;
       border: 2px solid transparent;
       transition: border-color 0.2s ease;
@@ -823,7 +957,7 @@ type Destino = 'base' | 'campo0' | 'campo1' | 'cementerio' | 'mano';
       margin: 0 8px;
     }
     .en-mano .carta {
-      width: 118px;
+      width: 104px;
       max-width: none;
     }
     .en-mano.elegida {
@@ -850,14 +984,15 @@ type Destino = 'base' | 'campo0' | 'campo1' | 'cementerio' | 'mano';
     }
     .log {
       margin: 0;
-      padding: 8px 8px 8px 26px;
-      font-size: 0.78rem;
+      padding: 0 0 0 22px;
+      font-size: 0.82rem;
       color: var(--muted);
-      border-radius: 8px;
-      background: rgb(0 0 0 / 0.2);
-      max-height: 120px;
       overflow-y: auto;
-      columns: 2;
+      display: grid;
+      gap: 4px;
+    }
+    .log li:last-child {
+      color: var(--text);
     }
     .menu {
       position: fixed;
@@ -902,8 +1037,10 @@ type Destino = 'base' | 'campo0' | 'campo1' | 'cementerio' | 'mano';
       .en-mano .carta {
         width: 84px;
       }
-      .log {
-        columns: 1;
+      .mesa {
+        height: auto;
+        overflow: visible;
+        grid-template-rows: none;
       }
       .menu {
         inset: auto 8px 8px 8px;
@@ -948,6 +1085,56 @@ export class SimuladorPage {
   protected readonly elegidas = signal<ReadonlySet<number>>(new Set());
   protected readonly seleccion = signal<Copia | null>(null);
   protected readonly sobre = signal<string | null>(null);
+  protected readonly arrastrando = signal(false);
+  protected readonly logAbierto = signal(false);
+  protected readonly vistaPrevia = signal<CatalogCard | null>(null);
+  /** Estados anteriores, para deshacer (los últimos 30). */
+  protected readonly historial = signal<Partida[]>([]);
+  protected readonly ultimo = computed(() => this.p().log.at(-1) ?? '');
+
+  /** Todo cambio de partida pasa por aquí para poder deshacerlo. */
+  private mutar(f: (p: Partida) => Partida): void {
+    const antes = this.p();
+    const despues = f(antes);
+    if (despues === antes) return;
+    this.historial.update((h) => [...h.slice(-29), antes]);
+    this.p.set(despues);
+  }
+
+  protected deshacer(): void {
+    const h = this.historial();
+    if (!h.length) return;
+    this.p.set(h[h.length - 1]);
+    this.historial.set(h.slice(0, -1));
+    this.seleccion.set(null);
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  protected tecla(e: KeyboardEvent): void {
+    const t = e.target as HTMLElement | null;
+    if (t && ['INPUT', 'SELECT', 'TEXTAREA'].includes(t.tagName)) return;
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+      e.preventDefault();
+      this.deshacer();
+      return;
+    }
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    switch (e.key.toLowerCase()) {
+      case 'd':
+        this.aplicar(this.robar1);
+        break;
+      case 'c':
+        this.aplicar(this.canalizar1);
+        break;
+      case 'e':
+        if (this.p().fase !== 'mulligan') this.aplicar(terminarTurno);
+        break;
+      case 'escape':
+        this.seleccion.set(null);
+        this.logAbierto.set(false);
+        break;
+    }
+  }
 
   protected readonly colores = computed(() => {
     const l = this.mazo()?.leyenda;
@@ -980,12 +1167,13 @@ export class SimuladorPage {
     const m = this.mazo();
     if (!m) return;
     this.p.set(nuevaPartida(m, { empiezoYo: this.empiezoYo(), pagarCostes: this.p().pagarCostes }));
+    this.historial.set([]);
     this.elegidas.set(new Set());
     this.seleccion.set(null);
   }
 
   protected aplicar(f: (p: Partida) => Partida): void {
-    this.p.update(f);
+    this.mutar(f);
     this.elegidas.set(new Set());
   }
 
@@ -994,20 +1182,20 @@ export class SimuladorPage {
   }
 
   protected hacerMulligan(): void {
-    this.p.update((p) => mulligan(p, [...this.elegidas()]));
+    this.mutar((p) => mulligan(p, [...this.elegidas()]));
     this.elegidas.set(new Set());
   }
 
   protected rivalEn(donde: number, d: number): void {
-    this.p.update((p) => rival(p, donde as 0 | 1 | -1, d));
+    this.mutar((p) => rival(p, donde as 0 | 1 | -1, d));
   }
 
   protected combate(i: number, gano: boolean): void {
-    this.p.update((p) => resolverCombate(p, i as 0 | 1, gano));
+    this.mutar((p) => resolverCombate(p, i as 0 | 1, gano));
   }
 
   protected cambiar(i: number, id: string): void {
-    if (id) this.p.update((p) => cambiarCampo(p, i as 0 | 1, id));
+    if (id) this.mutar((p) => cambiarCampo(p, i as 0 | 1, id));
   }
 
   protected zonaSel(c: Copia): ZonaSim | null {
@@ -1047,12 +1235,13 @@ export class SimuladorPage {
   }
 
   protected moverA(c: Copia, zona: Destino): void {
-    this.p.update((p) => mover(p, c.uid, zona, this.carta(c.id)));
+    this.mutar((p) => mover(p, c.uid, zona, this.carta(c.id)));
     this.seleccion.set(null);
+    this.vistaPrevia.set(null);
   }
 
   protected agotar(c: Copia): void {
-    this.p.update((p) => alternarAgotada(p, c.uid));
+    this.mutar((p) => alternarAgotada(p, c.uid));
     const s = this.seleccion();
     if (s?.uid === c.uid) this.seleccion.set({ ...s, agotada: !s.agotada });
   }
@@ -1062,6 +1251,8 @@ export class SimuladorPage {
     e.dataTransfer?.setData('text/plain', String(c.uid));
     if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
     this.seleccion.set(null);
+    this.vistaPrevia.set(null);
+    this.arrastrando.set(true);
   }
 
   protected permitir(e: DragEvent, zona: string): void {

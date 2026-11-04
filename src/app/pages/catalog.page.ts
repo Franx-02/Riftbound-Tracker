@@ -2,6 +2,7 @@ import { Component, Injectable, computed, inject, signal } from '@angular/core';
 import { CatalogService } from '../core/catalog.service';
 import { CollectionService } from '../core/collection.service';
 import { TraduccionService } from '../core/traduccion.service';
+import { CabeceraComponent } from '../ui/cabecera.component';
 import { CardTileComponent } from '../ui/card-tile.component';
 import { LoadMoreComponent } from '../ui/load-more.component';
 import { VolverArribaComponent } from '../ui/volver-arriba.component';
@@ -35,9 +36,16 @@ export class CatalogFiltersState {
 
 @Component({
   selector: 'app-catalog-page',
-  imports: [CardTileComponent, LoadMoreComponent, VolverArribaComponent],
+  imports: [CabeceraComponent, CardTileComponent, LoadMoreComponent, VolverArribaComponent],
   template: `
     <main class="pagina">
+      <app-cabecera
+        titulo="Catálogo"
+        [subtitulo]="
+          catalog.cards().length +
+          ' cartas de todos los sets. Pulsa + en una carta para añadirla a tu colección.'
+        "
+      />
       <section class="filtros" aria-label="Filtros">
         <label class="busqueda">
           <span class="sr-only">Buscar</span>
@@ -116,12 +124,21 @@ export class CatalogFiltersState {
       padding: 12px 16px 48px;
       max-width: 1400px;
       margin: 0 auto;
+      display: grid;
+      gap: 14px;
     }
     .filtros {
-      display: grid;
-      grid-template-columns: minmax(200px, 2fr) repeat(4, minmax(120px, 1fr)) auto;
+      display: flex;
+      flex-wrap: wrap;
       gap: 8px;
       align-items: center;
+    }
+    .busqueda {
+      flex: 1 1 260px;
+    }
+    .filtros select {
+      flex: 0 1 170px;
+      min-width: 140px;
     }
     .busqueda input {
       width: 100%;
@@ -166,6 +183,7 @@ export class CatalogFiltersState {
 
     @media (max-width: 900px) {
       .filtros {
+        display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
       .busqueda {
