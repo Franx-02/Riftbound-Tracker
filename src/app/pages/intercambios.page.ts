@@ -7,6 +7,7 @@ import { IntercambiablesService } from '../core/intercambiables.service';
 import { UsersService } from '../core/users.service';
 import { ValuationService } from '../core/valuation.service';
 import { EurPipe, ThumbPipe } from '../ui/pipes';
+import { CabeceraComponent } from '../ui/cabecera.component';
 
 interface Oferta {
   card: CatalogCard;
@@ -26,16 +27,13 @@ interface Oferta {
  */
 @Component({
   selector: 'app-intercambios-page',
-  imports: [RouterLink, EurPipe, ThumbPipe],
+  imports: [CabeceraComponent, RouterLink, EurPipe, ThumbPipe],
   template: `
     <main class="pagina">
-      <header>
-        <h1>Intercambios</h1>
-        <p class="muted">
-          Elige a alguien y verás las cartas que le sobran y a ti te faltan, para pedírselas, y las
-          que te sobran a ti y a esa persona le faltan, para ofrecérselas.
-        </p>
-      </header>
+      <app-cabecera
+        titulo="Intercambios"
+        subtitulo="Elige a alguien y verás las cartas que le sobran y a ti te faltan, para pedírselas, y las que te sobran a ti y a esa persona le faltan, para ofrecérselas."
+      />
 
       <section class="controles">
         <label>

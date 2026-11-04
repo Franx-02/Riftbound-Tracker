@@ -213,7 +213,7 @@ type Destino = 'base' | 'campo0' | 'campo1' | 'cementerio' | 'mano';
         </section>
 
         <!-- Mi lado -->
-        <section class="mio">
+        <section class="mesa-mia">
           <aside class="columna">
             <div class="pila">
               <span class="etiqueta">Leyenda</span>
@@ -668,7 +668,7 @@ type Destino = 'base' | 'campo0' | 'campo1' | 'cementerio' | 'mano';
       gap: 4px;
       justify-self: end;
     }
-    .mio {
+    .mesa-mia {
       display: grid;
       grid-template-columns: 110px minmax(0, 1fr) 110px;
       gap: 12px;
@@ -885,7 +885,7 @@ type Destino = 'base' | 'campo0' | 'campo1' | 'cementerio' | 'mano';
     }
     @media (max-width: 900px) {
       .campos,
-      .mio {
+      .mesa-mia {
         grid-template-columns: 1fr;
       }
       .columna {

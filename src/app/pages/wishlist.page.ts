@@ -15,6 +15,7 @@ import {
   quienTiene,
 } from '../core/wishlist.service';
 import { EurPipe, ThumbPipe } from '../ui/pipes';
+import { CabeceraComponent } from '../ui/cabecera.component';
 
 interface Fila {
   cardId: string;
@@ -30,12 +31,13 @@ interface Fila {
 /** Lista de deseos: lo que quieres, cuánto cuesta lo que falta y quién del grupo lo tiene. */
 @Component({
   selector: 'app-wishlist-page',
-  imports: [RouterLink, EurPipe, ThumbPipe],
+  imports: [CabeceraComponent, RouterLink, EurPipe, ThumbPipe],
   template: `
     <main class="pagina">
-      <header class="cabecera">
-        <h1>Lista de deseos</h1>
-      </header>
+      <app-cabecera
+        titulo="Lista de deseos"
+        subtitulo="Lo que quieres, cuánto cuesta lo que falta y quién del grupo lo tiene."
+      />
 
       @if (wish.error()) {
         <p class="error" role="alert">{{ wish.error() }}</p>

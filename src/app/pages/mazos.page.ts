@@ -7,27 +7,21 @@ import { esLegal, tamanoPrincipal, validar } from '../core/mazos';
 import { MazosService } from '../core/mazos.service';
 import { ThumbPipe } from '../ui/pipes';
 import { InclinarDirective } from '../ui/inclinar.directive';
+import { CabeceraComponent } from '../ui/cabecera.component';
 
 /** Lista de tus mazos, con su Leyenda de portada y si cumplen las reglas. */
 @Component({
   selector: 'app-mazos-page',
-  imports: [RouterLink, ThumbPipe, InclinarDirective],
+  imports: [CabeceraComponent, RouterLink, ThumbPipe, InclinarDirective],
   template: `
     <main class="pagina">
-      <header class="cabecera">
-        <div>
-          <h1>Mazos</h1>
-          <p class="muted">
-            Crea mazos con las reglas oficiales y mira qué te falta de tu colección.
-          </p>
-        </div>
-        <div class="acciones">
-          <button type="button" class="secondary" (click)="abierto.set(!abierto())">
-            Importar
-          </button>
-          <button type="button" (click)="nuevo()">+ Nuevo mazo</button>
-        </div>
-      </header>
+      <app-cabecera
+        titulo="Mazos"
+        subtitulo="Crea mazos con las reglas oficiales y mira qué te falta de tu colección."
+      >
+        <button type="button" class="secondary" (click)="abierto.set(!abierto())">Importar</button>
+        <button type="button" (click)="nuevo()">+ Nuevo mazo</button>
+      </app-cabecera>
 
       @if (abierto()) {
         <section class="importar">

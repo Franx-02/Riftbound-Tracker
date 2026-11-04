@@ -1,4 +1,4 @@
-import { Component, computed, inject, input } from '@angular/core';
+import { Component, computed, inject, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CatalogCard } from '../core/catalog.service';
 import { CardQty } from '../core/collection.service';
@@ -30,6 +30,20 @@ import { volarA } from './volar';
     ThumbPipe,
   ],
   template: `
+    @if (seleccion()) {
+      <button
+        type="button"
+        class="capa-seleccion"
+        [class.marcada]="seleccionada()"
+        [attr.aria-pressed]="seleccionada()"
+        [attr.aria-label]="
+          (seleccionada() ? 'Quitar de la selección ' : 'Seleccionar ') + card().name
+        "
+        (click)="alternarSeleccion.emit()"
+      >
+        <span class="check" aria-hidden="true">✓</span>
+      </button>
+    }
     <div class="marco" appInclinar [holo]="owned().foil > 0">
       <!-- Los botones no pueden ir dentro de un enlace (HTML inválido, y el teclado se
            lía): la imagen es un enlace y el panel, un hermano posicionado encima.
@@ -181,6 +195,56 @@ import { volarA } from './volar';
     }
     .enlace-carta:hover .nombre {
       color: color-mix(in srgb, var(--dom-a) 70%, white);
+    }
+    .capa-seleccion {
+      all: unset;
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      cursor: pointer;
+      border-radius: inherit;
+      border: 2px solid transparent;
+      transition:
+        border-color 0.15s ease,
+        background 0.15s ease;
+    }
+    .capa-seleccion:hover {
+      background: rgb(255 255 255 / 0.05);
+    }
+    .capa-seleccion .check {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 26px;
+      height: 26px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: transparent;
+      background: rgb(0 0 0 / 0.55);
+      border: 2px solid rgb(255 255 255 / 0.7);
+      transition:
+        transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1),
+        background 0.2s ease,
+        color 0.2s ease;
+    }
+    .capa-seleccion.marcada {
+      border-color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 10%, transparent);
+    }
+    .capa-seleccion.marcada .check {
+      color: #111;
+      background: var(--accent);
+      border-color: var(--accent);
+      transform: scale(1.15);
+    }
+    :host(.seleccionada) {
+      box-shadow:
+        0 0 0 2px var(--accent),
+        0 10px 30px rgb(0 0 0 / 0.5);
+      transform: translateY(-2px) scale(0.98);
     }
     .marco {
       position: relative;
@@ -363,6 +427,7 @@ import { volarA } from './volar';
     '[class.tengo]': 'copias() > 0',
     '[class.apagada]': 'dim() && copias() === 0',
     '[class.descartada]': 'descartada() && copias() === 0',
+    '[class.seleccionada]': 'seleccionada()',
     '[style]': 'colores()',
   },
 })
@@ -385,6 +450,10 @@ export class CardTileComponent {
   readonly readonly = input(false);
   /** Oscurecer si no hay copias (vista de carpeta). */
   readonly dim = input(false);
+  /** Modo selección múltiple: la tarjeta entera marca o desmarca en vez de abrir la ficha. */
+  readonly seleccion = input(false);
+  readonly seleccionada = input(false);
+  readonly alternarSeleccion = output<void>();
 
   protected readonly pricing = computed(() => this.valuation.pricing(this.card().cardId));
   protected readonly colores = computed(() => estiloDominios(this.card().domains));

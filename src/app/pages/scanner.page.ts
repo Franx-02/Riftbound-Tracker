@@ -26,6 +26,7 @@ import { RedService } from '../core/red.service';
 import { ValuationService } from '../core/valuation.service';
 import { EurPipe, ThumbPipe } from '../ui/pipes';
 import { QtyControlComponent } from '../ui/qty-control.component';
+import { CabeceraComponent } from '../ui/cabecera.component';
 
 /** Pausa entre lecturas de la cámara. Reconocer un fotograma tarda unos 20-60 ms. */
 const PAUSA_MS = 350;
@@ -60,16 +61,13 @@ interface Resultado {
  */
 @Component({
   selector: 'app-scanner-page',
-  imports: [RouterLink, ThumbPipe, EurPipe, QtyControlComponent],
+  imports: [CabeceraComponent, RouterLink, ThumbPipe, EurPipe, QtyControlComponent],
   template: `
     <main class="pagina">
-      <header>
-        <h1>Escanear cartas</h1>
-        <p class="muted">
-          Pon la carta dentro del recuadro, entera y de frente (no hace falta que lo llene).
-          Funciona mejor con buena luz, sobre un fondo liso y sin reflejos.
-        </p>
-      </header>
+      <app-cabecera
+        titulo="Escanear cartas"
+        subtitulo="Pon la carta dentro del recuadro, entera y de frente (no hace falta que lo llene). Funciona mejor con buena luz, sobre un fondo liso y sin reflejos."
+      />
 
       <section class="camara" [class.activa]="camaraActiva()">
         <video #video playsinline muted [hidden]="!camaraActiva()"></video>

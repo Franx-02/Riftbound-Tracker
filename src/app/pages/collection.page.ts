@@ -15,6 +15,8 @@ import { AuthService } from '../core/auth.service';
 import { CatalogCard, CatalogService } from '../core/catalog.service';
 import { CardQty, CollectionMap, CollectionService, totalsOf } from '../core/collection.service';
 import { DescartadasService } from '../core/descartadas.service';
+import { IntercambiablesService } from '../core/intercambiables.service';
+import { WishlistService } from '../core/wishlist.service';
 import { TraduccionService } from '../core/traduccion.service';
 import { PricesService } from '../core/prices.service';
 import { UsersService } from '../core/users.service';
@@ -296,6 +298,17 @@ interface Fila {
               <span class="contador">{{ filtrosActivos() }}</span>
             }
           </button>
+          @if (propia() && v.vista() === 'carpeta') {
+            <button
+              type="button"
+              class="secondary"
+              [class.activa-sel]="seleccionando()"
+              [attr.aria-pressed]="seleccionando()"
+              (click)="alternarSeleccionando()"
+            >
+              {{ seleccionando() ? 'Listo' : 'Seleccionar' }}
+            </button>
+          }
           <div class="vistas" role="group" aria-label="Vista">
             <button
               type="button"
@@ -316,8 +329,33 @@ interface Fila {
           </div>
         </section>
 
+        @if (chips().length) {
+          <div class="chips entrada" aria-label="Filtros activos">
+            @for (ch of chips(); track ch.texto) {
+              <button
+                type="button"
+                class="chip"
+                (click)="ch.quitar()"
+                [attr.aria-label]="'Quitar filtro ' + ch.texto"
+              >
+                {{ ch.texto }} <span aria-hidden="true">×</span>
+              </button>
+            }
+            <button type="button" class="chip limpiar-chip" (click)="limpiarFiltros()">
+              Quitar todos
+            </button>
+          </div>
+        }
+
         @if (v.filtrosAbiertos()) {
-          <section class="filtros" aria-label="Más filtros">
+          <div class="fondo-cajon" (click)="v.filtrosAbiertos.set(false)"></div>
+          <section class="filtros cajon" aria-label="Más filtros" role="dialog">
+            <div class="cajon-cabecera">
+              <h2>Filtros</h2>
+              <button type="button" class="secondary" (click)="v.filtrosAbiertos.set(false)">
+                Cerrar
+              </button>
+            </div>
             <label>
               Energía
               <select [value]="v.energia()" (change)="cambiar(v.energia, $event)">
@@ -387,11 +425,14 @@ interface Fila {
                 }
               </select>
             </label>
-            @if (filtrosActivos()) {
-              <button type="button" class="secondary limpiar" (click)="limpiarFiltros()">
-                Quitar filtros
-              </button>
-            }
+            <div class="cajon-pie">
+              <span class="muted">{{ carpeta().length }} cartas</span>
+              @if (filtrosActivos()) {
+                <button type="button" class="secondary limpiar" (click)="limpiarFiltros()">
+                  Quitar filtros
+                </button>
+              }
+            </div>
           </section>
         }
 
@@ -419,12 +460,47 @@ interface Fila {
                   [owned]="fuente()!.get(c.cardId) ?? vacio"
                   [readonly]="!propia()"
                   [dim]="true"
+                  [seleccion]="seleccionando()"
+                  [seleccionada]="seleccionadas().has(c.cardId)"
+                  (alternarSeleccion)="alternarCarta(c.cardId)"
                 />
               </li>
             } @empty {
               <li class="muted sin-resultados">Ninguna carta coincide con el filtro.</li>
             }
           </ul>
+          @if (seleccionando()) {
+            <div class="barra-seleccion" role="toolbar" aria-label="Acciones sobre la selección">
+              <strong>{{ seleccionadas().size }}</strong>
+              <span class="muted">{{ seleccionadas().size === 1 ? 'carta' : 'cartas' }}</span>
+              <button type="button" class="secondary" (click)="seleccionarVisibles()">
+                {{ todasVisiblesSeleccionadas() ? 'Ninguna' : 'Todas las visibles' }}
+              </button>
+              <span class="separador"></span>
+              <button type="button" [disabled]="!seleccionadas().size" (click)="lote('deseos')">
+                ♡ A deseos
+              </button>
+              <button
+                type="button"
+                class="secondary"
+                [disabled]="!seleccionadas().size"
+                (click)="lote('cambiar')"
+              >
+                ⇄ Para cambiar
+              </button>
+              <button
+                type="button"
+                class="secondary"
+                [disabled]="!seleccionadas().size"
+                (click)="lote('descartar')"
+              >
+                No las quiero
+              </button>
+              @if (hecho(); as h) {
+                <span class="hecho">{{ h }}</span>
+              }
+            </div>
+          }
           @if (carpetaVisible().length < carpeta().length) {
             <app-load-more
               [remaining]="carpeta().length - carpetaVisible().length"
@@ -722,14 +798,124 @@ interface Fila {
       line-height: 18px;
       text-align: center;
     }
-    .filtros {
+    .fondo-cajon {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      background: rgb(0 0 0 / 0.45);
+      backdrop-filter: blur(2px);
+      animation: aparecer 0.2s ease both;
+    }
+    @keyframes aparecer {
+      from {
+        opacity: 0;
+      }
+    }
+    @keyframes deslizar {
+      from {
+        transform: translateX(40px);
+        opacity: 0;
+      }
+    }
+    .filtros.cajon {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 41;
+      width: min(360px, 92vw);
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      gap: 10px;
-      align-items: end;
-      padding: 12px;
+      grid-template-columns: 1fr;
+      grid-auto-rows: max-content;
+      gap: 12px;
+      padding: 16px;
+      overflow-y: auto;
       background: var(--surface);
-      border: 1px solid var(--border);
+      border-left: 1px solid var(--border);
+      box-shadow: -20px 0 50px rgb(0 0 0 / 0.5);
+      animation: deslizar 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+    .cajon-cabecera {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .cajon-cabecera h2 {
+      margin: 0;
+    }
+    .cajon-pie {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .chip {
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      background: color-mix(in srgb, var(--accent) 14%, transparent);
+      color: var(--text);
+      border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+      transition:
+        background 0.15s ease,
+        transform 0.15s ease;
+    }
+    .chip:hover {
+      background: color-mix(in srgb, var(--accent) 28%, transparent);
+      transform: translateY(-1px);
+    }
+    .chip span {
+      margin-left: 4px;
+      opacity: 0.7;
+    }
+    .limpiar-chip {
+      background: transparent;
+      border-color: var(--border);
+      color: var(--muted);
+    }
+    .activa-sel {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .barra-seleccion {
+      position: sticky;
+      bottom: 12px;
+      z-index: 30;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-top: 12px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      background: color-mix(in srgb, var(--surface) 94%, transparent);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--accent);
+      box-shadow: 0 16px 40px rgb(0 0 0 / 0.55);
+      animation: deslizar-arriba 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+    @keyframes deslizar-arriba {
+      from {
+        transform: translateY(20px);
+        opacity: 0;
+      }
+    }
+    .barra-seleccion strong {
+      font-size: 1.2rem;
+      color: var(--accent);
+    }
+    .separador {
+      flex: 1;
+    }
+    .hecho {
+      font-size: 0.85rem;
+      color: var(--ok, #4ade80);
     }
     .filtros label {
       display: grid;
@@ -895,6 +1081,77 @@ export class CollectionPage implements OnInit {
   protected readonly prices = inject(PricesService);
   private readonly valuation = inject(ValuationService);
   private readonly descartadas = inject(DescartadasService);
+  private readonly wish = inject(WishlistService);
+  private readonly intercambiables = inject(IntercambiablesService);
+
+  // ── Selección múltiple ────────────────────────────────────────────────────────────
+  protected readonly seleccionando = signal(false);
+  protected readonly seleccionadas = signal<ReadonlySet<string>>(new Set());
+  protected readonly hecho = signal<string | null>(null);
+
+  protected alternarSeleccionando(): void {
+    this.seleccionando.set(!this.seleccionando());
+    this.seleccionadas.set(new Set());
+    this.hecho.set(null);
+  }
+
+  protected alternarCarta(id: string): void {
+    const s = new Set(this.seleccionadas());
+    if (s.has(id)) s.delete(id);
+    else s.add(id);
+    this.seleccionadas.set(s);
+  }
+
+  protected readonly todasVisiblesSeleccionadas = computed(() => {
+    const vis = this.carpetaVisible();
+    return vis.length > 0 && vis.every((c) => this.seleccionadas().has(c.cardId));
+  });
+
+  protected seleccionarVisibles(): void {
+    if (this.todasVisiblesSeleccionadas()) this.seleccionadas.set(new Set());
+    else this.seleccionadas.set(new Set(this.carpetaVisible().map((c) => c.cardId)));
+  }
+
+  /** Aplica una acción a todas las seleccionadas. */
+  protected lote(que: 'deseos' | 'cambiar' | 'descartar'): void {
+    const ids = [...this.seleccionadas()];
+    void this.wish.load();
+    for (const id of ids) {
+      if (que === 'deseos') this.wish.add(id);
+      else if (que === 'cambiar') {
+        if (!this.intercambiables.tiene(id)) this.intercambiables.alternar(id);
+      } else if (!this.descartadas.tiene(id)) this.descartadas.alternar(id);
+    }
+    const n = ids.length;
+    this.hecho.set(
+      que === 'deseos'
+        ? `${n} añadidas a la lista de deseos`
+        : que === 'cambiar'
+          ? `${n} marcadas para cambiar`
+          : `${n} marcadas como "no la quiero"`,
+    );
+    setTimeout(() => this.hecho.set(null), 2500);
+  }
+
+  /** Filtros activos como chips, cada uno con su forma de quitarse. */
+  protected readonly chips = computed(() => {
+    const v = this.v;
+    const lista: { texto: string; quitar: () => void }[] = [];
+    const add = (texto: string, s: { set: (x: never) => void }) =>
+      lista.push({ texto, quitar: () => (s as { set: (x: string) => void }).set('') });
+    if (v.energia()) add(`Energía ${v.energia() === '7' ? '7+' : v.energia()}`, v.energia);
+    if (v.power())
+      add(
+        v.power() === 'no' ? 'Sin power' : `Power ${v.power() === '3' ? '3+' : v.power()}`,
+        v.power,
+      );
+    if (v.dominio()) add(this.t.etiqueta(v.dominio()), v.dominio);
+    if (v.tipo()) add(this.t.etiqueta(v.tipo()), v.tipo);
+    if (v.rareza()) add(this.t.etiqueta(v.rareza()), v.rareza);
+    if (v.acabado()) add(v.acabado() === 'foil' ? 'En foil' : 'Solo normal', v.acabado);
+    if (v.precioMinimo()) add(`Más de ${v.precioMinimo()} €`, v.precioMinimo);
+    return lista;
+  });
   protected readonly t = inject(TraduccionService);
   private readonly users = inject(UsersService);
   private readonly auth = inject(AuthService);
