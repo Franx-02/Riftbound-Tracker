@@ -44,73 +44,79 @@ type Destino = 'base' | 'campo0' | 'campo1' | 'cementerio' | 'mano';
   template: `
     @if (mazo(); as m) {
       <main class="mesa" [style]="colores()" [class.arrastrando]="arrastrando()">
-        <header class="barra">
-          <a [routerLink]="['/mazos', m.id]" class="volver">← {{ m.nombre }}</a>
-          <ol class="fases" aria-label="Fase del turno">
-            @for (f of fases; track f.id) {
-              <li
-                [class.activa]="p().fase === f.id"
-                [class.pasada]="indiceFase(p().fase) > indiceFase(f.id)"
-              >
-                {{ f.texto }}
-              </li>
-            }
-          </ol>
-          <span class="turno">Turno {{ p().turno }}</span>
-          <span class="acciones">
-            @if (p().fase === 'mulligan') {
-              <label class="opcion">
-                <input
-                  type="checkbox"
-                  [checked]="empiezoYo()"
-                  (change)="empiezoYo.set(!empiezoYo()); reiniciar()"
-                />
-                Empiezo yo
-              </label>
-              <button type="button" (click)="hacerMulligan()">
-                {{ elegidas().size ? 'Mulligan de ' + elegidas().size : 'Me la quedo' }}
+        <div class="cabeza">
+          <header class="barra">
+            <a [routerLink]="['/mazos', m.id]" class="volver">← {{ m.nombre }}</a>
+            <ol class="fases" aria-label="Fase del turno">
+              @for (f of fases; track f.id) {
+                <li
+                  [class.activa]="p().fase === f.id"
+                  [class.pasada]="indiceFase(p().fase) > indiceFase(f.id)"
+                >
+                  {{ f.texto }}
+                </li>
+              }
+            </ol>
+            <span class="turno">Turno {{ p().turno }}</span>
+            <span class="acciones">
+              @if (p().fase === 'mulligan') {
+                <label class="opcion">
+                  <input
+                    type="checkbox"
+                    [checked]="empiezoYo()"
+                    (change)="empiezoYo.set(!empiezoYo()); reiniciar()"
+                  />
+                  Empiezo yo
+                </label>
+                <button type="button" (click)="hacerMulligan()">
+                  {{ elegidas().size ? 'Mulligan de ' + elegidas().size : 'Me la quedo' }}
+                </button>
+              } @else {
+                <button type="button" (click)="aplicar(terminarTurno)">Terminar turno</button>
+              }
+              <button type="button" class="secondary" (click)="aplicar(robar1)">Robar</button>
+              <button type="button" class="secondary" (click)="aplicar(canalizar1)">
+                Canalizar
               </button>
-            } @else {
-              <button type="button" (click)="aplicar(terminarTurno)">Terminar turno</button>
-            }
-            <button type="button" class="secondary" (click)="aplicar(robar1)">Robar</button>
-            <button type="button" class="secondary" (click)="aplicar(canalizar1)">Canalizar</button>
-            <button type="button" class="secondary" (click)="aplicar(barajarMazo)">Barajar</button>
-            <button
-              type="button"
-              class="secondary"
-              [disabled]="!historial().length"
-              (click)="deshacer()"
-              title="Ctrl+Z"
+              <button type="button" class="secondary" (click)="aplicar(barajarMazo)">
+                Barajar
+              </button>
+              <button
+                type="button"
+                class="secondary"
+                [disabled]="!historial().length"
+                (click)="deshacer()"
+                title="Ctrl+Z"
+              >
+                ↶ Deshacer
+              </button>
+              <button
+                type="button"
+                class="secondary"
+                (click)="logAbierto.set(!logAbierto())"
+                [attr.aria-expanded]="logAbierto()"
+              >
+                Historial
+              </button>
+              <button type="button" class="secondary" (click)="reiniciar()">Reiniciar</button>
+            </span>
+          </header>
+          <p class="ultimo muted" aria-live="polite">
+            {{ ultimo() }}
+            <span class="atajos"
+              >· atajos: D robar · C canalizar · E terminar turno · Ctrl+Z deshacer</span
             >
-              ↶ Deshacer
-            </button>
-            <button
-              type="button"
-              class="secondary"
-              (click)="logAbierto.set(!logAbierto())"
-              [attr.aria-expanded]="logAbierto()"
-            >
-              Historial
-            </button>
-            <button type="button" class="secondary" (click)="reiniciar()">Reiniciar</button>
-          </span>
-        </header>
-        <p class="ultimo muted" aria-live="polite">
-          {{ ultimo() }}
-          <span class="atajos"
-            >· atajos: D robar · C canalizar · E terminar turno · Ctrl+Z deshacer</span
-          >
-        </p>
-
-        @if (p().aviso; as a) {
-          <p class="aviso error" role="alert">{{ a }}</p>
-        } @else if (p().fase === 'mulligan') {
-          <p class="aviso">
-            Pulsa las cartas de tu mano que quieras devolver al fondo del mazo y robar otras, o
-            quédate la mano. Con "Empiezo yo" no robas en el primer turno.
           </p>
-        }
+
+          @if (p().aviso; as a) {
+            <p class="aviso error" role="alert">{{ a }}</p>
+          } @else if (p().fase === 'mulligan') {
+            <p class="aviso">
+              Pulsa las cartas de tu mano que quieras devolver al fondo del mazo y robar otras, o
+              quédate la mano. Con "Empiezo yo" no robas en el primer turno.
+            </p>
+          }
+        </div>
 
         <!-- Rival -->
         <section class="rival" aria-label="Rival">
@@ -481,8 +487,9 @@ type Destino = 'base' | 'campo0' | 'campo1' | 'cementerio' | 'mano';
       padding: 8px 14px 6px;
       display: grid;
       gap: 8px;
-      grid-template-rows: auto auto auto minmax(0, 1.1fr) minmax(0, 1fr) auto;
-      height: calc(100dvh - 56px);
+      grid-template-rows: auto auto minmax(0, 1.1fr) minmax(0, 1fr) auto;
+      /* Barra superior del shell hasta 1000 px; a partir de ahí la barra es lateral. */
+      height: calc(100dvh - var(--alto-barra, 56px));
       overflow: hidden;
       background:
         radial-gradient(
@@ -491,6 +498,10 @@ type Destino = 'base' | 'campo0' | 'campo1' | 'cementerio' | 'mano';
           transparent 55%
         ),
         radial-gradient(ellipse at 50% 0%, rgb(220 60 60 / 0.12), transparent 50%);
+    }
+    .cabeza {
+      display: grid;
+      gap: 8px;
     }
     .ultimo {
       margin: 0;
@@ -516,7 +527,7 @@ type Destino = 'base' | 'campo0' | 'campo1' | 'cementerio' | 'mano';
     }
     .log-cajon {
       position: fixed;
-      top: 56px;
+      top: var(--alto-barra, 56px);
       right: 0;
       bottom: 0;
       z-index: 45;

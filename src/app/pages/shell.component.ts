@@ -95,6 +95,8 @@ import { TraduccionService } from '../core/traduccion.service';
       position: sticky;
       top: 0;
       z-index: 10;
+      /* Con nombre propio queda fuera de la animación de página (solo se anima el contenido). */
+      view-transition-name: barra-nav;
       display: flex;
       align-items: center;
       gap: 16px;
@@ -249,6 +251,7 @@ import { TraduccionService } from '../core/traduccion.service';
       :host {
         display: block;
         padding-left: 236px;
+        --alto-barra: 0px;
       }
       .barra {
         position: fixed;
