@@ -224,6 +224,60 @@ interface GrupoFaltan {
               </ul>
             </div>
 
+            <section class="panel estadisticas">
+              <h2>Estadísticas</h2>
+              @if (stats(); as s) {
+                <div
+                  class="curva"
+                  role="img"
+                  [attr.aria-label]="'Curva de energía, media ' + s.media"
+                >
+                  @for (b of s.curva; track b.coste) {
+                    <div class="barra-energia" [title]="b.n + ' cartas de coste ' + b.etiqueta">
+                      <span class="valor-barra">{{ b.n || '' }}</span>
+                      <span class="relleno" [style.height.%]="b.pct"></span>
+                      <span class="coste-barra">{{ b.etiqueta }}</span>
+                    </div>
+                  }
+                </div>
+                <p class="muted resumen-stats">
+                  Coste medio <strong>{{ s.media }}</strong> ·
+                  @for (x of s.tipos; track x.nombre; let last = $last) {
+                    {{ x.n }} {{ x.nombre }}{{ last ? '' : ' · ' }}
+                  }
+                </p>
+                @if (s.dominios.length) {
+                  <div class="dominios-barra" aria-label="Reparto por dominio">
+                    @for (d of s.dominios; track d.nombre) {
+                      <span
+                        [style.flex]="d.n"
+                        [style.background]="d.color"
+                        [title]="d.nombre + ': ' + d.n"
+                      ></span>
+                    }
+                  </div>
+                }
+                <div class="mano-prueba">
+                  <button type="button" class="secondary" (click)="robarMano()">
+                    {{ manoPrueba().length ? 'Otra mano de prueba' : 'Mano de prueba (4)' }}
+                  </button>
+                  @if (manoPrueba().length) {
+                    <ul class="mano-cartas entrada">
+                      @for (card of manoPrueba(); track $index) {
+                        <li>
+                          <img
+                            [src]="card.imgUrl | thumb: 160"
+                            [alt]="card.name"
+                            [title]="card.name"
+                          />
+                        </li>
+                      }
+                    </ul>
+                  }
+                </div>
+              }
+            </section>
+
             <section class="panel">
               <h2>Reglas</h2>
               <ul class="reglas">
@@ -374,6 +428,68 @@ interface GrupoFaltan {
     .volver {
       text-decoration: none;
       font-size: 0.9rem;
+    }
+    .curva {
+      display: grid;
+      grid-template-columns: repeat(8, minmax(0, 1fr));
+      gap: 4px;
+      height: 110px;
+      align-items: end;
+      margin-top: 6px;
+    }
+    .barra-energia {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      height: 100%;
+      justify-items: center;
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+    .barra-energia .relleno {
+      width: 100%;
+      min-height: 2px;
+      border-radius: 4px 4px 0 0;
+      background: linear-gradient(
+        180deg,
+        var(--accent),
+        color-mix(in srgb, var(--accent) 40%, transparent)
+      );
+      align-self: end;
+      transition: height 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    .valor-barra {
+      font-weight: 700;
+      color: var(--text);
+    }
+    .resumen-stats {
+      margin: 8px 0 0;
+      font-size: 0.85rem;
+    }
+    .dominios-barra {
+      display: flex;
+      height: 8px;
+      margin-top: 8px;
+      border-radius: 999px;
+      overflow: hidden;
+      gap: 2px;
+    }
+    .mano-prueba {
+      margin-top: 10px;
+      display: grid;
+      gap: 8px;
+    }
+    .mano-cartas {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 6px;
+    }
+    .mano-cartas img {
+      width: 100%;
+      border-radius: 6px;
+      box-shadow: 0 4px 10px rgb(0 0 0 / 0.45);
     }
     .boton-simular {
       padding: 8px 14px;
@@ -793,6 +909,64 @@ export class MazoPage {
           (a.card.energy ?? 99) - (b.card.energy ?? 99) || a.card.name.localeCompare(b.card.name),
       );
   }
+
+  protected readonly manoPrueba = signal<CatalogCard[]>([]);
+
+  /** Roba 4 al azar del mazo principal (más el Campeón elegido), como una mano inicial. */
+  protected robarMano(): void {
+    const m = this.mazo();
+    if (!m) return;
+    const bolsa = Object.entries(m.principal).flatMap(([id, n]) => Array(n).fill(id) as string[]);
+    if (m.campeon) bolsa.push(m.campeon);
+    for (let i = bolsa.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [bolsa[i], bolsa[j]] = [bolsa[j], bolsa[i]];
+    }
+    this.manoPrueba.set(
+      bolsa
+        .slice(0, 4)
+        .map((id) => this.catalog.card(id))
+        .filter((x): x is CatalogCard => !!x),
+    );
+  }
+
+  /** Curva de energía, tipos y dominios del mazo principal (con el Campeón). */
+  protected readonly stats = computed(() => {
+    const m = this.mazo();
+    if (!m) return null;
+    const lineas = this.lineas(m.principal);
+    const campeon = m.campeon ? this.catalog.card(m.campeon) : undefined;
+    if (campeon) lineas.push({ card: campeon, n: 1 });
+    const total = lineas.reduce((a, x) => a + x.n, 0);
+    if (!total) return null;
+    const cuenta = new Array(8).fill(0) as number[];
+    let suma = 0;
+    const tipos = new Map<string, number>();
+    const dominios = new Map<string, number>();
+    for (const { card, n } of lineas) {
+      const e = Math.min(card.energy ?? 0, 7);
+      cuenta[e] += n;
+      suma += (card.energy ?? 0) * n;
+      tipos.set(card.type, (tipos.get(card.type) ?? 0) + n);
+      for (const d of card.domains)
+        if (d !== 'Colorless') dominios.set(d, (dominios.get(d) ?? 0) + n);
+    }
+    const max = Math.max(...cuenta, 1);
+    return {
+      media: (suma / total).toFixed(1),
+      curva: cuenta.map((n, coste) => ({
+        coste,
+        etiqueta: coste === 7 ? '7+' : String(coste),
+        n,
+        pct: Math.round((n / max) * 100),
+      })),
+      tipos: [...tipos].map(([tipo, n]) => ({
+        nombre: this.t.etiqueta(tipo).toLowerCase(),
+        n,
+      })),
+      dominios: [...dominios].map(([nombre, n]) => ({ nombre, n, color: colorDominio(nombre) })),
+    };
+  });
 
   protected readonly principalPorTipo = computed(() => {
     const m = this.mazo();
