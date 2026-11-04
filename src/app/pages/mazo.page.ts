@@ -83,6 +83,7 @@ interface GrupoFaltan {
             (change)="renombrar($event)"
           />
           <span class="estado" [class.legal]="legal()">{{ legal() ? 'Legal' : 'Incompleto' }}</span>
+          <a class="boton-simular" [routerLink]="['/mazos', m.id, 'simular']">▶ Probar</a>
           <button type="button" class="secondary" (click)="copiarTexto()">
             {{ copiado() ? 'Copiado' : 'Copiar lista' }}
           </button>
@@ -373,6 +374,21 @@ interface GrupoFaltan {
     .volver {
       text-decoration: none;
       font-size: 0.9rem;
+    }
+    .boton-simular {
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-weight: 700;
+      text-decoration: none;
+      color: #111;
+      background: var(--accent);
+      transition:
+        transform 0.15s ease,
+        box-shadow 0.15s ease;
+    }
+    .boton-simular:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 45%, transparent);
     }
     .cabecera {
       display: flex;

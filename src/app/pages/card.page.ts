@@ -16,6 +16,7 @@ import { ConfidenceBadgeComponent } from '../ui/confidence-badge.component';
 import { EurPipe, ThumbPipe } from '../ui/pipes';
 import { QtyControlComponent } from '../ui/qty-control.component';
 import { RulesTextComponent } from '../ui/rules-text.component';
+import { InclinarDirective } from '../ui/inclinar.directive';
 import { GraficaPrecioComponent, PuntoPrecio } from '../ui/grafica-precio.component';
 
 @Component({
@@ -29,6 +30,7 @@ import { GraficaPrecioComponent, PuntoPrecio } from '../ui/grafica-precio.compon
     ConfidenceBadgeComponent,
     RulesTextComponent,
     GraficaPrecioComponent,
+    InclinarDirective,
   ],
   template: `
     <main class="pagina">
@@ -48,15 +50,17 @@ import { GraficaPrecioComponent, PuntoPrecio } from '../ui/grafica-precio.compon
         <!-- El arte de la carta, muy difuminado, de fondo de toda la página. -->
         <img class="fondo" [src]="c.imgUrl | thumb: 240" alt="" aria-hidden="true" />
         <article class="ficha" [style]="colores()">
-          <img
-            class="imagen"
-            [src]="c.imgUrl | thumb: 600"
-            [alt]="c.name"
-            width="372"
-            height="520"
-          />
+          <div class="visor" [appInclinar]="14" [holo]="col.qty(c.cardId).foil > 0">
+            <img
+              class="imagen"
+              [src]="c.imgUrl | thumb: 600"
+              [alt]="c.name"
+              width="372"
+              height="520"
+            />
+          </div>
 
-          <div class="datos">
+          <div class="datos entrada">
             <header>
               <h1>{{ c.name }}</h1>
               <p class="muted">{{ c.cardId }} · {{ c.setName }} · {{ t.etiqueta(c.rarity) }}</p>
@@ -370,8 +374,21 @@ import { GraficaPrecioComponent, PuntoPrecio } from '../ui/grafica-precio.compon
         0 20px 50px rgb(0 0 0 / 55%),
         0 0 60px color-mix(in srgb, var(--dom-a, transparent) 35%, transparent);
       background: var(--surface-2);
+      display: block;
+      view-transition-name: carta-activa;
+    }
+    .visor {
       position: sticky;
       top: 72px;
+      align-self: start;
+      border-radius: 18px;
+      animation: aparecer-carta 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+    @keyframes aparecer-carta {
+      from {
+        opacity: 0;
+        transform: perspective(900px) rotateY(-25deg) scale(0.92);
+      }
     }
     h1 {
       margin-bottom: 4px;
@@ -547,8 +564,9 @@ import { GraficaPrecioComponent, PuntoPrecio } from '../ui/grafica-precio.compon
       .ficha {
         grid-template-columns: 1fr;
       }
-      .imagen {
+      .visor {
         position: static;
+        width: 100%;
         max-width: 320px;
         margin: 0 auto;
       }

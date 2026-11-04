@@ -67,8 +67,7 @@ const PRECIO_MINIMO_SUBIDA = 1;
             <p class="antetitulo">Set más reciente</p>
             <h2>{{ n.set.name }}</h2>
             <p class="muted">
-              {{ n.set.count }} cartas · tienes {{ n.tengo }}
-              ({{ n.porcentaje }}&nbsp;%)
+              {{ n.set.count }} cartas · tienes {{ n.tengo }} ({{ n.porcentaje }}&nbsp;%)
             </p>
             <span class="progreso"><span [style.width.%]="n.porcentaje"></span></span>
             <button type="button" class="enlace" (click)="verSet(n.set.id)">Ver el set →</button>
@@ -446,7 +445,11 @@ const PRECIO_MINIMO_SUBIDA = 1;
       padding: 16px 18px;
       border-radius: var(--radio);
       background:
-        radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--dom) 22%, transparent), transparent 65%),
+        radial-gradient(
+          circle at 100% 0%,
+          color-mix(in srgb, var(--dom) 22%, transparent),
+          transparent 65%
+        ),
         var(--surface);
       border: 1px solid color-mix(in srgb, var(--dom) 28%, transparent);
       color: var(--text);
@@ -535,7 +538,9 @@ const PRECIO_MINIMO_SUBIDA = 1;
       font-weight: 700;
       color: #1a1305;
       background: linear-gradient(135deg, #fde68a, var(--accent-fuerte));
-      box-shadow: 0 0 0 2px var(--surface), 0 0 0 3px var(--accent-fuerte);
+      box-shadow:
+        0 0 0 2px var(--surface),
+        0 0 0 3px var(--accent-fuerte);
     }
     .persona-nombre {
       flex: 1;

@@ -411,7 +411,7 @@ interface Fila {
           <p class="muted cuenta">
             {{ carpeta().length }} {{ carpeta().length === 1 ? 'carta' : 'cartas' }}
           </p>
-          <ul class="rejilla">
+          <ul class="rejilla entrada">
             @for (c of carpetaVisible(); track c.cardId) {
               <li>
                 <app-card-tile
@@ -614,7 +614,11 @@ interface Fila {
       border-radius: var(--radio);
       border: 1px solid color-mix(in srgb, var(--dom) 30%, transparent);
       background:
-        radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--dom) 22%, transparent), transparent 70%),
+        radial-gradient(
+          circle at 100% 0%,
+          color-mix(in srgb, var(--dom) 22%, transparent),
+          transparent 70%
+        ),
         var(--surface);
       box-shadow: none;
     }
@@ -624,7 +628,9 @@ interface Fila {
     }
     .dominio.activo {
       border-color: var(--dom);
-      box-shadow: 0 0 0 1px var(--dom), 0 0 22px color-mix(in srgb, var(--dom) 35%, transparent);
+      box-shadow:
+        0 0 0 1px var(--dom),
+        0 0 22px color-mix(in srgb, var(--dom) 35%, transparent);
     }
     .dominio-cabecera {
       display: flex;

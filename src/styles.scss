@@ -268,3 +268,114 @@ input[type='checkbox'] {
     animation: none;
   }
 }
+
+/* ── Animaciones de cartas ─────────────────────────────────────────────────────────── */
+
+/* Inclinación 3D con brillo que sigue al puntero (directiva appInclinar). */
+.inclinable {
+  --rx: 0deg;
+  --ry: 0deg;
+  --mx: 50%;
+  --my: 50%;
+  --brillo: 0;
+  position: relative;
+  transform: perspective(900px) rotateX(var(--rx)) rotateY(var(--ry));
+  transform-style: preserve-3d;
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  will-change: transform;
+}
+.inclinable:hover {
+  transition-duration: 0.08s;
+}
+.inclinable::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: var(--brillo);
+  transition: opacity 0.3s ease;
+  background: radial-gradient(
+    circle at var(--mx) var(--my),
+    rgb(255 255 255 / 0.28),
+    rgb(255 255 255 / 0.06) 35%,
+    transparent 60%
+  );
+  mix-blend-mode: soft-light;
+  z-index: 2;
+}
+/* Foil: arcoíris que se desplaza con el puntero. */
+.inclinable.holo::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 1;
+  opacity: calc(0.25 + var(--brillo) * 0.45);
+  mix-blend-mode: color-dodge;
+  background: linear-gradient(
+    115deg,
+    transparent 20%,
+    rgb(255 0 128 / 0.35) 32%,
+    rgb(255 220 0 / 0.35) 42%,
+    rgb(0 255 170 / 0.35) 52%,
+    rgb(0 160 255 / 0.35) 62%,
+    transparent 75%
+  );
+  background-size: 250% 250%;
+  background-position: var(--mx) var(--my);
+  transition: opacity 0.3s ease;
+}
+
+/* Entrada escalonada: los hijos de .entrada aparecen subiendo, uno tras otro. */
+@keyframes entrar {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+}
+.entrada > * {
+  animation: entrar 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@for $i from 1 through 24 {
+  .entrada > :nth-child(#{$i}) {
+    animation-delay: #{$i * 25}ms;
+  }
+}
+
+/* Entre páginas: la nueva entra desde abajo y la vieja se desvanece. */
+@keyframes vt-sale {
+  to {
+    opacity: 0;
+    transform: scale(0.99);
+  }
+}
+@keyframes vt-entra {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+::view-transition-old(root) {
+  animation: vt-sale 0.16s ease both;
+}
+::view-transition-new(root) {
+  animation: vt-entra 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+/* La carta pulsada vuela a su sitio en la ficha (view-transition-name: carta-activa). */
+::view-transition-group(carta-activa) {
+  animation-duration: 0.38s;
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .entrada > * {
+    animation: none;
+  }
+  ::view-transition-old(root),
+  ::view-transition-new(root),
+  ::view-transition-group(carta-activa) {
+    animation: none;
+  }
+}

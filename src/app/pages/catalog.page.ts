@@ -89,7 +89,7 @@ export class CatalogFiltersState {
           }
         </p>
 
-        <ul class="rejilla">
+        <ul class="rejilla entrada">
           @for (c of visibles(); track c.cardId) {
             <li><app-card-tile [card]="c" [owned]="col.qty(c.cardId)" /></li>
           }

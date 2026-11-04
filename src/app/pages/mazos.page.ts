@@ -6,11 +6,12 @@ import { MazoImportado, importarMazo } from '../core/importar-mazo';
 import { esLegal, tamanoPrincipal, validar } from '../core/mazos';
 import { MazosService } from '../core/mazos.service';
 import { ThumbPipe } from '../ui/pipes';
+import { InclinarDirective } from '../ui/inclinar.directive';
 
 /** Lista de tus mazos, con su Leyenda de portada y si cumplen las reglas. */
 @Component({
   selector: 'app-mazos-page',
-  imports: [RouterLink, ThumbPipe],
+  imports: [RouterLink, ThumbPipe, InclinarDirective],
   template: `
     <main class="pagina">
       <header class="cabecera">
@@ -54,7 +55,7 @@ import { ThumbPipe } from '../ui/pipes';
           @if (resultado(); as r) {
             @if (r.cartas === 0) {
               <p class="error" role="alert">No se ha reconocido ninguna carta.</p>
-            } @else {
+            } @else if (r.noEncontradas.length) {
               <p class="error" role="alert">
                 Importadas {{ r.cartas }} cartas, pero no se han encontrado estas líneas:
               </p>
@@ -76,10 +77,15 @@ import { ThumbPipe } from '../ui/pipes';
       @if (!mazos.cargado() || !catalog.loaded()) {
         <p class="muted">Cargando tus mazos…</p>
       } @else {
-        <ul class="rejilla">
+        <ul class="rejilla entrada">
           @for (m of lista(); track m.mazo.id) {
             <li>
-              <a class="mazo" [routerLink]="['/mazos', m.mazo.id]" [style]="m.colores">
+              <a
+                class="mazo"
+                [appInclinar]="6"
+                [routerLink]="['/mazos', m.mazo.id]"
+                [style]="m.colores"
+              >
                 @if (m.leyenda) {
                   <img [src]="m.leyenda.imgUrl | thumb: 400" alt="" aria-hidden="true" />
                 } @else {
@@ -189,11 +195,16 @@ import { ThumbPipe } from '../ui/pipes';
       box-shadow: var(--sombra);
       isolation: isolate;
       transition:
-        transform 0.15s ease,
+        transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
         box-shadow 0.15s ease;
     }
+    .mazo img {
+      transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    .mazo:hover img {
+      transform: scale(1.06);
+    }
     .mazo:hover {
-      transform: translateY(-3px);
       box-shadow: 0 0 26px color-mix(in srgb, var(--dom-a) 35%, transparent);
       border-color: var(--dom-a);
     }

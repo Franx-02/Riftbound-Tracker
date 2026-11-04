@@ -10,6 +10,8 @@ import { ValuationService } from '../core/valuation.service';
 import { ConfidenceBadgeComponent } from './confidence-badge.component';
 import { EurPipe, ThumbPipe } from './pipes';
 import { QtyControlComponent } from './qty-control.component';
+import { InclinarDirective } from './inclinar.directive';
+import { volarA } from './volar';
 
 /**
  * Una carta en cuadrícula. El +/− de normal y foil va encima de la imagen: en
@@ -19,14 +21,28 @@ import { QtyControlComponent } from './qty-control.component';
  */
 @Component({
   selector: 'app-card-tile',
-  imports: [RouterLink, QtyControlComponent, ConfidenceBadgeComponent, EurPipe, ThumbPipe],
+  imports: [
+    RouterLink,
+    InclinarDirective,
+    QtyControlComponent,
+    ConfidenceBadgeComponent,
+    EurPipe,
+    ThumbPipe,
+  ],
   template: `
-    <div class="marco">
+    <div class="marco" appInclinar [holo]="owned().foil > 0">
       <!-- Los botones no pueden ir dentro de un enlace (HTML inválido, y el teclado se
            lía): la imagen es un enlace y el panel, un hermano posicionado encima.
            Fuera del tabulador porque el nombre de abajo lleva al mismo sitio. -->
-      <a [routerLink]="['/carta', card().cardId]" class="imagen" tabindex="-1" aria-hidden="true">
+      <a
+        [routerLink]="['/carta', card().cardId]"
+        class="imagen"
+        tabindex="-1"
+        aria-hidden="true"
+        (click)="volarA(img)"
+      >
         <img
+          #img
           [src]="card().imgUrl | thumb: 300"
           alt=""
           loading="lazy"
@@ -97,7 +113,7 @@ import { QtyControlComponent } from './qty-control.component';
         }
       </div>
     </div>
-    <a [routerLink]="['/carta', card().cardId]" class="enlace-carta">
+    <a [routerLink]="['/carta', card().cardId]" class="enlace-carta" (click)="volarA(img)">
       <span class="nombre">{{ card().name }}</span>
       <span class="meta">
         <span class="codigo">{{ card().cardId }}</span>
@@ -352,6 +368,7 @@ import { QtyControlComponent } from './qty-control.component';
 })
 export class CardTileComponent {
   private readonly valuation = inject(ValuationService);
+  protected readonly volarA = volarA;
   protected readonly descartadas = inject(DescartadasService);
   protected readonly wish = inject(WishlistService);
   /** Copias que pides en la lista de deseos (0 si no está). */

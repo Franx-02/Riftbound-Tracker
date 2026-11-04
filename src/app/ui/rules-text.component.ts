@@ -119,7 +119,15 @@ const ICONOS: Record<string, { valor: string; titulo: string }> = {
       background: var(--order);
     }
     .runa[data-dominio='rainbow'] {
-      background: conic-gradient(var(--fury), var(--body), var(--order), var(--calm), var(--mind), var(--chaos), var(--fury));
+      background: conic-gradient(
+        var(--fury),
+        var(--body),
+        var(--order),
+        var(--calm),
+        var(--mind),
+        var(--chaos),
+        var(--fury)
+      );
     }
   `,
 })

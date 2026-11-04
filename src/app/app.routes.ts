@@ -50,6 +50,11 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/mazos.page').then((m) => m.MazosPage),
       },
       {
+        path: 'mazos/:id/simular',
+        title: 'Simulador · Riftbound Tracker',
+        loadComponent: () => import('./pages/simulador.page').then((m) => m.SimuladorPage),
+      },
+      {
         path: 'mazos/:id',
         title: 'Mazo · Riftbound Tracker',
         loadComponent: () => import('./pages/mazo.page').then((m) => m.MazoPage),

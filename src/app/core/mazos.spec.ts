@@ -33,16 +33,67 @@ function carta(parcial: Partial<CatalogCard> & { cardId: string }): CatalogCard 
 
 const CARTAS = new Map(
   [
-    carta({ cardId: 'LEY', name: 'Jinx, Loose Cannon', type: 'Legend', supertype: 'Champion', domains: ['Fury', 'Chaos'], tags: ['Jinx'] }),
-    carta({ cardId: 'CAM', name: 'Jinx, Rebel', supertype: 'Champion', domains: ['Chaos'], tags: ['Jinx'] }),
-    carta({ cardId: 'CAM-A', name: 'Jinx, Rebel (Alternate Art)', supertype: 'Champion', domains: ['Chaos'], tags: ['Jinx'] }),
-    carta({ cardId: 'OTRO-CAM', name: 'Darius, Trifarian', supertype: 'Champion', domains: ['Fury'], tags: ['Darius'] }),
-    carta({ cardId: 'SIG', name: 'Super Mega Death Rocket!', type: 'Spell', supertype: 'Signature', domains: ['Fury', 'Chaos'], tags: ['Jinx'] }),
+    carta({
+      cardId: 'LEY',
+      name: 'Jinx, Loose Cannon',
+      type: 'Legend',
+      supertype: 'Champion',
+      domains: ['Fury', 'Chaos'],
+      tags: ['Jinx'],
+    }),
+    carta({
+      cardId: 'CAM',
+      name: 'Jinx, Rebel',
+      supertype: 'Champion',
+      domains: ['Chaos'],
+      tags: ['Jinx'],
+    }),
+    carta({
+      cardId: 'CAM-A',
+      name: 'Jinx, Rebel (Alternate Art)',
+      supertype: 'Champion',
+      domains: ['Chaos'],
+      tags: ['Jinx'],
+    }),
+    carta({
+      cardId: 'OTRO-CAM',
+      name: 'Darius, Trifarian',
+      supertype: 'Champion',
+      domains: ['Fury'],
+      tags: ['Darius'],
+    }),
+    carta({
+      cardId: 'SIG',
+      name: 'Super Mega Death Rocket!',
+      type: 'Spell',
+      supertype: 'Signature',
+      domains: ['Fury', 'Chaos'],
+      tags: ['Jinx'],
+    }),
     carta({ cardId: 'CALMA', name: 'Calm unit', domains: ['Calm'] }),
     carta({ cardId: 'GRIS', name: 'Gear', type: 'Gear', domains: ['Colorless'] }),
-    carta({ cardId: 'RUNA-F', name: 'Fury Rune', type: 'Rune', supertype: 'Basic', domains: ['Fury'] }),
-    carta({ cardId: 'RUNA-C', name: 'Chaos Rune', type: 'Rune', supertype: 'Basic', domains: ['Chaos'] }),
-    ...[1, 2, 3].map((i) => carta({ cardId: `CAMPO-${i}`, name: `Battlefield ${i}`, type: 'Battlefield', domains: ['Colorless'] })),
+    carta({
+      cardId: 'RUNA-F',
+      name: 'Fury Rune',
+      type: 'Rune',
+      supertype: 'Basic',
+      domains: ['Fury'],
+    }),
+    carta({
+      cardId: 'RUNA-C',
+      name: 'Chaos Rune',
+      type: 'Rune',
+      supertype: 'Basic',
+      domains: ['Chaos'],
+    }),
+    ...[1, 2, 3].map((i) =>
+      carta({
+        cardId: `CAMPO-${i}`,
+        name: `Battlefield ${i}`,
+        type: 'Battlefield',
+        domains: ['Colorless'],
+      }),
+    ),
     ...Array.from({ length: 13 }, (_, i) => carta({ cardId: `F${i}`, name: `Fury ${i}` })),
   ].map((c) => [c.cardId, c]),
 );
@@ -91,10 +142,12 @@ describe('reglas de construcción de mazos', () => {
   });
 
   it('no deja cartas de otros dominios; las incoloras sí', () => {
-    expect(fallos({ ...mazoLegal(), principal: { ...mazoLegal().principal, CALMA: 1 } }).join()).toContain(
-      'dominios',
+    expect(
+      fallos({ ...mazoLegal(), principal: { ...mazoLegal().principal, CALMA: 1 } }).join(),
+    ).toContain('dominios');
+    expect(fallos({ ...mazoLegal(), principal: { ...mazoLegal().principal, GRIS: 1 } })).toEqual(
+      [],
     );
-    expect(fallos({ ...mazoLegal(), principal: { ...mazoLegal().principal, GRIS: 1 } })).toEqual([]);
   });
 
   it('máximo 3 Signature', () => {
@@ -143,7 +196,11 @@ describe('MazosService (modo demo)', () => {
     await TestBed.inject(AuthService).signIn();
     const otra = TestBed.inject(MazosService);
     await otra.load();
-    expect(otra.mazo(id)).toMatchObject({ nombre: 'Jinx aggro', leyenda: 'OGN-251', principal: { 'OGN-001': 2 } });
+    expect(otra.mazo(id)).toMatchObject({
+      nombre: 'Jinx aggro',
+      leyenda: 'OGN-251',
+      principal: { 'OGN-001': 2 },
+    });
 
     otra.borrar(id);
     await otra.flush();
