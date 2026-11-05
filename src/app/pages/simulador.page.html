@@ -33,31 +33,6 @@
           </span>
         }
         <span class="acciones">
-          @if (p().fase === 'mulligan') {
-            <label class="opcion">
-              <input
-                type="checkbox"
-                [checked]="empiezoYo()"
-                (change)="empiezoYo.set(!empiezoYo()); reiniciar()"
-              />
-              Empiezo yo
-            </label>
-            <button type="button" (click)="hacerMulligan()">
-              {{ elegidas().size ? 'Mulligan de ' + elegidas().size : 'Me la quedo' }}
-            </button>
-          } @else if (p().enfrentamiento) {
-            <button type="button" (click)="resolver()" title="R">
-              Resolver {{ p().enfrentamiento!.tipo }}
-            </button>
-          } @else if (p().fase === 'robo') {
-            <button type="button" (click)="robarDeTurno()" title="D">Robar (fase de robo)</button>
-          } @else if (p().fase === 'principal') {
-            <button type="button" (click)="terminar()" title="E">Terminar turno</button>
-          } @else if (p().fase === 'rival') {
-            <button type="button" class="rival-btn" (click)="terminar()" title="E">
-              Terminar turno del rival
-            </button>
-          }
           <button
             type="button"
             class="secondary"
@@ -78,10 +53,6 @@
           <details class="mas">
             <summary class="secondary">⋯</summary>
             <div class="mas-menu">
-              <button type="button" class="secondary" (click)="robar1()">Robar 1 (efecto)</button>
-              <button type="button" class="secondary" (click)="canalizar1()">
-                Canalizar 1 (efecto)
-              </button>
               <button type="button" class="secondary" (click)="barajar()">Barajar el mazo</button>
               <button type="button" class="secondary" (click)="pozoManual(1, 0)">
                 +1 ⚡ al pozo (efecto)
@@ -307,7 +278,8 @@
 
           <div class="lado-mio">
             <span class="etiqueta nombre-campo">
-              {{ nombreCampo(i) }}
+              <span class="nombre-txt" [title]="nombreCampo(i)">{{ nombreCampo(i) }}</span> · tus
+              unidades
               @if (campo.control === 'yo' && p().fase === 'principal') {
                 <button
                   type="button"
@@ -376,67 +348,63 @@
       }
     </ol>
 
-    <section class="lado mio-izq" aria-label="Mazo y runas">
-      <div class="pila" data-zona="mazo" [class.sobre]="sobre() === 'mazo'">
+    <section class="bloque-runas" aria-label="Runas">
+      <div class="pila">
         <button
           type="button"
-          class="dorso"
-          [class.pulsa]="p().fase === 'robo'"
-          [disabled]="p().fase !== 'robo'"
-          (click)="robarDeTurno()"
-          [title]="p().fase === 'robo' ? 'Robar 1 (fase de robo)' : 'Mazo'"
+          class="dorso runa"
+          (click)="pulsarRunas()"
+          title="Canalizar 1 runa por efecto"
         >
-          <span class="cuenta">{{ p().mazo.length }}</span>
-        </button>
-        <span class="etiqueta">Mazo</span>
-      </div>
-      <div class="pila">
-        <div class="dorso runa" aria-label="Mazo de runas">
           <span class="cuenta">{{ p().mazoRunas.length }}</span>
-        </div>
+        </button>
         <span class="etiqueta">Runas</span>
       </div>
-    </section>
-
-    <section class="zona runas-mias" aria-label="Tus runas">
-      <span class="etiqueta">
-        <span class="pozo" title="Pozo: energía y poder disponibles este turno (CR 165)">
-          ⚡ {{ p().pozo.energia }}
-          @if (poderPozo()) {
-            · ✦ {{ poderPozo() }}
+      <div class="zona runas-mias">
+        <span class="etiqueta">
+          <span class="pozo" title="Pozo: energía y poder disponibles este turno (CR 165)">
+            ⚡ {{ p().pozo.energia }}
+            @if (poderPozo()) {
+              · ✦ {{ poderPozo() }}
+            }
+          </span>
+          @if (gasto(); as g) {
+            @if (g.pozoEnergia || g.pozoPoder) {
+              <span class="gasto-pozo">usa del pozo ⚡{{ g.pozoEnergia }} ✦{{ g.pozoPoder }}</span>
+            }
+          }
+          <span [title]="runasListas() + ' runas preparadas de ' + p().runas.length"
+            >{{ runasListas() }}/{{ p().runas.length }}</span
+          >
+          <button
+            type="button"
+            class="mini"
+            (click)="mutarEnergia()"
+            title="Agotar una runa: +1 de energía al pozo"
+          >
+            ⚡ +1
+          </button>
+          <button
+            type="button"
+            class="mini"
+            (click)="mutarPoder()"
+            title="Reciclar una runa: +1 de poder de su dominio"
+          >
+            ✦ +1
+          </button>
+          @if (p().xp) {
+            <span class="xp">XP {{ p().xp }}</span>
           }
         </span>
-        <span [title]="runasListas() + ' runas preparadas de ' + p().runas.length"
-          >{{ runasListas() }}/{{ p().runas.length }}</span
-        >
-        <button
-          type="button"
-          class="mini"
-          (click)="mutarEnergia()"
-          title="Agotar una runa: +1 de energía al pozo"
-        >
-          ⚡ +1
-        </button>
-        <button
-          type="button"
-          class="mini"
-          (click)="mutarPoder()"
-          title="Reciclar una runa: +1 de poder de su dominio"
-        >
-          ✦ +1
-        </button>
-        @if (p().xp) {
-          <span class="xp">XP {{ p().xp }}</span>
-        }
-      </span>
-      <div class="fila runas" [style.--n]="p().runas.length">
-        @for (c of p().runas; track c.uid) {
-          <ng-container *ngTemplateOutlet="tCarta; context: { $implicit: c }" />
-        } @empty {
-          <span class="hueco"
-            >Se canalizan 2 al empezar cada turno; los costes se pagan solos al jugar.</span
-          >
-        }
+        <div class="fila runas" [style.--n]="p().runas.length">
+          @for (c of p().runas; track c.uid) {
+            <ng-container *ngTemplateOutlet="tCarta; context: { $implicit: c }" />
+          } @empty {
+            <span class="hueco"
+              >Se canalizan 2 al empezar cada turno; los costes se pagan solos al jugar.</span
+            >
+          }
+        </div>
       </div>
     </section>
 
@@ -493,9 +461,18 @@
         }
         <span class="etiqueta">Campeón</span>
       </div>
-    </section>
-
-    <section class="lado mio-trash" aria-label="Cementerio">
+      <div class="pila" data-zona="mazo" [class.sobre]="sobre() === 'mazo'">
+        <button
+          type="button"
+          class="dorso"
+          [class.pulsa]="p().fase === 'robo'"
+          (click)="pulsarMazo()"
+          [title]="p().fase === 'robo' ? 'Robar 1 (fase de robo)' : 'Robar 1 por efecto'"
+        >
+          <span class="cuenta">{{ p().mazo.length }}</span>
+        </button>
+        <span class="etiqueta">Mazo</span>
+      </div>
       <div class="pila cementerio" data-zona="cementerio" [class.sobre]="sobre() === 'cementerio'">
         @if (p().cementerio.at(-1); as c) {
           <ng-container *ngTemplateOutlet="tCarta; context: { $implicit: c }" />
@@ -527,6 +504,55 @@
         <span class="hueco">Mano vacía</span>
       }
     </section>
+
+    <div class="accion-turno">
+      @if (p().enfrentamiento; as e) {
+        <button type="button" class="grande combate-btn" (click)="resolver()" title="R">
+          Resolver {{ e.tipo }}
+        </button>
+      } @else if (p().fase === 'robo') {
+        <span class="pista-turno">Pulsa el mazo para robar</span>
+      } @else if (p().fase === 'principal') {
+        <button type="button" class="grande" (click)="terminar()" title="E">Terminar turno</button>
+      } @else if (p().fase === 'rival') {
+        <button type="button" class="grande rival-btn" (click)="terminar()" title="E">
+          Fin del turno rival
+        </button>
+      }
+    </div>
+
+    @if (cartaEleccion(); as c) {
+      <div class="menu elegir" role="dialog" aria-label="Dónde jugar la carta">
+        <img [src]="carta(c.id)?.imgUrl ?? '' | thumb: 400" [alt]="c.ficha.nombre" />
+        <div class="botones">
+          <strong>{{ c.ficha.nombre }} · {{ coste(c) }}</strong>
+          <span class="muted">¿Dónde la juegas?</span>
+          @if (c.ficha.kw.accelerate) {
+            <label class="opcion">
+              <input type="checkbox" [checked]="acelerar()" (change)="acelerar.set(!acelerar())" />
+              Accelerate: +1⚡ +1✦ y entra preparada
+            </label>
+          }
+          @for (d of eleccion()!.destinos; track d.destino) {
+            <button
+              type="button"
+              [class.secondary]="!!d.razon"
+              [disabled]="!!d.razon"
+              [title]="d.razon ?? ''"
+              (click)="elegirDestino(d.destino)"
+            >
+              {{ d.texto }}
+            </button>
+          }
+          <div class="botones-fila">
+            <button type="button" class="secondary" (click)="abrirMenu(c, $event)">
+              Más opciones
+            </button>
+            <button type="button" class="secondary" (click)="eleccion.set(null)">Cerrar</button>
+          </div>
+        </div>
+      </div>
+    }
 
     <!-- ── Capas ────────────────────────────────────────────────────────────────── -->
     @if (arrastre(); as a) {
@@ -1008,11 +1034,14 @@
         [class.origen]="arrastre()?.uid === c.uid"
         [class.seleccionada]="seleccion()?.uid === c.uid"
         [class.elegida]="elegidas().has(c.uid)"
+        [class.gasto-energia]="gasto()?.runasEnergia?.includes(c.uid)"
+        [class.gasto-poder]="gasto()?.runasPoder?.includes(c.uid)"
         [title]="c.ficha.nombre"
         (pointerdown)="bajar($event, c.uid)"
         (mouseenter)="previsualizar(c)"
         (mouseleave)="previsualizar(null)"
         (click)="pulsar(c, $event)"
+        (contextmenu)="abrirMenu(c, $event)"
       >
         <img
           class="carta"
@@ -1025,6 +1054,9 @@
         }
         @if (c.danio) {
           <span class="insignia danio-ins">{{ c.danio }}</span>
+        }
+        @if (c.ficha.kw.tank && enJuego(c)) {
+          <span class="tag-kw">Tank</span>
         }
       </button>
     </ng-template>

@@ -511,6 +511,11 @@ export function fuerzaDe(c: Copia, papel: 'ataca' | 'defiende' | null = null): n
   return Math.max(0, c.ficha.fuerza + c.buffs + extra);
 }
 
+/** Unidades (no equipo) que tengo en un campo. */
+export function unidadesEn(campo: Campo): Copia[] {
+  return campo.unidades.filter((c) => c.ficha.tipo === 'Unit');
+}
+
 function esMiTurno(p: Partida): boolean {
   return p.fase === 'principal';
 }
@@ -538,7 +543,7 @@ function limpieza(p: Partida): Partida {
   if (!s.enfrentamiento) {
     for (const i of [0, 1] as const) {
       const c = s.campos[i];
-      if (c.control === 'yo' && !c.unidades.length)
+      if (c.control === 'yo' && !unidadesEn(c).length)
         s = anota(
           conCampo(s, i, { control: null }),
           `Pierdes el control de ${nombreCampo(s, i)}: no te quedan unidades.`,
@@ -839,7 +844,7 @@ export function anadirPoder(p: Partida, uid?: number): Partida {
   return anota(s, `Reciclas una runa de ${dom}: +1 de poder de ${dom}.`);
 }
 
-interface Coste {
+export interface Coste {
   energia: number;
   poder: number;
   /** Dominios válidos para el poder; vacío = cualquiera. */
@@ -873,6 +878,47 @@ function porQueNoPagar(p: Partida, coste: Coste): string | null {
     return `falta energía: cuesta ${coste.energia} y tienes ${p.pozo.energia} en el pozo y ${listas.length - poderFalta} runa(s) preparadas disponibles`;
   }
   return null;
+}
+
+export interface PlanDePago {
+  pozoEnergia: number;
+  pozoPoder: number;
+  /** Runas que se agotarían (energía) y que se reciclarían (poder), en ese orden. */
+  runasEnergia: number[];
+  runasPoder: number[];
+}
+
+/** Lo que costaría pagar ahora, sin pagar: para previsualizarlo. Null si no alcanza. */
+export function planDePago(p: Partida, coste: Coste): PlanDePago | null {
+  if (porQueNoPagar(p, coste)) return null;
+  let poder = coste.poder;
+  let pozoPoder = 0;
+  for (const [d, n] of Object.entries(p.pozo.poder)) {
+    if (!coste.dominios.length || coste.dominios.includes(d) || d === 'Any') {
+      const usa = Math.min(poder, n);
+      pozoPoder += usa;
+      poder -= usa;
+    }
+  }
+  const usadas = new Set<number>();
+  const runasPoder: number[] = [];
+  for (let k = 0; k < poder; k++) {
+    const r = runasPara(p, coste.dominios).find((x) => !usadas.has(x.uid));
+    if (!r) break;
+    usadas.add(r.uid);
+    runasPoder.push(r.uid);
+  }
+  let energia = coste.energia;
+  const pozoEnergia = Math.min(energia, p.pozo.energia);
+  energia -= pozoEnergia;
+  const runasEnergia: number[] = [];
+  for (let k = 0; k < energia; k++) {
+    const r = runasListas(p).find((x) => !usadas.has(x.uid));
+    if (!r) break;
+    usadas.add(r.uid);
+    runasEnergia.push(r.uid);
+  }
+  return { pozoEnergia, pozoPoder, runasEnergia, runasPoder };
 }
 
 function pagar(p: Partida, coste: Coste): Partida {
@@ -939,7 +985,9 @@ export function porQueNoJugar(
   if (p.pendiente) return 'Resuelve antes la Vision pendiente.';
   const kw = c.ficha.kw;
   const ambushAqui =
-    kw.ambush && destino !== 'base' && p.campos[destino === 'campo0' ? 0 : 1].unidades.length > 0;
+    kw.ambush &&
+    destino !== 'base' &&
+    unidadesEn(p.campos[destino === 'campo0' ? 0 : 1]).length > 0;
   const reaccion = kw.reaction || oculta || (kw.quickDraw && c.ficha.tipo === 'Gear') || ambushAqui;
   const accion = kw.action || reaccion;
   if (p.fase === 'rival') {
@@ -956,7 +1004,11 @@ export function porQueNoJugar(
   }
   if (c.ficha.tipo === 'Spell' && destino !== 'base')
     return 'Los hechizos no van a un campo: se resuelven y van al cementerio.';
-  if (c.ficha.tipo === 'Gear' && destino !== 'base' && !oculta)
+  // Deploy: el equipo con esta palabra solo se juega en un campo, se controle o no.
+  const deploy = c.ficha.tipo === 'Gear' && /\[Deploy\]/.test(c.ficha.texto);
+  if (deploy && destino === 'base')
+    return `${c.ficha.nombre} tiene Deploy: solo se juega en un campo de batalla (no hace falta controlarlo).`;
+  if (c.ficha.tipo === 'Gear' && !deploy && destino !== 'base' && !oculta)
     return 'El equipo solo se juega en la base (CR 148).';
   if (c.ficha.tipo === 'Unit' && destino !== 'base') {
     const i = destino === 'campo0' ? 0 : 1;
@@ -1019,7 +1071,8 @@ export function jugar(p: Partida, uid: number, destino: DestinoJuego, acelerar =
         { ...s, pendiente: { tipo: 'vision', de: c.ficha.nombre } },
         `Vision: mira la primera carta del mazo y decide si la reciclas.`,
       );
-    if (destino !== 'base') s = contestar(s, destino === 'campo0' ? 0 : 1, 'yo');
+    if (destino !== 'base' && c.ficha.tipo === 'Unit')
+      s = contestar(s, destino === 'campo0' ? 0 : 1, 'yo');
   }
   if (c.ficha.kw.legion)
     s = anota(
@@ -1130,7 +1183,7 @@ function contestar(p: Partida, i: 0 | 1, quien: 'yo' | 'rival'): Partida {
     if (campo.rival.length)
       return anota(
         { ...p, enfrentamiento: { campo: i, tipo: 'combate', atacante: 'yo' } },
-        `¡Combate en el campo ${i + 1}! Atacas con ${campo.unidades.length} unidad(es) contra ${campo.rival.length}. Puedes jugar Action/Reaction; luego resuélvelo.`,
+        `¡Combate en el campo ${i + 1}! Atacas con ${unidadesEn(campo).length} unidad(es) contra ${campo.rival.length}. Puedes jugar Action/Reaction; luego resuélvelo.`,
       );
     if (campo.control !== 'yo')
       return anota(
@@ -1139,10 +1192,10 @@ function contestar(p: Partida, i: 0 | 1, quien: 'yo' | 'rival'): Partida {
       );
     return p;
   }
-  if (campo.unidades.length)
+  if (unidadesEn(campo).length)
     return anota(
       { ...p, enfrentamiento: { campo: i, tipo: 'combate', atacante: 'rival' } },
-      `¡El rival ataca el campo ${i + 1}! Defiendes con ${campo.unidades.length} unidad(es). Puedes jugar Action/Reaction; luego resuélvelo.`,
+      `¡El rival ataca el campo ${i + 1}! Defiendes con ${unidadesEn(campo).length} unidad(es). Puedes jugar Action/Reaction; luego resuélvelo.`,
     );
   if (campo.control !== 'rival')
     return anota(
@@ -1161,15 +1214,15 @@ export function resolverEnfrentamiento(p: Partida): Partida {
   const i = e.campo;
   let s: Partida = { ...p, enfrentamiento: null };
   const campo = s.campos[i];
-  if (e.tipo === 'conquista' || !campo.unidades.length || !campo.rival.length) {
+  if (e.tipo === 'conquista' || !unidadesEn(campo).length || !campo.rival.length) {
     return limpieza(establecerControl(s, i));
   }
   // Combate: fuerzas con Assault/Shield; las aturdidas no suman (CR 423.1.b).
   const yoAtaco = e.atacante === 'yo';
   const papel = yoAtaco ? 'ataca' : 'defiende';
-  const miDanio = campo.unidades.reduce((t, c) => t + (c.aturdida ? 0 : fuerzaDe(c, papel)), 0);
+  const miDanio = unidadesEn(campo).reduce((t, c) => t + (c.aturdida ? 0 : fuerzaDe(c, papel)), 0);
   const suDanio = campo.rival.reduce((t, r) => t + r.fuerza, 0);
-  for (const c of campo.unidades) {
+  for (const c of unidadesEn(campo)) {
     if (c.ficha.disparadores.includes(yoAtaco ? 'atacar' : 'defender'))
       s = recordar(s, c.ficha.nombre, c.ficha.texto);
   }
@@ -1177,7 +1230,7 @@ export function resolverEnfrentamiento(p: Partida): Partida {
   const rivalesOrden = [...campo.rival].sort(
     (a, b) => Number(b.tank) - Number(a.tank) || a.fuerza - b.fuerza,
   );
-  const miasOrden = [...campo.unidades].sort(
+  const miasOrden = [...unidadesEn(campo)].sort(
     (a, b) =>
       Number(b.ficha.kw.tank) - Number(a.ficha.kw.tank) ||
       Number(a.ficha.kw.backline) - Number(b.ficha.kw.backline) ||
@@ -1211,13 +1264,14 @@ export function resolverEnfrentamiento(p: Partida): Partida {
     rival: c2.rival.map((r) => ({ ...r, danio: 0 })),
   });
   c2 = s.campos[i];
-  if (c2.unidades.length && c2.rival.length) {
+  if (unidadesEn(c2).length && c2.rival.length) {
     if (yoAtaco) {
+      // Vuelven las unidades; el equipo desplegado (Deploy) se queda.
       s = anota(
-        { ...s, base: [...s.base, ...c2.unidades] },
+        { ...s, base: [...s.base, ...unidadesEn(c2)] },
         'Quedan defensores: tus atacantes vuelven a la base (CR 466.1.a.2).',
       );
-      s = conCampo(s, i, { unidades: [] });
+      s = conCampo(s, i, { unidades: c2.unidades.filter((c) => c.ficha.tipo !== 'Unit') });
     } else {
       s = anota(
         { ...s, rivalBase: [...s.rivalBase, ...c2.rival] },
@@ -1252,19 +1306,19 @@ function asignar<T extends { uid: number }>(
 /** Tras un enfrentamiento: quien queda controla el campo y conquista si no lo había puntuado (CR 466.5). */
 function establecerControl(p: Partida, i: 0 | 1): Partida {
   const campo = p.campos[i];
-  if (campo.unidades.length && !campo.rival.length) {
+  if (unidadesEn(campo).length && !campo.rival.length) {
     const s = conCampo(p, i, { control: 'yo' });
     return campo.control === 'yo'
       ? s
       : puntuar(anota(s, `Controlas el campo ${i + 1}.`), i, 'conquista');
   }
-  if (campo.rival.length && !campo.unidades.length) {
+  if (campo.rival.length && !unidadesEn(campo).length) {
     const s = conCampo(p, i, { control: 'rival' });
     return campo.control === 'rival'
       ? s
       : puntuarRival(anota(s, `El rival controla el campo ${i + 1}.`), i, 'conquista');
   }
-  if (!campo.unidades.length && !campo.rival.length)
+  if (!unidadesEn(campo).length && !campo.rival.length)
     return anota(conCampo(p, i, { control: null }), `El campo ${i + 1} queda sin control.`);
   return p;
 }
@@ -1682,7 +1736,7 @@ export function crearToken(
     `Juegas la ficha ${fi.nombre}${fi.tipo === 'Unit' ? ` (${fi.fuerza} de fuerza)` : ''} en ${destino === 'base' ? 'tu base' : `el campo ${i + 1}`}${fi.tipo === 'Unit' ? ', agotada' : ''}.`,
   );
   if (fi.disparadores.includes('jugar')) s = recordar(s, `Al jugar ${fi.nombre}`, fi.texto);
-  if (esCampo) s = contestar(s, i as 0 | 1, 'yo');
+  if (esCampo && fi.tipo === 'Unit') s = contestar(s, i as 0 | 1, 'yo');
   return limpieza(s);
 }
 

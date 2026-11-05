@@ -31,6 +31,7 @@ import {
   cerrarRecordatorio,
   copiaDe,
   costeDe,
+  planDePago,
   danar,
   desterrar,
   fijarPuntos,
@@ -116,6 +117,21 @@ export class SimuladorPage {
   protected readonly leyendaAbierta = signal(false);
   /** Zona donde se va a jugar una ficha (abre el selector). */
   protected readonly tokenDestino = signal<DestinoJuego | null>(null);
+  /** Carta de la mano con varios destinos legales: se pregunta dónde jugarla. */
+  protected readonly eleccion = signal<{
+    uid: number;
+    destinos: { destino: DestinoJuego; texto: string; razon: string | null }[];
+  } | null>(null);
+  /** Al pasar el ratón por una carta jugable: qué runas se gastarían. */
+  protected readonly gasto = computed(() => {
+    const c = this.vistaPrevia();
+    if (!c || !this.enMano(c) || this.p().fase !== 'principal') return null;
+    return planDePago(this.p(), costeDe(this.p(), c, this.acelerar() && c.ficha.kw.accelerate));
+  });
+  protected readonly cartaEleccion = computed(() => {
+    const e = this.eleccion();
+    return e ? (copiaDe(this.p(), e.uid) ?? null) : null;
+  });
   protected readonly tokenNombre = signal('');
   protected readonly tokenFuerza = signal(1);
   /** Fichas del catálogo (una por nombre): Recruit, Sprite, Mech, Bird, Gold, Bomb… */
@@ -281,6 +297,7 @@ export class SimuladorPage {
         this.logAbierto.set(false);
         this.leyendaAbierta.set(false);
         this.tokenDestino.set(null);
+        this.eleccion.set(null);
         break;
     }
   }
@@ -537,7 +554,59 @@ export class SimuladorPage {
       return;
     }
     this.acelerar.set(false);
+    // Carta jugable: se juega directa si solo cabe en un sitio; si no, se pregunta dónde.
+    if (this.enMano(c) && (this.p().fase === 'principal' || this.p().fase === 'rival')) {
+      const destinos = (['base', 'campo0', 'campo1'] as DestinoJuego[]).map((destino) => ({
+        destino,
+        texto:
+          destino === 'base'
+            ? c.ficha.tipo === 'Spell'
+              ? 'Jugar el hechizo'
+              : 'Tu base'
+            : this.nombreCampo(destino === 'campo0' ? 0 : 1),
+        razon: porQueNoJugar(this.p(), c, destino, false),
+      }));
+      const legales = destinos.filter((d) => !d.razon);
+      if (legales.length === 1 && !c.ficha.kw.accelerate) {
+        this.jugarA(c, legales[0].destino);
+        return;
+      }
+      if (legales.length > 0) {
+        this.seleccion.set(null);
+        this.eleccion.set({
+          uid: c.uid,
+          destinos: c.ficha.tipo === 'Unit' ? destinos : destinos.slice(0, 1),
+        });
+        return;
+      }
+    }
     this.seleccion.set(this.seleccion()?.uid === c.uid ? null : { uid: c.uid, rival: false });
+  }
+
+  /** Botón derecho: menú completo de la carta (texto, palabras clave, acciones manuales). */
+  protected abrirMenu(c: Copia, e: Event): void {
+    e.preventDefault();
+    this.eleccion.set(null);
+    this.acelerar.set(false);
+    this.seleccion.set({ uid: c.uid, rival: false });
+  }
+
+  protected elegirDestino(destino: DestinoJuego): void {
+    const c = this.cartaEleccion();
+    if (!c) return;
+    this.jugarA(c, destino);
+    if (!this.p().aviso) this.eleccion.set(null);
+  }
+
+  /** Pulsar el mazo: el robo de la fase de robo o, fuera de ella, un robo por efecto. */
+  protected pulsarMazo(): void {
+    if (this.p().fase === 'robo') this.mutar(robarTurno);
+    else this.mutar((p) => robar(p));
+  }
+
+  /** Pulsar el mazo de runas: canalizar 1 por efecto (las 2 del turno son automáticas). */
+  protected pulsarRunas(): void {
+    this.mutar((p) => canalizar(p, 1));
   }
 
   protected pulsarRival(r: Rival): void {
