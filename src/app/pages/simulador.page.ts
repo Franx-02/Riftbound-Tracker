@@ -540,6 +540,7 @@ export class SimuladorPage {
       if (z === 'base' || z === 'campo0' || z === 'campo1') return mover(p, this.grupoDe(c), zona);
       return jugar(p, c.uid, zona, false);
     });
+    if (!this.p().aviso && this.p().fase !== 'mulligan') this.elegidas.set(new Set());
   }
 
   protected fantasmaImg(a: Arrastre): string {
