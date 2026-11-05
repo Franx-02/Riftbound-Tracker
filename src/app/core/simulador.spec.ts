@@ -16,6 +16,7 @@ import {
   resolverVision,
   rivalCrear,
   rivalMover,
+  robarTurno,
   terminarTurno,
   terminarTurnoRival,
   validarMazo,
@@ -103,10 +104,16 @@ function mazo() {
 }
 
 /** Partida en mi fase principal del turno 1, con la mano que toque y 2 runas. */
+function ciclo(p: ReturnType<typeof nuevaPartida>) {
+  return robarTurno(terminarTurnoRival(terminarTurno(p)));
+}
+
 function enJuego(empiezoYo = true) {
-  return mulligan(
-    nuevaPartida(mazo(), carta, { empiezoYo, campoRival: 'F3' }, () => 0.5),
-    [],
+  return robarTurno(
+    mulligan(
+      nuevaPartida(mazo(), carta, { empiezoYo, campoRival: 'F3' }, () => 0.5),
+      [],
+    ),
   );
 }
 
@@ -141,7 +148,7 @@ describe('simulador (Core Rules 1v1)', () => {
       p,
       dos.map((c) => c.uid),
     );
-    expect(s.fase).toBe('principal');
+    expect(s.fase).toBe('robo');
     expect(s.mazo.slice(-2).map((c) => c.uid)).toEqual(dos.map((c) => c.uid));
   });
 
@@ -151,7 +158,7 @@ describe('simulador (Core Rules 1v1)', () => {
     expect(yo.runas).toHaveLength(2);
     let seg = enJuego(false);
     expect(seg.fase).toBe('rival');
-    seg = terminarTurnoRival(seg);
+    seg = robarTurno(terminarTurnoRival(seg));
     expect(seg.turno).toBe(1);
     expect(seg.runas).toHaveLength(3);
     expect(seg.mano).toHaveLength(5);
@@ -189,7 +196,7 @@ describe('simulador (Core Rules 1v1)', () => {
     const a = p.mano.find((c) => c.id === 'A')!;
     p = jugar(p, a.uid, 'base');
     expect(porQueNoMover(p, [a.uid], 'campo0')).toContain('agotada');
-    p = terminarTurnoRival(terminarTurno(p));
+    p = ciclo(p);
     p = mover(p, [a.uid], 'campo0');
     expect(p.enfrentamiento).toMatchObject({ tipo: 'conquista', atacante: 'yo' });
     expect(porQueNoMover(p, [a.uid], 'base')).toContain('enfrentamiento');
@@ -198,7 +205,7 @@ describe('simulador (Core Rules 1v1)', () => {
     expect(p.puntos).toBe(1);
     expect(p.campos[0].unidades[0].agotada).toBe(true);
     // Sin Ganking no se va de campo a campo.
-    p = terminarTurnoRival(terminarTurno(p));
+    p = ciclo(p);
     expect(p.puntos).toBe(2); // Hold al empezar el turno
     expect(porQueNoMover(p, [a.uid], 'campo1')).toContain('Ganking');
   });
@@ -218,7 +225,7 @@ describe('simulador (Core Rules 1v1)', () => {
     p = resolverEnfrentamiento(p);
     expect(p.campos[1].control).toBe('rival');
     expect(p.puntosRival).toBe(1);
-    p = terminarTurnoRival(p);
+    p = robarTurno(terminarTurnoRival(p));
     // Ataco con Soldado (2) y Muro (1, Tank): 3 de daño matan a la ficha de 3; ella pega 3: Tank primero (1) y luego 2 al Soldado.
     p = mover(p, [a.uid, t.uid], 'campo1');
     expect(p.enfrentamiento?.tipo).toBe('combate');
@@ -233,7 +240,7 @@ describe('simulador (Core Rules 1v1)', () => {
     let p = conEnMano(enJuego(), 'A');
     const a = p.mano.find((c) => c.id === 'A')!;
     p = jugar(p, a.uid, 'base');
-    p = terminarTurnoRival(terminarTurno(p));
+    p = ciclo(p);
     p = fijarPuntos(p, 'yo', PUNTOS_PARA_GANAR - 1);
     const mano = p.mano.length;
     p = resolverEnfrentamiento(mover(p, [a.uid], 'campo0'));
@@ -246,10 +253,10 @@ describe('simulador (Core Rules 1v1)', () => {
     let p = conEnMano(enJuego(), 'A');
     const a = p.mano.find((c) => c.id === 'A')!;
     p = jugar(p, a.uid, 'base');
-    p = terminarTurnoRival(terminarTurno(p));
+    p = ciclo(p);
     p = resolverEnfrentamiento(mover(p, [a.uid], 'campo0'));
     p = fijarPuntos(p, 'yo', PUNTOS_PARA_GANAR - 1);
-    p = terminarTurnoRival(terminarTurno(p));
+    p = ciclo(p);
     expect(p.puntos).toBe(PUNTOS_PARA_GANAR);
     expect(p.ganador).toBe('yo');
   });
@@ -266,13 +273,13 @@ describe('simulador (Core Rules 1v1)', () => {
     p = conEnMano(p, 'H');
     const h = p.mano.find((c) => c.id === 'H')!;
     expect(ocultar(p, h.uid, 0).aviso).toContain('controles');
-    p = terminarTurnoRival(terminarTurno(p));
+    p = ciclo(p);
     p = resolverEnfrentamiento(mover(p, [v.uid], 'campo0'));
     p = ocultar(p, h.uid, 0);
     expect(p.aviso).toBeNull();
     expect(p.campos[0].oculta?.id).toBe('H');
     expect(porQueNoJugar(p, p.campos[0].oculta!, 'base')).toContain('turno siguiente');
-    p = terminarTurnoRival(terminarTurno(p));
+    p = ciclo(p);
     const antes = p.runas.filter((r) => !r.agotada).length;
     p = jugar(p, p.campos[0].oculta!.uid, 'base');
     expect(p.aviso).toBeNull();
@@ -283,7 +290,7 @@ describe('simulador (Core Rules 1v1)', () => {
   it('Burn Out: sin mazo, el cementerio vuelve barajado y el rival gana 1 punto (CR 431)', () => {
     let p = enJuego();
     p = { ...p, cementerio: p.mazo.slice(0, 5), mazo: [] };
-    p = terminarTurnoRival(terminarTurno(p));
+    p = ciclo(p);
     expect(p.puntosRival).toBe(1);
     expect(p.mazo).toHaveLength(4);
   });

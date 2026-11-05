@@ -214,7 +214,8 @@ export interface Pozo {
   poder: Record<string, number>;
 }
 
-export type Fase = 'mulligan' | 'principal' | 'rival' | 'fin';
+/** `robo`: inicio de turno hecho (despertar, puntuar, canalizar); falta robar para entrar en la principal. */
+export type Fase = 'mulligan' | 'robo' | 'principal' | 'rival' | 'fin';
 
 export type ZonaSim =
   | 'mano'
@@ -252,6 +253,8 @@ export interface Partida {
   xp: number;
   empiezoYo: boolean;
   pozo: Pozo;
+  /** La leyenda se agota al usar una habilidad con ese coste y se prepara al despertar. */
+  leyendaAgotada: boolean;
   /** Cartas del mazo principal que he jugado este turno (Legion, CR 812). */
   jugadasEsteTurno: number;
   enfrentamiento: Enfrentamiento | null;
@@ -388,6 +391,7 @@ export function nuevaPartida(
     xp: 0,
     empiezoYo,
     pozo: { energia: 0, poder: {} },
+    leyendaAgotada: false,
     jugadasEsteTurno: 0,
     enfrentamiento: null,
     pendiente: null,
@@ -634,16 +638,17 @@ export function mulligan(p: Partida, uids: number[]): Partida {
 function empezarTurno(p: Partida): Partida {
   let s: Partida = {
     ...p,
-    fase: 'principal',
+    fase: 'robo',
     turno: p.turno + 1,
     ronda: p.ronda + 1,
     jugadasEsteTurno: 0,
     enfrentamiento: null,
   };
   s = anota(s, `── Turno ${s.turno} (tuyo) ──`);
-  // Despertar (CR 315.1): se prepara todo lo que controlo.
+  // Despertar (CR 315.1): se prepara todo lo que controlo, la leyenda incluida.
   s = {
     ...s,
+    leyendaAgotada: false,
     runas: s.runas.map((r) => ({ ...r, agotada: false })),
     base: s.base.map((c) => ({ ...c, agotada: false })),
     campos: [
@@ -662,10 +667,21 @@ function empezarTurno(p: Partida): Partida {
   for (const i of [0, 1] as const) if (s.campos[i].control === 'yo') s = puntuar(s, i, 'hold');
   // Canalizar 2; el segundo jugador canaliza 3 en su primer turno (CR 485.7).
   s = canalizar(s, RUNAS_POR_TURNO + (!s.empiezoYo && s.turno === 1 ? 1 : 0));
-  // Robar 1 (CR 315.4), con Burn Out si hace falta.
-  s = robar(s, 1);
+  // Fase de robo (CR 315.4): la hace el jugador pulsando el mazo; es obligatoria.
+  return limpieza(anota(s, 'Fase de robo: roba 1 del mazo para empezar la fase principal.'));
+}
+
+/** Robo de la fase de robo (CR 315.4), con Burn Out si hace falta; abre la fase principal. */
+export function robarTurno(p: Partida): Partida {
+  if (p.fase !== 'robo')
+    return rechaza(
+      p,
+      'El robo de turno ya está hecho; fuera de la fase de robo solo robas por efectos (⋯ → Robar 1).',
+    );
+  let s = robar(p, 1);
+  if (s.ganador) return s;
   // El pozo se vacía al empezar la fase principal (CR 316.3).
-  s = { ...s, pozo: { energia: 0, poder: {} } };
+  s = { ...s, fase: 'principal', pozo: { energia: 0, poder: {} } };
   return limpieza(anota(s, 'Fase principal: juega cartas, mueve unidades o termina el turno.'));
 }
 
@@ -928,6 +944,8 @@ export function porQueNoJugar(
       return 'En el turno del rival solo se juegan cartas con Action o Reaction, y solo en enfrentamientos (CR 806/813).';
     if (!p.enfrentamiento)
       return 'Fuera de un enfrentamiento no puedes jugar en el turno del rival (CR 310.1.a).';
+  } else if (p.fase === 'robo') {
+    return 'Estás en la fase de robo: roba 1 del mazo antes de jugar (CR 315.4).';
   } else if (p.fase !== 'principal') {
     return 'Solo se juega en la fase principal.';
   } else if (p.enfrentamiento && !accion) {
@@ -1062,6 +1080,8 @@ export function porQueNoMover(
   destino: DestinoMovimiento,
 ): string | null {
   if (p.ganador) return 'La partida ha terminado.';
+  if (p.fase === 'robo')
+    return 'Estás en la fase de robo: roba 1 del mazo antes de mover (CR 315.4).';
   if (p.fase !== 'principal') return 'Solo puedes mover en tu fase principal (CR 144.1.a).';
   if (p.enfrentamiento) return 'No se mueve durante un enfrentamiento o combate (CR 144.1.c).';
   if (!uids.length) return 'Elige alguna unidad.';
@@ -1521,6 +1541,63 @@ export function cambiarCampo(p: Partida, i: 0 | 1, id: string): Partida {
   if (c.unidades.length || c.rival.length || c.control)
     return rechaza(p, 'Solo se cambia un campo vacío y sin control.');
   return anota(conCampo(p, i, { id }), `Campo ${i + 1} cambiado.`);
+}
+
+/**
+ * Habilidad de la leyenda (CR 174.8). Si su coste es agotarla (:rb_exhaust:), se agota y solo
+ * puede usarse preparada. Las habilidades "[Add]" añaden al pozo lo que indiquen sus iconos
+ * (energía, poder de un dominio o :rb_rune_rainbow: = poder de cualquier dominio); el resto
+ * queda como recordatorio para aplicarlo a mano.
+ */
+export function usarLeyenda(p: Partida, nombre: string, texto: string): Partida {
+  const agota = /:rb_exhaust:/.test(texto);
+  if (agota && p.leyendaAgotada)
+    return rechaza(p, `${nombre} ya está agotada: se prepara al despertar.`);
+  if (p.fase === 'mulligan' || p.fase === 'fin')
+    return rechaza(p, 'La leyenda se usa durante la partida.');
+  const kw = palabrasClave(texto);
+  if (p.fase === 'rival' && !kw.action && !kw.reaction)
+    return rechaza(p, 'En el turno del rival solo valen habilidades con Action o Reaction.');
+  if (p.fase === 'rival' && !p.enfrentamiento)
+    return rechaza(p, 'En el turno del rival solo en enfrentamientos (CR 310.1.a).');
+  let s: Partida = { ...p, leyendaAgotada: p.leyendaAgotada || agota };
+  const add = texto.match(/\[Add\]\s*((?::rb_[a-z_0-9]+:\s*)+)/i);
+  if (add) {
+    const pozo: Pozo = { energia: s.pozo.energia, poder: { ...s.pozo.poder } };
+    const partes: string[] = [];
+    for (const m of add[1].matchAll(/:rb_([a-z_0-9]+):/g)) {
+      const icono = m[1];
+      const energia = icono.match(/^energy_(\d+)$/);
+      if (energia) {
+        pozo.energia += Number(energia[1]);
+        partes.push(`${energia[1]} de energía`);
+      } else if (icono === 'rune_rainbow') {
+        pozo.poder['Any'] = (pozo.poder['Any'] ?? 0) + 1;
+        partes.push('1 de poder de cualquier dominio');
+      } else if (icono.startsWith('rune_')) {
+        const dom = icono.slice(5).replace(/^./, (c) => c.toUpperCase());
+        pozo.poder[dom] = (pozo.poder[dom] ?? 0) + 1;
+        partes.push(`1 de poder de ${dom}`);
+      }
+    }
+    s = { ...s, pozo };
+    const nota = /Use only to play spells/i.test(texto)
+      ? ' (solo para hechizos, según su texto)'
+      : '';
+    return anota(
+      s,
+      `${nombre}${agota ? ' se agota' : ''}: añades ${partes.join(' y ')} al pozo${nota}.`,
+    );
+  }
+  s = anota(s, `${nombre}${agota ? ' se agota' : ''}: aplica su efecto a mano.`);
+  return recordar(s, `Habilidad de ${nombre}`, texto);
+}
+
+export function prepararLeyenda(p: Partida): Partida {
+  return anota(
+    { ...p, leyendaAgotada: !p.leyendaAgotada },
+    p.leyendaAgotada ? 'La leyenda se prepara.' : 'La leyenda se agota.',
+  );
 }
 
 export function ajustarXp(p: Partida, d: number): Partida {

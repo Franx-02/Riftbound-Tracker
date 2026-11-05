@@ -13,6 +13,9 @@
             @case ('mulligan') {
               Preparación
             }
+            @case ('robo') {
+              Turno {{ p().turno }} · fase de robo
+            }
             @case ('principal') {
               Turno {{ p().turno }} · tu fase principal
             }
@@ -46,6 +49,8 @@
             <button type="button" (click)="resolver()" title="R">
               Resolver {{ p().enfrentamiento!.tipo }}
             </button>
+          } @else if (p().fase === 'robo') {
+            <button type="button" (click)="robarDeTurno()" title="D">Robar (fase de robo)</button>
           } @else if (p().fase === 'principal') {
             <button type="button" (click)="terminar()" title="E">Terminar turno</button>
           } @else if (p().fase === 'rival') {
@@ -112,6 +117,11 @@
             Como vas segundo, canalizarás 3 runas en tu primer turno.
           }
         </p>
+      } @else if (p().fase === 'robo') {
+        <p class="aviso">
+          Fase de robo (CR 315.4): pulsa el mazo o "Robar" para robar 1 y entrar en la fase
+          principal. Ya has despertado, puntuado por Hold y canalizado.
+        </p>
       } @else if (p().enfrentamiento; as e) {
         <p class="aviso combate">
           @if (e.tipo === 'combate') {
@@ -129,10 +139,10 @@
     </div>
 
     <!-- ── Rival (espejado) ─────────────────────────────────────────────────────── -->
-    <section class="lado rival-izq" aria-label="Rival: mazo y campeón">
+    <section class="lado rival-izq" aria-label="Rival: cementerio, mazo, campeón y leyenda">
       <div class="hueco-zona" aria-hidden="true"><span>Cementerio</span></div>
       <div class="dorso-fijo" aria-hidden="true"><span>Mazo</span></div>
-      <div class="hueco-zona" aria-hidden="true"><span>Campeón</span></div>
+      <div class="hueco-zona roja" aria-hidden="true"><span>Zona del campeón</span></div>
       <div class="hueco-zona leyenda-rival" aria-hidden="true"><span>Leyenda</span></div>
     </section>
 
@@ -352,7 +362,16 @@
 
     <section class="lado mio-izq" aria-label="Mazo y runas">
       <div class="pila" data-zona="mazo" [class.sobre]="sobre() === 'mazo'">
-        <div class="dorso" aria-label="Mazo">{{ p().mazo.length }}</div>
+        <button
+          type="button"
+          class="dorso"
+          [class.pulsa]="p().fase === 'robo'"
+          [disabled]="p().fase !== 'robo'"
+          (click)="robarDeTurno()"
+          [title]="p().fase === 'robo' ? 'Robar 1 (fase de robo)' : 'Mazo'"
+        >
+          {{ p().mazo.length }}
+        </button>
         <span class="etiqueta">Mazo</span>
       </div>
       <div class="pila">
@@ -369,7 +388,9 @@
             · ✦ {{ poderPozo() }}
           }
         </span>
-        {{ runasListas() }}/{{ p().runas.length }} runas preparadas
+        <span [title]="runasListas() + ' runas preparadas de ' + p().runas.length"
+          >{{ runasListas() }}/{{ p().runas.length }}</span
+        >
         <button
           type="button"
           class="mini"
@@ -419,16 +440,18 @@
       </div>
     </section>
 
-    <section class="lado mio-der" aria-label="Leyenda, campeón y cementerio">
+    <section class="lado mio-der" aria-label="Leyenda y campeón">
       <div class="pila">
-        @if (carta(m.leyenda); as l) {
-          <img
-            [src]="l.imgUrl | thumb: 240"
-            [alt]="l.name"
-            class="carta"
-            appInclinar
-            [title]="t.texto(l.text).valor"
-          />
+        @if (leyenda(); as l) {
+          <button
+            type="button"
+            class="carta-btn leyenda-btn"
+            [class.agotada]="p().leyendaAgotada"
+            [title]="l.name + ': ' + t.texto(l.text).valor"
+            (click)="leyendaAbierta.set(!leyendaAbierta())"
+          >
+            <img [src]="l.imgUrl | thumb: 240" [alt]="l.name" class="carta" draggable="false" />
+          </button>
         }
         <span class="etiqueta">Leyenda</span>
       </div>
@@ -440,6 +463,9 @@
         }
         <span class="etiqueta">Campeón</span>
       </div>
+    </section>
+
+    <section class="lado mio-trash" aria-label="Cementerio">
       <div class="pila cementerio" data-zona="cementerio" [class.sobre]="sobre() === 'cementerio'">
         @if (p().cementerio.at(-1); as c) {
           <ng-container *ngTemplateOutlet="tCarta; context: { $implicit: c }" />
@@ -487,6 +513,44 @@
         />
       }
     }
+    @if (leyendaAbierta() && leyenda(); as l) {
+      <div class="menu" role="dialog" aria-label="Leyenda">
+        <img [src]="l.imgUrl | thumb: 400" [alt]="l.name" appInclinar />
+        <div class="botones">
+          <strong>{{ l.name }}</strong>
+          <span class="muted"
+            >Leyenda · {{ p().leyendaAgotada ? 'agotada' : 'preparada' }} · dominios:
+            {{ l.domains.join(', ') }}</span
+          >
+          @if (leyendaKw().length) {
+            <ul class="kws">
+              @for (k of leyendaKw(); track k) {
+                <li>
+                  <strong>{{ k }}</strong> {{ glosario[nombreKw(k)] }}
+                </li>
+              }
+            </ul>
+          }
+          <div class="texto-carta"><app-rules-text [text]="t.texto(l.text).valor" /></div>
+          @if (leyendaActivable()) {
+            <button type="button" (click)="usarLaLeyenda()">Usar habilidad</button>
+            <span class="hueco"
+              >Si cuesta agotarla, se agota y se prepara al despertar; si añade recursos, van al
+              pozo.</span
+            >
+          } @else {
+            <span class="hueco"
+              >Habilidad pasiva: tenla en cuenta al jugar (el motor no la aplica sola).</span
+            >
+          }
+          <button type="button" class="secondary" (click)="alternarLeyenda()">
+            {{ p().leyendaAgotada ? 'Preparar' : 'Agotar' }}
+          </button>
+          <button type="button" (click)="leyendaAbierta.set(false)">Cerrar</button>
+        </div>
+      </div>
+    }
+
     @if (recordatorioAbierto(); as r) {
       <div class="modal modal-rec" role="dialog" aria-label="Efecto pendiente">
         <strong>{{ r.titulo }}</strong>

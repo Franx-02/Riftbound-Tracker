@@ -4,24 +4,27 @@
   --dom-a: var(--colorless);
   --hex: var(--hextech, #0ac8b9);
   --rojo: #e35d5d;
-  --w-carta: clamp(40px, 5.4vh, 66px);
+  --w-carta: clamp(36px, 5.4vh, 66px);
   --w-mano: clamp(64px, 10.5vh, 104px);
   position: relative;
   isolation: isolate;
   padding: 6px 10px 0;
   display: grid;
   gap: 6px 10px;
-  grid-template-columns: 40px 180px minmax(0, 1fr) 250px 40px;
-  grid-template-rows:
-    auto minmax(0, 0.7fr) minmax(0, 1.7fr) minmax(0, 0.85fr) minmax(0, 0.85fr)
-    clamp(84px, 12vh, 124px);
+  grid-template-columns:
+    40px minmax(110px, 0.55fr) minmax(170px, 0.9fr) minmax(0, 1.7fr) minmax(130px, 0.75fr)
+    minmax(70px, 0.4fr) 40px;
+  grid-template-rows: auto minmax(0, 0.95fr) minmax(0, 2.3fr) minmax(0, 1fr) clamp(
+      84px,
+      12vh,
+      124px
+    );
   grid-template-areas:
-    'cab cab cab cab cab'
-    'rizq rizq rbase rinfo rpista'
-    'mpista campos campos campos rpista'
-    'mpista mizq mrun mder mder'
-    'mpista mizq mbase mder mder'
-    'mano mano mano mano mano';
+    'cab cab cab cab cab cab cab'
+    'rizq rizq rizq rbase rrun rrun rpista'
+    'mpista campos campos campos campos campos rpista'
+    'mpista mizq mrun mbase mder mtrash .'
+    'mano mano mano mano mano mano mano';
   height: calc(100dvh - var(--alto-barra, 56px));
   overflow: hidden;
   background:
@@ -264,12 +267,19 @@
 }
 /* Fila de cartas: sin scroll; a partir de 6 se solapan progresivamente. */
 .fila {
-  --solape: clamp(0px, (var(--n, 0) - 5) * 10px, calc(var(--w-carta) * 0.7));
+  container-type: inline-size;
   display: flex;
   align-items: flex-start;
   padding: 3px 2px 0;
   min-height: 0;
   overflow: hidden;
+}
+.fila > * {
+  --solape: clamp(
+    0px,
+    calc((var(--n, 1) * (var(--w-carta) + 6px) - 100cqw + 8px) / max(1, var(--n, 1) - 1)),
+    calc(var(--w-carta) * 0.9)
+  );
 }
 .fila > * + * {
   margin-left: calc(6px - var(--solape));
@@ -281,20 +291,35 @@
   grid-area: rbase;
 }
 .info-rival {
-  grid-area: rinfo;
+  grid-area: rrun;
   font-size: 0.9em;
+}
+.mio-trash .etiqueta {
+  font-size: 0.56rem;
+  letter-spacing: 0.04em;
+}
+.mio-trash {
+  grid-area: mtrash;
+  display: grid;
+  justify-items: center;
+  align-content: start;
 }
 .runas-mias {
   grid-area: mrun;
+}
+.runas-mias .etiqueta {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  overflow: hidden;
 }
 .base-mia {
   grid-area: mbase;
 }
 .nuevo-rival {
   display: inline-flex;
-  gap: 6px;
+  flex-wrap: wrap;
+  gap: 4px 6px;
   align-items: center;
-  margin-left: auto;
 }
 .nuevo-rival input[type='number'] {
   width: 52px;
@@ -305,8 +330,9 @@
 .rival-izq {
   grid-area: rizq;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
+  grid-template-columns: repeat(2, var(--w-carta));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: 4px 10px;
   align-items: start;
 }
 .mio-izq {
@@ -319,7 +345,7 @@
 .mio-der {
   grid-area: mder;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
   align-content: start;
 }
@@ -394,6 +420,21 @@
     4px 4px 0 #091428,
     0 8px 16px rgb(0 0 0 / 0.5);
 }
+.dorso.pulsa {
+  cursor: pointer;
+  animation: late 1.2s ease-in-out infinite;
+  border-color: var(--accent);
+}
+.dorso:disabled {
+  opacity: 1;
+  cursor: default;
+}
+.leyenda-btn {
+  cursor: pointer;
+}
+.hueco-zona.roja {
+  border-color: rgb(220 60 60 / 0.4);
+}
 .dorso.runa {
   color: var(--hex);
   background: repeating-linear-gradient(135deg, #1f1b4d 0 6px, #16133a 6px 12px);
@@ -467,24 +508,18 @@
 }
 .campo {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
   grid-template-areas:
-    'tab riv'
-    'tab mio';
-  gap: 4px 12px;
+    'riv'
+    'tab'
+    'mio';
+  gap: 4px;
   padding: 6px 10px;
   border-radius: 12px;
   border: 1px solid rgb(170 190 240 / 0.14);
   background: rgb(0 0 0 / 0.12);
   overflow: hidden;
   transition: box-shadow 0.2s ease;
-}
-.lado-rival {
-  grid-area: riv;
-}
-.lado-mio {
-  grid-area: mio;
 }
 .campo.mio {
   border-color: color-mix(in srgb, var(--accent) 45%, transparent);
@@ -504,17 +539,25 @@
   gap: 2px;
   min-height: 0;
 }
+.lado-rival {
+  grid-area: riv;
+}
+.lado-mio {
+  grid-area: mio;
+}
+.campo .fila {
+  justify-content: center;
+}
 .tablero {
   grid-area: tab;
   position: relative;
-  align-self: center;
   display: flex;
-  flex-direction: column;
+  justify-content: center;
   align-items: center;
   gap: 10px;
 }
 .campo-img {
-  width: clamp(110px, 18vh, 170px);
+  width: clamp(96px, 15vh, 200px);
   aspect-ratio: 1039 / 744;
   object-fit: cover;
   border-radius: 8px;
@@ -532,7 +575,10 @@
   background: rgb(0 0 0 / 0.3);
 }
 .control {
-  margin-top: -14px;
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  translate: -50% 0;
   padding: 1px 8px;
   border-radius: 4px;
   font-size: 0.58rem;
@@ -551,15 +597,21 @@
   background: var(--rojo);
 }
 .puntuado {
+  position: absolute;
+  left: 0;
+  top: 0;
   font-size: 0.65rem;
   font-weight: 700;
   color: var(--accent);
 }
 .cambiar {
-  width: 100%;
+  position: absolute;
+  right: 0;
+  bottom: 0;
   font-size: 0.7rem;
   padding: 2px 6px;
   min-height: 0;
+  max-width: 150px;
 }
 .nombre-campo {
   color: var(--text);
@@ -1032,6 +1084,21 @@
   }
   .menu img {
     width: 110px;
+  }
+}
+@media (max-height: 820px) and (min-width: 901px) {
+  .mesa {
+    --w-carta: clamp(32px, 5.4vh, 66px);
+  }
+  .info-rival .hueco {
+    font-size: 0.66rem;
+  }
+  .campo .fila {
+    padding-top: 0;
+  }
+  .rival-izq {
+    grid-template-columns: repeat(4, var(--w-carta));
+    grid-template-rows: minmax(0, 1fr);
   }
 }
 @media (prefers-reduced-motion: reduce) {

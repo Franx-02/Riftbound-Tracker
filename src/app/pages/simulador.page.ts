@@ -45,6 +45,9 @@ import {
   porQueNoMoverRival,
   resolverEnfrentamiento,
   resolverVision,
+  robarTurno,
+  prepararLeyenda,
+  usarLeyenda,
   rivalAlternarAgotada,
   rivalCrear,
   rivalDanar,
@@ -108,6 +111,12 @@ export class SimuladorPage {
   protected readonly logAbierto = signal(false);
   protected readonly avisosAbiertos = signal(false);
   protected readonly recAbierto = signal<number | null>(null);
+  protected readonly leyendaAbierta = signal(false);
+  protected readonly leyenda = computed(() => this.carta(this.mazo()?.leyenda));
+  protected readonly leyendaKw = computed(() => listarPalabrasClave(this.leyenda()?.text));
+  protected readonly leyendaActivable = computed(() =>
+    /:rb_exhaust:|\[Add\]|:\s*\[Reaction\]|:\s*\[Action\]/.test(this.leyenda()?.text ?? ''),
+  );
   protected readonly recordatorioAbierto = computed(() => {
     const id = this.recAbierto();
     return id === null ? null : (this.p().recordatorios.find((r) => r.id === id) ?? null);
@@ -244,12 +253,16 @@ export class SimuladorPage {
       case 'e':
         this.terminar();
         break;
+      case 'd':
+        this.robarDeTurno();
+        break;
       case 'r':
         if (this.p().enfrentamiento) this.mutar(resolverEnfrentamiento);
         break;
       case 'escape':
         this.seleccion.set(null);
         this.logAbierto.set(false);
+        this.leyendaAbierta.set(false);
         break;
     }
   }
@@ -346,6 +359,22 @@ export class SimuladorPage {
 
   protected robar1(): void {
     this.mutar((p) => robar(p));
+  }
+
+  /** Robo de la fase de robo (clic en el mazo o tecla D). */
+  protected robarDeTurno(): void {
+    this.mutar(robarTurno);
+  }
+
+  protected usarLaLeyenda(): void {
+    const l = this.leyenda();
+    if (!l) return;
+    this.mutar((p) => usarLeyenda(p, l.name, l.text));
+    if (!this.p().aviso) this.leyendaAbierta.set(false);
+  }
+
+  protected alternarLeyenda(): void {
+    this.mutar(prepararLeyenda);
   }
 
   protected canalizar1(): void {
