@@ -1,122 +1,305 @@
+import { CatalogCard } from './catalog.service';
 import { mazoVacio } from './mazos';
 import {
   PUNTOS_PARA_GANAR,
-  alMazo,
-  alternarAgotada,
+  anadirEnergia,
+  fijarPuntos,
+  jugar,
   mover,
   mulligan,
   nuevaPartida,
-  pagar,
-  resolverCombate,
-  rival,
-  siguienteTurno,
+  ocultar,
+  palabrasClave,
+  porQueNoJugar,
+  porQueNoMover,
+  resolverEnfrentamiento,
+  resolverVision,
+  rivalCrear,
+  rivalMover,
   terminarTurno,
+  terminarTurnoRival,
+  validarMazo,
 } from './simulador';
+
+/** Catálogo de mentira: unidades de 2 de fuerza, algunas con palabras clave. */
+const CARTAS: Record<string, Partial<CatalogCard>> = {
+  L: { name: 'Leyenda', type: 'Legend', domains: ['Fury'], tags: ['Jinx'] },
+  C: {
+    name: 'Jinx',
+    type: 'Unit',
+    supertype: 'Champion',
+    domains: ['Fury'],
+    tags: ['Jinx'],
+    energy: 2,
+    power: 1,
+    might: 3,
+  },
+  A: { name: 'Soldado', type: 'Unit', domains: ['Fury'], energy: 1, power: 0, might: 2 },
+  B: {
+    name: 'Gancho',
+    type: 'Unit',
+    domains: ['Fury'],
+    energy: 2,
+    power: 1,
+    might: 2,
+    text: '[Ganking]',
+  },
+  T: {
+    name: 'Muro',
+    type: 'Unit',
+    domains: ['Fury'],
+    energy: 1,
+    power: 0,
+    might: 1,
+    text: '[Tank]',
+  },
+  V: {
+    name: 'Vidente',
+    type: 'Unit',
+    domains: ['Fury'],
+    energy: 1,
+    power: 0,
+    might: 1,
+    text: '[Vision]',
+  },
+  X: {
+    name: 'Rápida',
+    type: 'Unit',
+    domains: ['Fury'],
+    energy: 1,
+    power: 0,
+    might: 2,
+    text: '[Accelerate] [Assault 2]',
+  },
+  H: {
+    name: 'Trampa',
+    type: 'Spell',
+    domains: ['Fury'],
+    energy: 3,
+    power: 0,
+    text: '[Hidden] [Action] Deal 2.',
+  },
+  S: { name: 'Chispa', type: 'Spell', domains: ['Fury'], energy: 1, power: 0, text: 'Deal 1.' },
+  R: { name: 'Fury Rune', type: 'Rune', domains: ['Fury'] },
+  F1: { name: 'Campo A', type: 'Battlefield' },
+  F2: { name: 'Campo B', type: 'Battlefield' },
+  F3: { name: 'Campo C', type: 'Battlefield' },
+};
+const carta = (id: string) =>
+  CARTAS[id]
+    ? ({ cardId: id, domains: [], tags: [], text: '', ...CARTAS[id] } as CatalogCard)
+    : undefined;
 
 function mazo() {
   const m = mazoVacio('x', 'Prueba');
+  m.leyenda = 'L';
   m.campeon = 'C';
-  m.principal = { A: 3, B: 3, D: 3, E: 3, F: 3, G: 3, H: 3, I: 3, J: 3, K: 3, L: 3, M: 3, N: 3 };
+  m.principal = { A: 3, B: 3, T: 3, V: 3, X: 3, H: 3, S: 3, C: 2 };
+  // Relleno hasta 40 con más soldados (el motor no limita copias; validarMazo avisa).
+  m.principal['A'] = 3 + (40 - 1 - 23);
   m.runas = { R: 12 };
-  m.campos = ['X', 'Y', 'Z'];
+  m.campos = ['F1', 'F2', 'F3'];
   return m;
 }
 
-describe('simulador', () => {
-  it('empieza con 4 en mano, el campeón aparte y 2 campos en juego', () => {
-    const p = nuevaPartida(mazo());
-    expect(p.mano.length).toBe(4);
-    expect(p.mazo.length).toBe(35);
-    expect(p.campeon.map((c) => c.id)).toEqual(['C']);
-    expect(p.campos.map((c) => c.id)).toEqual(['X', 'Y']);
-    expect(p.camposReserva).toEqual(['Z']);
+/** Partida en mi fase principal del turno 1, con la mano que toque y 2 runas. */
+function enJuego(empiezoYo = true) {
+  return mulligan(
+    nuevaPartida(mazo(), carta, { empiezoYo, campoRival: 'F3' }, () => 0.5),
+    [],
+  );
+}
+
+/** Pone una copia concreta en la mano para probar (sin pasar por el mazo). */
+function conEnMano(p: ReturnType<typeof enJuego>, id: string) {
+  const c = p.mazo.find((x) => x.id === id) ?? p.mano.find((x) => x.id === id)!;
+  return {
+    ...p,
+    mazo: p.mazo.filter((x) => x.uid !== c.uid),
+    mano: p.mano.some((x) => x.uid === c.uid) ? p.mano : [...p.mano, c],
+  };
+}
+
+describe('simulador (Core Rules 1v1)', () => {
+  it('empieza con 4 en mano, el campeón en su zona y un campo mío más el del rival', () => {
+    const p = nuevaPartida(mazo(), carta, { campoRival: 'F3' });
+    expect(p.mano).toHaveLength(4);
+    expect(p.campeon[0].id).toBe('C');
+    expect(p.campos[0].de).toBe('yo');
+    expect(['F1', 'F2', 'F3']).toContain(p.campos[0].id);
+    expect(p.campos[1]).toMatchObject({ de: 'rival', id: 'F3' });
+    expect(p.mazoRunas).toHaveLength(12);
     expect(p.fase).toBe('mulligan');
   });
 
-  it('el mulligan devuelve al fondo, roba otras tantas y arranca el turno 1 sin robar', () => {
-    const p = nuevaPartida(mazo(), { empiezoYo: true });
-    const fuera = p.mano.slice(0, 2).map((c) => c.uid);
-    const s = mulligan(p, fuera);
-    expect(s.turno).toBe(1);
-    expect(s.fase).toBe('accion');
-    expect(s.mano.length).toBe(4); // sin robo del turno 1
-    expect(s.runas.length).toBe(2);
-    expect(s.mazo.slice(-2).map((c) => c.uid)).toEqual(fuera);
+  it('el mulligan admite 2 cartas como máximo y recicla al fondo (CR 117)', () => {
+    const p = nuevaPartida(mazo(), carta, { campoRival: 'F3' });
+    const tres = p.mano.slice(0, 3).map((c) => c.uid);
+    expect(mulligan(p, tres).aviso).toContain('hasta 2');
+    const dos = p.mano.slice(0, 2);
+    const s = mulligan(
+      p,
+      dos.map((c) => c.uid),
+    );
+    expect(s.fase).toBe('principal');
+    expect(s.mazo.slice(-2).map((c) => c.uid)).toEqual(dos.map((c) => c.uid));
   });
 
-  it('si empieza el rival, robas en el turno 1', () => {
-    const s = mulligan(nuevaPartida(mazo(), { empiezoYo: false }), []);
-    expect(s.mano.length).toBe(5);
+  it('el primer jugador roba en su turno 1 y canaliza 2; el segundo canaliza 3 (CR 315, 485.7)', () => {
+    const yo = enJuego(true);
+    expect(yo.mano).toHaveLength(5);
+    expect(yo.runas).toHaveLength(2);
+    let seg = enJuego(false);
+    expect(seg.fase).toBe('rival');
+    seg = terminarTurnoRival(seg);
+    expect(seg.turno).toBe(1);
+    expect(seg.runas).toHaveLength(3);
+    expect(seg.mano).toHaveLength(5);
   });
 
-  it('jugar desde la mano paga energía agotando runas y poder reciclándolas', () => {
-    let p = mulligan(nuevaPartida(mazo()), []);
-    p = siguienteTurno(p); // 4 runas
-    const uid = p.mano[0].uid;
-    p = mover(p, uid, 'base', { name: 'Carta', energy: 2, power: 1 });
-    expect(p.base.length).toBe(1);
-    expect(p.runas.length).toBe(3);
-    expect(p.runas.filter((r) => r.agotada).length).toBe(2);
-    expect(p.mazoRunas.length).toBe(12 - 4 + 1);
-    // Sin runas suficientes no se juega y avisa.
-    const antes = p;
-    p = mover(p, p.mano[0].uid, 'base', { name: 'Cara', energy: 5, power: 0 });
-    expect(p.base.length).toBe(1);
-    expect(p.aviso).toContain('No puedes pagar');
-    expect(p.mano.length).toBe(antes.mano.length);
+  it('las unidades entran agotadas y se pagan con runas; Accelerate cuesta 1 energía y 1 poder y entra preparada', () => {
+    let p = conEnMano(enJuego(), 'A');
+    const a = p.mano.find((c) => c.id === 'A')!;
+    p = jugar(p, a.uid, 'base');
+    expect(p.aviso).toBeNull();
+    expect(p.base[0]).toMatchObject({ id: 'A', agotada: true });
+    expect(p.runas.filter((r) => r.agotada)).toHaveLength(1);
+    // Accelerate: 1⚡ + 1✦ extra; solo queda 1 runa preparada, así que no se puede.
+    let q = conEnMano(enJuego(), 'X');
+    const x = q.mano.find((c) => c.id === 'X')!;
+    expect(porQueNoJugar(q, x, 'base', true)).toContain('No puedes pagar');
+    q = anadirEnergia(q); // sin efecto en el total, solo mueve al pozo
+    q = { ...q, runas: [...q.runas, { ...q.runas[0], uid: 999, agotada: false }] };
+    q = jugar(q, x.uid, 'base', true);
+    expect(q.aviso).toBeNull();
+    expect(q.base[0]).toMatchObject({ id: 'X', agotada: false });
   });
 
-  it('conquistar un campo vacío da 1 punto y Hold puntúa al despertar', () => {
-    let p = mulligan(nuevaPartida(mazo(), { pagarCostes: false }), []);
-    const uid = p.mano[0].uid;
-    p = mover(p, uid, 'campo0');
+  it('no deja jugar sin recursos ni fuera de la fase principal', () => {
+    const p = conEnMano(enJuego(), 'C');
+    const c = p.campeon[0];
+    expect(porQueNoJugar(p, c, 'base')).toContain('No puedes pagar');
+    const rival = terminarTurno(p);
+    const a = rival.mano[0];
+    expect(porQueNoJugar(rival, a, 'base')).toContain('turno del rival');
+  });
+
+  it('mover cuesta agotar, solo entre base y campo (Ganking entre campos), y conquistar da 1 punto', () => {
+    let p = conEnMano(enJuego(), 'A');
+    const a = p.mano.find((c) => c.id === 'A')!;
+    p = jugar(p, a.uid, 'base');
+    expect(porQueNoMover(p, [a.uid], 'campo0')).toContain('agotada');
+    p = terminarTurnoRival(terminarTurno(p));
+    p = mover(p, [a.uid], 'campo0');
+    expect(p.enfrentamiento).toMatchObject({ tipo: 'conquista', atacante: 'yo' });
+    expect(porQueNoMover(p, [a.uid], 'base')).toContain('enfrentamiento');
+    p = resolverEnfrentamiento(p);
     expect(p.campos[0].control).toBe('yo');
     expect(p.puntos).toBe(1);
-    p = terminarTurno(p);
-    expect(p.puntos).toBe(2);
+    expect(p.campos[0].unidades[0].agotada).toBe(true);
+    // Sin Ganking no se va de campo a campo.
+    p = terminarTurnoRival(terminarTurno(p));
+    expect(p.puntos).toBe(2); // Hold al empezar el turno
+    expect(porQueNoMover(p, [a.uid], 'campo1')).toContain('Ganking');
   });
 
-  it('el último punto no puede ser por Hold', () => {
-    let p = mulligan(nuevaPartida(mazo(), { pagarCostes: false }), []);
-    p = mover(p, p.mano[0].uid, 'campo0');
-    p = { ...p, puntos: PUNTOS_PARA_GANAR - 1 };
+  it('el combate reparte el daño por fuerza, Tank primero, y los atacantes vuelven si quedan defensores (CR 465-466)', () => {
+    let p = enJuego();
+    p = conEnMano(conEnMano(p, 'A'), 'T');
+    const a = p.mano.find((c) => c.id === 'A')!;
+    const t = p.mano.find((c) => c.id === 'T')!;
+    p = jugar(p, a.uid, 'base');
+    p = jugar(p, t.uid, 'base');
     p = terminarTurno(p);
-    expect(p.puntos).toBe(PUNTOS_PARA_GANAR - 1);
-    p = mover(p, p.mano[0].uid, 'campo1');
-    expect(p.puntos).toBe(PUNTOS_PARA_GANAR);
-  });
-
-  it('con rival en el campo hay combate y lo resuelve el jugador', () => {
-    let p = mulligan(nuevaPartida(mazo(), { pagarCostes: false }), []);
-    p = rival(p, 1, 2);
+    // El rival pone una ficha de 3 en el campo 1 y la mueve: conquista.
+    p = rivalCrear(p, 'base', { fuerza: 3 });
+    const r = p.rivalBase[0];
+    p = rivalMover(p, r.uid, 1);
+    p = resolverEnfrentamiento(p);
     expect(p.campos[1].control).toBe('rival');
     expect(p.puntosRival).toBe(1);
-    p = mover(p, p.mano[0].uid, 'campo1');
+    p = terminarTurnoRival(p);
+    // Ataco con Soldado (2) y Muro (1, Tank): 3 de daño matan a la ficha de 3; ella pega 3: Tank primero (1) y luego 2 al Soldado.
+    p = mover(p, [a.uid, t.uid], 'campo1');
+    expect(p.enfrentamiento?.tipo).toBe('combate');
+    p = resolverEnfrentamiento(p);
+    expect(p.campos[1].rival).toHaveLength(0);
+    expect(p.campos[1].unidades).toHaveLength(0);
+    expect(p.campos[1].control).toBeNull();
     expect(p.puntos).toBe(0);
-    const perdido = resolverCombate(p, 1, false);
-    expect(perdido.cementerio.length).toBe(1);
-    const ganado = resolverCombate(p, 1, true);
-    expect(ganado.campos[1].rival).toBe(0);
-    expect(ganado.campos[1].control).toBe('yo');
-    expect(ganado.puntos).toBe(1);
   });
 
-  it('agota y prepara cartas en juego', () => {
-    let p = mulligan(nuevaPartida(mazo()), []);
-    p = alternarAgotada(p, p.runas[0].uid);
-    expect(p.runas[0].agotada).toBe(true);
-    expect(pagar(p, 2, 0)).toBeNull();
-    p = siguienteTurno(p);
-    expect(p.runas.every((r) => !r.agotada)).toBe(true);
+  it('el punto final por conquista exige haber puntuado todos los campos ese turno; si no, robas (CR 471.1.b)', () => {
+    let p = conEnMano(enJuego(), 'A');
+    const a = p.mano.find((c) => c.id === 'A')!;
+    p = jugar(p, a.uid, 'base');
+    p = terminarTurnoRival(terminarTurno(p));
+    p = fijarPuntos(p, 'yo', PUNTOS_PARA_GANAR - 1);
+    const mano = p.mano.length;
+    p = resolverEnfrentamiento(mover(p, [a.uid], 'campo0'));
+    expect(p.puntos).toBe(PUNTOS_PARA_GANAR - 1);
+    expect(p.mano).toHaveLength(mano + 1);
+    expect(p.ganador).toBeNull();
   });
-  it('devuelve una carta de la mano encima o al fondo del mazo', () => {
-    const p = mulligan(nuevaPartida(mazo()), []);
-    const c = p.mano[0];
-    const arriba = alMazo(p, c.uid, 'arriba');
-    expect(arriba.mano).toHaveLength(p.mano.length - 1);
-    expect(arriba.mazo[0].uid).toBe(c.uid);
-    const abajo = alMazo(p, c.uid, 'abajo');
-    expect(abajo.mazo.at(-1)?.uid).toBe(c.uid);
-    expect(abajo.mazo).toHaveLength(p.mazo.length + 1);
+
+  it('Hold sí puede dar el punto final y gana la partida', () => {
+    let p = conEnMano(enJuego(), 'A');
+    const a = p.mano.find((c) => c.id === 'A')!;
+    p = jugar(p, a.uid, 'base');
+    p = terminarTurnoRival(terminarTurno(p));
+    p = resolverEnfrentamiento(mover(p, [a.uid], 'campo0'));
+    p = fijarPuntos(p, 'yo', PUNTOS_PARA_GANAR - 1);
+    p = terminarTurnoRival(terminarTurno(p));
+    expect(p.puntos).toBe(PUNTOS_PARA_GANAR);
+    expect(p.ganador).toBe('yo');
+  });
+
+  it('Vision deja elegir reciclar la primera carta; Hidden cuesta 1 de poder y se juega gratis al turno siguiente', () => {
+    let p = conEnMano(enJuego(), 'V');
+    const v = p.mano.find((c) => c.id === 'V')!;
+    p = jugar(p, v.uid, 'base');
+    expect(p.pendiente?.tipo).toBe('vision');
+    const arriba = p.mazo[0];
+    p = resolverVision(p, true);
+    expect(p.mazo.at(-1)?.uid).toBe(arriba.uid);
+    // Hidden: hay que controlar el campo.
+    p = conEnMano(p, 'H');
+    const h = p.mano.find((c) => c.id === 'H')!;
+    expect(ocultar(p, h.uid, 0).aviso).toContain('controles');
+    p = terminarTurnoRival(terminarTurno(p));
+    p = resolverEnfrentamiento(mover(p, [v.uid], 'campo0'));
+    p = ocultar(p, h.uid, 0);
+    expect(p.aviso).toBeNull();
+    expect(p.campos[0].oculta?.id).toBe('H');
+    expect(porQueNoJugar(p, p.campos[0].oculta!, 'base')).toContain('turno siguiente');
+    p = terminarTurnoRival(terminarTurno(p));
+    const antes = p.runas.filter((r) => !r.agotada).length;
+    p = jugar(p, p.campos[0].oculta!.uid, 'base');
+    expect(p.aviso).toBeNull();
+    expect(p.runas.filter((r) => !r.agotada)).toHaveLength(antes);
+    expect(p.cementerio.some((c) => c.id === 'H')).toBe(true);
+  });
+
+  it('Burn Out: sin mazo, el cementerio vuelve barajado y el rival gana 1 punto (CR 431)', () => {
+    let p = enJuego();
+    p = { ...p, cementerio: p.mazo.slice(0, 5), mazo: [] };
+    p = terminarTurnoRival(terminarTurno(p));
+    expect(p.puntosRival).toBe(1);
+    expect(p.mazo).toHaveLength(4);
+  });
+
+  it('lee las palabras clave del texto y valida la construcción del mazo', () => {
+    const kw = palabrasClave('[Accelerate] (…)\n[Assault 2] [Tank] [Deflect]');
+    expect(kw).toMatchObject({
+      accelerate: true,
+      assault: 2,
+      tank: true,
+      deflect: 1,
+      ganking: false,
+    });
+    const m = mazo();
+    expect(validarMazo(m, carta).some((a) => a.includes('copias'))).toBe(true);
+    m.runas = { R: 11 };
+    expect(validarMazo(m, carta).some((a) => a.includes('runas'))).toBe(true);
   });
 });

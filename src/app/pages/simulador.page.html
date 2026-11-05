@@ -1,22 +1,34 @@
 @if (mazo(); as m) {
-  <main class="mesa" [style]="colores()" [class.arrastrando]="arrastre()">
+  <main
+    class="mesa"
+    [style]="colores()"
+    [class.arrastrando]="arrastre()"
+    [class.turno-rival]="p().fase === 'rival'"
+  >
     <div class="cabeza">
       <header class="barra">
         <a [routerLink]="['/mazos', m.id]" class="volver">← {{ m.nombre }}</a>
-        <span class="chip turno-chip">
-          Turno {{ p().turno }} ·
-          {{ p().fase === 'mulligan' ? 'preparación' : 'tu turno' }}
-        </span>
-        <ol class="fases" aria-label="Fase del turno">
-          @for (f of fases; track f.id) {
-            <li
-              [class.activa]="p().fase === f.id"
-              [class.pasada]="indiceFase(p().fase) > indiceFase(f.id)"
-            >
-              {{ f.texto }}
-            </li>
+        <span class="chip" [class.chip-rival]="p().fase === 'rival'">
+          @switch (p().fase) {
+            @case ('mulligan') {
+              Preparación
+            }
+            @case ('principal') {
+              Turno {{ p().turno }} · tu fase principal
+            }
+            @case ('rival') {
+              Turno del rival
+            }
+            @case ('fin') {
+              Fin · gana {{ p().ganador === 'yo' ? 'tú' : 'el rival' }}
+            }
           }
-        </ol>
+        </span>
+        @if (p().enfrentamiento; as e) {
+          <span class="chip chip-combate">
+            {{ e.tipo === 'combate' ? 'Combate' : 'Enfrentamiento' }} en {{ nombreCampo(e.campo) }}
+          </span>
+        }
         <span class="acciones">
           @if (p().fase === 'mulligan') {
             <label class="opcion">
@@ -30,12 +42,17 @@
             <button type="button" (click)="hacerMulligan()">
               {{ elegidas().size ? 'Mulligan de ' + elegidas().size : 'Me la quedo' }}
             </button>
-          } @else {
-            <button type="button" (click)="aplicar(terminarTurno)">Terminar turno</button>
+          } @else if (p().enfrentamiento) {
+            <button type="button" (click)="resolver()" title="R">
+              Resolver {{ p().enfrentamiento!.tipo }}
+            </button>
+          } @else if (p().fase === 'principal') {
+            <button type="button" (click)="terminar()" title="E">Terminar turno</button>
+          } @else if (p().fase === 'rival') {
+            <button type="button" class="rival-btn" (click)="terminar()" title="E">
+              Terminar turno del rival
+            </button>
           }
-          <button type="button" class="secondary" (click)="aplicar(robar1)">Robar</button>
-          <button type="button" class="secondary" (click)="aplicar(canalizar1)">Canalizar</button>
-          <button type="button" class="secondary" (click)="aplicar(barajarMazo)">Barajar</button>
           <button
             type="button"
             class="secondary"
@@ -43,7 +60,7 @@
             (click)="deshacer()"
             title="Ctrl+Z"
           >
-            ↶ Deshacer
+            ↶
           </button>
           <button
             type="button"
@@ -53,21 +70,60 @@
           >
             Historial
           </button>
-          <button type="button" class="secondary" (click)="reiniciar()">Reiniciar</button>
+          <details class="mas">
+            <summary class="secondary">⋯</summary>
+            <div class="mas-menu">
+              <button type="button" class="secondary" (click)="robar1()">Robar 1 (efecto)</button>
+              <button type="button" class="secondary" (click)="canalizar1()">
+                Canalizar 1 (efecto)
+              </button>
+              <button type="button" class="secondary" (click)="barajar()">Barajar el mazo</button>
+              <button type="button" class="secondary" (click)="reiniciar()">
+                Reiniciar partida
+              </button>
+              @if (avisosMazo().length) {
+                <strong class="muted">Avisos del mazo (CR 101-103)</strong>
+                @for (a of avisosMazo(); track a) {
+                  <span class="aviso-mazo">{{ a }}</span>
+                }
+              }
+            </div>
+          </details>
         </span>
       </header>
-      <p class="ultimo muted" aria-live="polite">
-        {{ ultimo() }}
-        <span class="atajos">
-          · atajos: D robar · C canalizar · E terminar turno · Ctrl+Z deshacer
-        </span>
-      </p>
+      <p class="ultimo muted" aria-live="polite">{{ ultimo() }}</p>
+      @if (p().recordatorios.length) {
+        <div class="recordatorios" aria-label="Efectos pendientes de resolver a mano">
+          <span class="etiqueta">Efectos pendientes</span>
+          @for (r of p().recordatorios; track r.id) {
+            <button type="button" class="mini rec-chip" (click)="recAbierto.set(r.id)">
+              ⚑ {{ r.titulo }}
+            </button>
+          }
+        </div>
+      }
       @if (p().aviso; as a) {
         <p class="aviso error" role="alert">{{ a }}</p>
       } @else if (p().fase === 'mulligan') {
         <p class="aviso">
-          Pulsa las cartas de tu mano que quieras devolver al fondo del mazo y robar otras, o
-          quédate la mano. Con "Empiezo yo" no robas en el primer turno.
+          Pulsa hasta {{ mulliganMax }} cartas de tu mano para reciclarlas y robar otras tantas (CR
+          117), o quédate la mano.
+          @if (!empiezoYo()) {
+            Como vas segundo, canalizarás 3 runas en tu primer turno.
+          }
+        </p>
+      } @else if (p().enfrentamiento; as e) {
+        <p class="aviso combate">
+          @if (e.tipo === 'combate') {
+            Combate en {{ nombreCampo(e.campo) }}:
+            {{ e.atacante === 'yo' ? 'atacas' : 'defiendes' }} con {{ fuerzas()[e.campo].mia }} ⚔
+            contra {{ fuerzas()[e.campo].rival }} ⚔. Puedes jugar cartas con Action o Reaction;
+            después pulsa Resolver (el daño se reparte según CR 465: Tank primero, Backline al
+            final).
+          } @else {
+            Nadie defiende {{ nombreCampo(e.campo) }}: ventana para Action/Reaction. Al resolver,
+            {{ e.atacante === 'yo' ? 'lo conquistas' : 'el rival lo conquista' }} (CR 348.2).
+          }
         </p>
       }
     </div>
@@ -75,31 +131,62 @@
     <!-- ── Rival (espejado) ─────────────────────────────────────────────────────── -->
     <section class="lado rival-izq" aria-label="Rival: mazo y campeón">
       <div class="hueco-zona" aria-hidden="true"><span>Cementerio</span></div>
-      <div class="dorso-fijo rival-dorso" aria-hidden="true"><span>Mazo</span></div>
+      <div class="dorso-fijo" aria-hidden="true"><span>Mazo</span></div>
       <div class="hueco-zona" aria-hidden="true"><span>Campeón</span></div>
       <div class="hueco-zona leyenda-rival" aria-hidden="true"><span>Leyenda</span></div>
     </section>
 
-    <section class="zona base-rival" aria-label="Base del rival">
-      <span class="etiqueta">Su base · {{ p().rivalBase }}</span>
-      <div class="fila">
-        @for (n of fichas(p().rivalBase); track $index) {
-          <span class="ficha" aria-hidden="true"></span>
-        } @empty {
-          <span class="hueco">Sin unidades.</span>
-        }
-        <span class="mini-botones">
-          <button type="button" class="mini" (click)="rivalEn(-1, -1)">−</button>
-          <button type="button" class="mini" (click)="rivalEn(-1, 1)">+ unidad</button>
+    <section
+      class="zona base-rival"
+      data-zona="rival-base"
+      [class.sobre]="sobre() === 'rival-base'"
+      aria-label="Base del rival"
+    >
+      <span class="etiqueta">
+        Su base · {{ p().rivalBase.length }}
+        <span class="nuevo-rival">
+          <input
+            type="number"
+            min="0"
+            max="20"
+            [value]="rivalFuerza()"
+            (input)="rivalFuerza.set(+$any($event.target).value)"
+            aria-label="Fuerza de la ficha"
+          />
+          <label class="opcion"
+            ><input
+              type="checkbox"
+              [checked]="rivalTank()"
+              (change)="rivalTank.set(!rivalTank())"
+            />Tank</label
+          >
+          <label class="opcion"
+            ><input
+              type="checkbox"
+              [checked]="rivalGanking()"
+              (change)="rivalGanking.set(!rivalGanking())"
+            />Ganking</label
+          >
+          <button type="button" class="mini" (click)="rivalAnadir('base')">+ ficha</button>
         </span>
+      </span>
+      <div class="fila" [style.--n]="p().rivalBase.length">
+        @for (r of p().rivalBase; track r.uid) {
+          <ng-container *ngTemplateOutlet="tRival; context: { $implicit: r }" />
+        } @empty {
+          <span class="hueco"
+            >Añade fichas con su fuerza y, en su turno, arrástralas a los campos.</span
+          >
+        }
       </div>
     </section>
 
-    <section class="zona runas-rival" aria-label="Runas del rival">
-      <span class="etiqueta">Sus runas</span>
-      <div class="fila">
-        <span class="hueco">El rival es un muñeco: solo cuentas sus unidades.</span>
-      </div>
+    <section class="zona info-rival" aria-label="Rival">
+      <span class="etiqueta">Rival · muñeco</span>
+      <p class="hueco">
+        Fichas con fuerza. En su turno se preparan, mantiene (Hold) lo que controla y tú las mueves:
+        en un campo tuyo hay combate; en uno vacío, conquista.
+      </p>
     </section>
 
     <ol class="pista pista-rival" aria-label="Puntos del rival">
@@ -109,7 +196,7 @@
             type="button"
             [class.actual]="p().puntosRival === n"
             [class.pasado]="p().puntosRival > n"
-            (click)="puntosRivalA(n)"
+            (click)="puntosA('rival', n)"
             [attr.aria-label]="'Rival: ' + n + ' puntos'"
           >
             {{ n }}
@@ -128,33 +215,40 @@
           [class.mio]="campo.control === 'yo'"
           [class.suyo]="campo.control === 'rival'"
           [class.sobre]="sobre() === 'campo' + i"
+          [class.disputado]="p().enfrentamiento?.campo === i"
         >
           <div class="lado-rival">
-            <span class="fichas">
-              @for (n of fichas(campo.rival); track $index) {
-                <span class="ficha" aria-hidden="true"></span>
+            <span class="etiqueta">
+              Rival · {{ campo.rival.length }}
+              @if (campo.rival.length) {
+                <span class="fuerza-txt">⚔ {{ fuerzas()[i].rival }}</span>
+              }
+              @if (campo.control === 'rival') {
+                <button
+                  type="button"
+                  class="mini"
+                  (click)="rivalAnadir(i === 0 ? 0 : 1)"
+                  title="El rival juega una ficha aquí (controla el campo)"
+                >
+                  + ficha
+                </button>
               }
             </span>
-            <span class="etiqueta">Rival · {{ campo.rival }}</span>
-            <span class="mini-botones">
-              <button type="button" class="mini" (click)="rivalEn(i, -1)">−</button>
-              <button type="button" class="mini" (click)="rivalEn(i, 1)">+</button>
-            </span>
-            @if (campo.rival > 0 && campo.unidades.length) {
-              <span class="combate">
-                <button type="button" class="mini ok" (click)="combate(i, true)">
-                  Gano el combate
-                </button>
-                <button type="button" class="mini mal" (click)="combate(i, false)">
-                  Lo pierdo
-                </button>
-              </span>
-            }
+            <div class="fila" [style.--n]="campo.rival.length">
+              @for (r of campo.rival; track r.uid) {
+                <ng-container *ngTemplateOutlet="tRival; context: { $implicit: r }" />
+              }
+            </div>
           </div>
 
           <div class="tablero">
             @if (carta(campo.id); as c) {
-              <img class="campo-img" [src]="c.imgUrl | thumb: 400" [alt]="c.name" />
+              <img
+                class="campo-img"
+                [src]="c.imgUrl | thumb: 400"
+                [alt]="c.name"
+                [title]="t.texto(c.text).valor"
+              />
             } @else {
               <span class="campo-img sin">Sin campo</span>
             }
@@ -163,40 +257,74 @@
               [class.mio]="campo.control === 'yo'"
               [class.suyo]="campo.control === 'rival'"
             >
-              @if (campo.control === 'yo') {
-                Tuyo
-              } @else if (campo.control === 'rival') {
-                Suyo
-              } @else {
-                Libre
-              }
+              {{ campo.control === 'yo' ? 'Tuyo' : campo.control === 'rival' ? 'Suyo' : 'Libre' }}
+              · {{ campo.de === 'yo' ? 'lo pones tú' : 'lo pone el rival' }}
             </span>
-            @if (campo.unidades.length) {
-              <span class="fuerza" title="Fuerza total de tus unidades">⚔ {{ fuerza()[i] }}</span>
+            @if (campo.puntuado.yo === p().ronda && p().fase === 'principal') {
+              <span class="puntuado" title="Ya has puntuado aquí este turno (CR 470)"
+                >✓ puntuado</span
+              >
             }
-            @if (p().camposReserva.length && !campo.unidades.length && !campo.rival) {
+            @if (!campo.unidades.length && !campo.rival.length && !campo.control) {
               <select
                 class="cambiar"
                 aria-label="Cambiar campo de batalla"
-                (change)="cambiarCampo(i, $any($event.target).value)"
+                (change)="
+                  campo.de === 'yo'
+                    ? cambiarCampoMio($any($event.target).value)
+                    : cambiarCampoRival($any($event.target).value)
+                "
               >
                 <option value="">Cambiar por…</option>
-                @for (id of p().camposReserva; track id) {
-                  <option [value]="id">{{ carta(id)?.name ?? id }}</option>
+                @if (campo.de === 'yo') {
+                  @for (id of p().camposMios; track id) {
+                    <option [value]="id">{{ carta(id)?.name ?? id }}</option>
+                  }
+                } @else {
+                  @for (c of camposCatalogo(); track c.cardId) {
+                    <option [value]="c.cardId">{{ c.name }}</option>
+                  }
                 }
               </select>
             }
           </div>
 
           <div class="lado-mio">
-            <span class="etiqueta nombre-campo">{{
-              carta(campo.id)?.name ?? 'Campo ' + (i + 1)
-            }}</span>
-            <div class="fila">
+            <span class="etiqueta nombre-campo">
+              {{ nombreCampo(i) }}
+              @if (campo.unidades.length) {
+                <span class="fuerza-txt mia">⚔ {{ fuerzas()[i].mia }}</span>
+              }
+              <span
+                class="oculta-slot"
+                [attr.data-zona]="'oculta' + i"
+                [class.sobre]="sobre() === 'oculta' + i"
+                [class.llena]="campo.oculta"
+                [title]="
+                  campo.oculta
+                    ? 'Carta oculta: ' + campo.oculta.ficha.nombre
+                    : 'Suelta aquí una carta con Hidden (1✦)'
+                "
+              >
+                @if (campo.oculta; as oc) {
+                  <button
+                    type="button"
+                    class="oculta-btn"
+                    (pointerdown)="bajar($event, oc.uid)"
+                    (click)="pulsar(oc)"
+                  >
+                    🂠 {{ oc.ficha.nombre }}
+                  </button>
+                } @else {
+                  oculta
+                }
+              </span>
+            </span>
+            <div class="fila" [style.--n]="campo.unidades.length">
               @for (c of campo.unidades; track c.uid) {
                 <ng-container *ngTemplateOutlet="tCarta; context: { $implicit: c }" />
               } @empty {
-                <span class="hueco">Arrastra unidades aquí para conquistarlo.</span>
+                <span class="hueco">Arrastra unidades preparadas aquí para conquistarlo.</span>
               }
             </div>
           </div>
@@ -213,7 +341,7 @@
             type="button"
             [class.actual]="p().puntos === n"
             [class.pasado]="p().puntos > n"
-            (click)="puntosA(n)"
+            (click)="puntosA('yo', n)"
             [attr.aria-label]="'Tú: ' + n + ' puntos'"
           >
             {{ n }}
@@ -224,56 +352,51 @@
 
     <section class="lado mio-izq" aria-label="Mazo y runas">
       <div class="pila" data-zona="mazo" [class.sobre]="sobre() === 'mazo'">
-        <button type="button" class="dorso" (click)="aplicar(robar1)" aria-label="Robar una carta">
-          {{ p().mazo.length }}
-        </button>
+        <div class="dorso" aria-label="Mazo">{{ p().mazo.length }}</div>
         <span class="etiqueta">Mazo</span>
       </div>
       <div class="pila">
-        <button
-          type="button"
-          class="dorso runa"
-          (click)="aplicar(canalizar1)"
-          aria-label="Canalizar 2 runas"
-        >
-          {{ p().mazoRunas.length }}
-        </button>
+        <div class="dorso runa" aria-label="Mazo de runas">{{ p().mazoRunas.length }}</div>
         <span class="etiqueta">Runas</span>
       </div>
     </section>
 
     <section class="zona runas-mias" aria-label="Tus runas">
       <span class="etiqueta">
-        <span class="pozo" title="Runas preparadas: energía disponible"
-          >⚡ {{ runasListas() }}</span
-        >
-        {{ runasListas() }}/{{ p().runas.length }} preparadas
-        <label class="opcion">
-          <input type="checkbox" [checked]="p().pagarCostes" (change)="alternarPago()" />
-          pagar costes
-        </label>
+        <span class="pozo" title="Pozo: energía y poder disponibles este turno (CR 165)">
+          ⚡ {{ p().pozo.energia }}
+          @if (poderPozo()) {
+            · ✦ {{ poderPozo() }}
+          }
+        </span>
+        {{ runasListas() }}/{{ p().runas.length }} runas preparadas
         <button
           type="button"
           class="mini"
-          (click)="aplicar(agotarRuna)"
-          title="Agotar una runa: +1 energía"
+          (click)="mutarEnergia()"
+          title="Agotar una runa: +1 de energía al pozo"
         >
-          ⚡ energía
+          ⚡ +1
         </button>
         <button
           type="button"
           class="mini"
-          (click)="aplicar(reciclarRuna)"
-          title="Reciclar una runa: +1 poder"
+          (click)="mutarPoder()"
+          title="Reciclar una runa: +1 de poder de su dominio"
         >
-          ✦ poder
+          ✦ +1
         </button>
+        @if (p().xp) {
+          <span class="xp">XP {{ p().xp }}</span>
+        }
       </span>
-      <div class="fila runas">
+      <div class="fila runas" [style.--n]="p().runas.length">
         @for (c of p().runas; track c.uid) {
           <ng-container *ngTemplateOutlet="tCarta; context: { $implicit: c }" />
         } @empty {
-          <span class="hueco">Se canalizan 2 al empezar cada turno.</span>
+          <span class="hueco"
+            >Se canalizan 2 al empezar cada turno; los costes se pagan solos al jugar.</span
+          >
         }
       </div>
     </section>
@@ -285,11 +408,13 @@
       aria-label="Tu base"
     >
       <span class="etiqueta">Tu base · {{ p().base.length }}</span>
-      <div class="fila">
+      <div class="fila" [style.--n]="p().base.length">
         @for (c of p().base; track c.uid) {
           <ng-container *ngTemplateOutlet="tCarta; context: { $implicit: c }" />
         } @empty {
-          <span class="hueco">Arrastra cartas de tu mano para jugarlas.</span>
+          <span class="hueco"
+            >Arrastra cartas de tu mano para jugarlas (entran agotadas, CR 143.4).</span
+          >
         }
       </div>
     </section>
@@ -297,7 +422,13 @@
     <section class="lado mio-der" aria-label="Leyenda, campeón y cementerio">
       <div class="pila">
         @if (carta(m.leyenda); as l) {
-          <img [src]="l.imgUrl | thumb: 240" [alt]="l.name" class="carta" appInclinar />
+          <img
+            [src]="l.imgUrl | thumb: 240"
+            [alt]="l.name"
+            class="carta"
+            appInclinar
+            [title]="t.texto(l.text).valor"
+          />
         }
         <span class="etiqueta">Leyenda</span>
       </div>
@@ -315,7 +446,12 @@
         } @else {
           <span class="hueco-carta">suelta aquí</span>
         }
-        <span class="etiqueta">Cementerio · {{ p().cementerio.length }}</span>
+        <span class="etiqueta"
+          >Cementerio · {{ p().cementerio.length }}
+          @if (p().desterradas.length) {
+            · dest. {{ p().desterradas.length }}
+          }
+        </span>
       </div>
     </section>
 
@@ -326,16 +462,10 @@
           class="en-mano"
           [style.--i]="i - (p().mano.length - 1) / 2"
           [class.elegida]="elegidas().has(c.uid)"
+          [class.injugable]="p().fase === 'principal' && razonJugar(c, 'base')"
         >
           <ng-container *ngTemplateOutlet="tCarta; context: { $implicit: c }" />
-          @if (carta(c.id); as cc) {
-            <span class="coste" aria-hidden="true">
-              {{ cc.energy ?? 0 }}⚡
-              @if (cc.power) {
-                {{ cc.power }}✦
-              }
-            </span>
-          }
+          <span class="coste" aria-hidden="true">{{ coste(c) }}</span>
         </div>
       } @empty {
         <span class="hueco">Mano vacía</span>
@@ -344,14 +474,48 @@
 
     <!-- ── Capas ────────────────────────────────────────────────────────────────── -->
     @if (arrastre(); as a) {
-      <img
-        class="fantasma"
-        [src]="carta(a.c.id)?.imgUrl ?? '' | thumb: 240"
-        alt=""
-        [style.left.px]="a.x"
-        [style.top.px]="a.y"
-        aria-hidden="true"
-      />
+      @if (a.rival) {
+        <span class="fantasma ficha-rival" [style.left.px]="a.x" [style.top.px]="a.y">⚔</span>
+      } @else {
+        <img
+          class="fantasma"
+          [src]="fantasmaImg(a) | thumb: 240"
+          alt=""
+          [style.left.px]="a.x"
+          [style.top.px]="a.y"
+          aria-hidden="true"
+        />
+      }
+    }
+    @if (recordatorioAbierto(); as r) {
+      <div class="modal modal-rec" role="dialog" aria-label="Efecto pendiente">
+        <strong>{{ r.titulo }}</strong>
+        <div class="texto-carta"><app-rules-text [text]="t.texto(r.texto).valor" /></div>
+        <span class="hueco"
+          >Aplica el efecto con los controles de la mesa (daño, buffs, robar…) y márcalo como
+          hecho.</span
+        >
+        <div class="botones-fila">
+          <button type="button" (click)="cerrarRec(r.id)">Hecho</button>
+          <button type="button" class="secondary" (click)="recAbierto.set(null)">Cerrar</button>
+        </div>
+      </div>
+    }
+
+    @if (p().pendiente; as pe) {
+      <div class="modal" role="dialog" aria-label="Vision">
+        <strong>Vision de {{ pe.de }} (CR 817)</strong>
+        @if (p().mazo[0]; as arriba) {
+          <img [src]="carta(arriba.id)?.imgUrl ?? '' | thumb: 400" [alt]="arriba.ficha.nombre" />
+          <span>Primera carta del mazo: {{ arriba.ficha.nombre }}</span>
+          <div class="botones-fila">
+            <button type="button" (click)="vision(true)">Reciclar al fondo</button>
+            <button type="button" class="secondary" (click)="vision(false)">Dejarla arriba</button>
+          </div>
+        } @else {
+          <button type="button" (click)="vision(false)">El mazo está vacío</button>
+        }
+      </div>
     }
 
     @if (logAbierto()) {
@@ -370,38 +534,286 @@
 
     @if (vistaPrevia(); as vp) {
       <aside class="vista-previa" aria-hidden="true">
-        <img [src]="vp.imgUrl | thumb: 600" [alt]="vp.name" />
-        <span class="nombre-vp">{{ vp.name }}</span>
+        <img [src]="carta(vp.id)?.imgUrl ?? '' | thumb: 600" [alt]="vp.ficha.nombre" />
+        <div class="vp-texto">
+          <strong>{{ vp.ficha.nombre }}</strong>
+          @if (vp.ficha.texto) {
+            <app-rules-text [text]="textoCarta(vp)" />
+          }
+        </div>
       </aside>
     }
 
-    @if (seleccion(); as s) {
+    @if (seleccionada(); as s) {
       <div class="menu" role="dialog" aria-label="Acciones de la carta">
-        <img
-          [src]="carta(s.id)?.imgUrl ?? '' | thumb: 400"
-          [alt]="carta(s.id)?.name ?? ''"
-          appInclinar
-        />
+        <img [src]="carta(s.id)?.imgUrl ?? '' | thumb: 400" [alt]="s.ficha.nombre" appInclinar />
         <div class="botones">
-          <strong>{{ carta(s.id)?.name }}</strong>
-          @if (carta(s.id); as cc) {
-            <span class="muted">
-              Coste {{ cc.energy ?? 0 }} energía{{ cc.power ? ', ' + cc.power + ' poder' : '' }}
-              @if (cc.might) {
-                · fuerza {{ cc.might }}
+          <strong>{{ s.ficha.nombre }}</strong>
+          <span class="muted">
+            {{ t.etiqueta(s.ficha.tipo) }} · coste {{ coste(s) }}
+            @if (s.ficha.tipo === 'Unit') {
+              · fuerza {{ fuerza(s) }}
+              @if (s.buffs) {
+                ({{ s.ficha.fuerza }}+{{ s.buffs }})
               }
-            </span>
+            }
+            @if (s.danio) {
+              · daño {{ s.danio }}
+            }
+            @if (s.aturdida) {
+              · aturdida
+            }
+          </span>
+          @if (kw(s).length) {
+            <ul class="kws">
+              @for (k of kw(s); track k) {
+                <li>
+                  <strong>{{ k }}</strong> {{ glosario[nombreKw(k)] }}
+                </li>
+              }
+            </ul>
           }
-          @for (a of accionesDe(s); track a.zona) {
-            <button type="button" class="secondary" (click)="moverA(s, a.zona)">
-              {{ a.texto }}
+          @if (s.ficha.texto) {
+            <div class="texto-carta"><app-rules-text [text]="textoCarta(s)" /></div>
+          }
+
+          @if (enMano(s)) {
+            @if (s.ficha.kw.accelerate) {
+              <label class="opcion">
+                <input
+                  type="checkbox"
+                  [checked]="acelerar()"
+                  (change)="acelerar.set(!acelerar())"
+                />
+                Accelerate: +1⚡ +1✦ y entra preparada
+              </label>
+            }
+            @if (s.ficha.tipo === 'Spell') {
+              <button
+                type="button"
+                [disabled]="razonJugar(s, 'base')"
+                [title]="razonJugar(s, 'base') ?? ''"
+                (click)="jugarA(s, 'base')"
+              >
+                Jugar hechizo
+              </button>
+            } @else {
+              <button
+                type="button"
+                [disabled]="razonJugar(s, 'base')"
+                [title]="razonJugar(s, 'base') ?? ''"
+                (click)="jugarA(s, 'base')"
+              >
+                Jugar en tu base
+              </button>
+              @if (s.ficha.tipo === 'Unit') {
+                <button
+                  type="button"
+                  class="secondary"
+                  [disabled]="razonJugar(s, 'campo0')"
+                  [title]="razonJugar(s, 'campo0') ?? ''"
+                  (click)="jugarA(s, 'campo0')"
+                >
+                  Jugar en {{ nombreCampo(0) }}
+                </button>
+                <button
+                  type="button"
+                  class="secondary"
+                  [disabled]="razonJugar(s, 'campo1')"
+                  [title]="razonJugar(s, 'campo1') ?? ''"
+                  (click)="jugarA(s, 'campo1')"
+                >
+                  Jugar en {{ nombreCampo(1) }}
+                </button>
+              }
+            }
+            @if (s.ficha.kw.hidden && zona(s) !== 'oculta0' && zona(s) !== 'oculta1') {
+              <button type="button" class="secondary" (click)="ocultarEn(s, 0)">
+                Ocultar en {{ nombreCampo(0) }} (1✦)
+              </button>
+              <button type="button" class="secondary" (click)="ocultarEn(s, 1)">
+                Ocultar en {{ nombreCampo(1) }} (1✦)
+              </button>
+            }
+            @if (razonJugar(s, 'base'); as r) {
+              <span class="razon">{{ r }}</span>
+            }
+            @if (zona(s) === 'mano') {
+              <button type="button" class="secondary" (click)="accion('cementerio', s)">
+                Descartar
+              </button>
+              <button type="button" class="secondary" (click)="accion('abajo', s)">
+                Reciclar al fondo del mazo
+              </button>
+            }
+          } @else if (enJuego(s)) {
+            @if (s.ficha.tipo === 'Unit') {
+              <div class="botones-fila">
+                <button
+                  type="button"
+                  class="secondary"
+                  [disabled]="razonMover(s, 'base')"
+                  [title]="razonMover(s, 'base') ?? ''"
+                  (click)="moverA(s, 'base')"
+                >
+                  → Base
+                </button>
+                <button
+                  type="button"
+                  class="secondary"
+                  [disabled]="razonMover(s, 'campo0')"
+                  [title]="razonMover(s, 'campo0') ?? ''"
+                  (click)="moverA(s, 'campo0')"
+                >
+                  → Campo 1
+                </button>
+                <button
+                  type="button"
+                  class="secondary"
+                  [disabled]="razonMover(s, 'campo1')"
+                  [title]="razonMover(s, 'campo1') ?? ''"
+                  (click)="moverA(s, 'campo1')"
+                >
+                  → Campo 2
+                </button>
+              </div>
+              @if (elegidas().size > 1 && elegidas().has(s.uid)) {
+                <span class="muted"
+                  >Se mueven juntas las {{ elegidas().size }} seleccionadas (Ctrl+clic para
+                  elegirlas; CR 144.3).</span
+                >
+              } @else {
+                <span class="muted"
+                  >Ctrl+clic en varias unidades para moverlas juntas y abrir un solo combate.</span
+                >
+              }
+              @if (razonMoverGrupo(s, zona(s) === 'base' ? 'campo0' : 'base'); as r) {
+                <span class="razon">{{ r }}</span>
+              }
+            }
+            <div class="botones-fila">
+              <button type="button" class="secondary" (click)="accion('agotar', s)">
+                {{ s.agotada ? 'Preparar' : 'Agotar' }}
+              </button>
+              <button type="button" class="secondary" (click)="accion('danar', s, 1)">
+                +1 daño
+              </button>
+              <button type="button" class="secondary" (click)="accion('danar', s, -1)">
+                −1 daño
+              </button>
+              <button type="button" class="secondary" (click)="accion('buff', s, 1)">
+                +1 buff
+              </button>
+              <button type="button" class="secondary" (click)="accion('buff', s, -1)">
+                −1 buff
+              </button>
+              <button type="button" class="secondary" (click)="accion('aturdir', s)">
+                {{ s.aturdida ? 'Quitar aturdir' : 'Aturdir' }}
+              </button>
+            </div>
+            <div class="botones-fila">
+              <button type="button" class="secondary" (click)="accion('matar', s)">Matar</button>
+              <button type="button" class="secondary" (click)="accion('mano', s)">A la mano</button>
+              @if (s.ficha.campeon) {
+                <button type="button" class="secondary" (click)="accion('campeon', s)">
+                  A la zona del campeón
+                </button>
+              }
+              <button type="button" class="secondary" (click)="accion('arriba', s)">
+                Encima del mazo
+              </button>
+              <button type="button" class="secondary" (click)="accion('desterrar', s)">
+                Desterrar
+              </button>
+            </div>
+          } @else if (zona(s) === 'runas') {
+            <button type="button" [disabled]="s.agotada" (click)="accion('energia', s)">
+              Agotar: +1 ⚡
+            </button>
+            <button
+              type="button"
+              class="secondary"
+              [disabled]="s.agotada"
+              (click)="accion('poder', s)"
+            >
+              Reciclar: +1 ✦ {{ t.etiqueta(s.ficha.dominios[0] ?? '') }}
+            </button>
+          } @else {
+            <button type="button" class="secondary" (click)="accion('mano', s)">A la mano</button>
+            <button type="button" class="secondary" (click)="accion('arriba', s)">
+              Encima del mazo
+            </button>
+            <button type="button" class="secondary" (click)="accion('abajo', s)">
+              Al fondo del mazo
+            </button>
+            <button type="button" class="secondary" (click)="accion('desterrar', s)">
+              Desterrar
             </button>
           }
-          @if (zonaSel(s) !== 'mano' && zonaSel(s) !== 'cementerio') {
-            <button type="button" class="secondary" (click)="agotar(s)">
-              {{ s.agotada ? 'Preparar' : 'Agotar' }}
+          <button type="button" (click)="seleccion.set(null)">Cerrar</button>
+        </div>
+      </div>
+    }
+
+    @if (rivalSeleccionado(); as r) {
+      <div class="menu menu-rival" role="dialog" aria-label="Ficha del rival">
+        <div class="botones">
+          <strong
+            >{{ r.nombre }} del rival · ⚔ {{ r.fuerza }}
+            @if (r.danio) {
+              · daño {{ r.danio }}
+            }
+          </strong>
+          <span class="muted"
+            >{{ r.tank ? 'Tank · ' : '' }}{{ r.ganking ? 'Ganking · ' : ''
+            }}{{ r.agotada ? 'agotada' : 'preparada' }}</span
+          >
+          <div class="botones-fila">
+            <button
+              type="button"
+              class="secondary"
+              [disabled]="razonMoverRival(r, 'base')"
+              [title]="razonMoverRival(r, 'base') ?? ''"
+              (click)="rivalMoverA(r, 'base')"
+            >
+              → Su base
             </button>
+            <button
+              type="button"
+              class="secondary"
+              [disabled]="razonMoverRival(r, 0)"
+              [title]="razonMoverRival(r, 0) ?? ''"
+              (click)="rivalMoverA(r, 0)"
+            >
+              → Campo 1
+            </button>
+            <button
+              type="button"
+              class="secondary"
+              [disabled]="razonMoverRival(r, 1)"
+              [title]="razonMoverRival(r, 1) ?? ''"
+              (click)="rivalMoverA(r, 1)"
+            >
+              → Campo 2
+            </button>
+          </div>
+          @if (razonMoverRival(r, 0) && razonMoverRival(r, 1) && razonMoverRival(r, 'base')) {
+            <span class="razon">{{ razonMoverRival(r, 0) }}</span>
           }
+          <div class="botones-fila">
+            <button type="button" class="secondary" (click)="rivalAccion('agotar', r)">
+              {{ r.agotada ? 'Preparar' : 'Agotar' }}
+            </button>
+            <button type="button" class="secondary" (click)="rivalAccion('danar', r, 1)">
+              +1 daño
+            </button>
+            <button type="button" class="secondary" (click)="rivalAccion('danar', r, -1)">
+              −1 daño
+            </button>
+            <button type="button" class="secondary" (click)="rivalAccion('quitar', r)">
+              Quitar
+            </button>
+          </div>
           <button type="button" (click)="seleccion.set(null)">Cerrar</button>
         </div>
       </div>
@@ -412,19 +824,52 @@
         type="button"
         class="carta-btn"
         [class.agotada]="c.agotada"
-        [class.origen]="arrastre()?.c?.uid === c.uid"
-        [title]="carta(c.id)?.name ?? c.id"
-        (pointerdown)="bajar($event, c)"
+        [class.aturdida]="c.aturdida"
+        [class.origen]="arrastre()?.uid === c.uid"
+        [class.seleccionada]="seleccion()?.uid === c.uid"
+        [class.elegida]="elegidas().has(c.uid)"
+        [title]="c.ficha.nombre"
+        (pointerdown)="bajar($event, c.uid)"
         (mouseenter)="previsualizar(c)"
         (mouseleave)="previsualizar(null)"
-        (click)="pulsar(c)"
+        (click)="pulsar(c, $event)"
       >
         <img
           class="carta"
           draggable="false"
           [src]="carta(c.id)?.imgUrl ?? '' | thumb: 240"
-          [alt]="carta(c.id)?.name ?? c.id"
+          [alt]="c.ficha.nombre"
         />
+        @if (c.ficha.tipo === 'Unit' && enJuego(c)) {
+          <span class="insignia fuerza-ins" [class.buff]="c.buffs">⚔{{ fuerza(c) }}</span>
+        }
+        @if (c.danio) {
+          <span class="insignia danio-ins">{{ c.danio }}</span>
+        }
+      </button>
+    </ng-template>
+
+    <ng-template #tRival let-r>
+      <button
+        type="button"
+        class="ficha-rival"
+        [class.agotada]="r.agotada"
+        [class.origen]="arrastre()?.uid === r.uid"
+        [class.seleccionada]="seleccion()?.uid === r.uid"
+        [title]="r.nombre + (r.tank ? ' · Tank' : '') + (r.ganking ? ' · Ganking' : '')"
+        (pointerdown)="bajar($event, r.uid, true)"
+        (click)="pulsarRival(r)"
+      >
+        <span class="fr-fuerza">{{ r.fuerza }}</span>
+        @if (r.tank) {
+          <span class="fr-kw">T</span>
+        }
+        @if (r.ganking) {
+          <span class="fr-kw g">G</span>
+        }
+        @if (r.danio) {
+          <span class="insignia danio-ins">{{ r.danio }}</span>
+        }
       </button>
     </ng-template>
   </main>
