@@ -170,6 +170,8 @@ export interface Copia {
   aturdida: boolean;
   /** Ronda en la que se ocultó (Hidden): se puede jugar gratis a partir de la siguiente. */
   ocultaDesde: number | null;
+  /** Ficha (token): no es una carta; si sale del tablero deja de existir (CR 179). */
+  token: boolean;
 }
 
 /** Unidad del rival: una ficha con fuerza, opcionalmente con Tank o Ganking. */
@@ -354,6 +356,7 @@ export function nuevaPartida(
     buffs: 0,
     aturdida: false,
     ocultaDesde: null,
+    token: false,
   });
   const copias = (zona: Record<string, number>) =>
     Object.entries(zona).flatMap(([id, n]) => Array.from({ length: n }, () => copia(id)));
@@ -1439,6 +1442,7 @@ export function aturdir(p: Partida, uid: number): Partida {
 export function matar(p: Partida, uid: number, motivo = ''): Partida {
   const [s, c, z] = quitar(p, uid);
   if (!c || !z) return p;
+  if (c.token) return desaparecer(s, c, 'matar');
   let r: Partida = {
     ...s,
     cementerio: [
@@ -1455,6 +1459,7 @@ export function matar(p: Partida, uid: number, motivo = ''): Partida {
 export function aMano(p: Partida, uid: number): Partida {
   const [s, c] = quitar(p, uid);
   if (!c) return p;
+  if (c.token) return desaparecer(s, c, 'aMano');
   return limpieza(
     anota(
       {
@@ -1474,6 +1479,7 @@ export function alCementerio(p: Partida, uid: number): Partida {
   if (z === 'base' || z === 'campo0' || z === 'campo1') return matar(p, uid);
   const [s, c] = quitar(p, uid);
   if (!c) return p;
+  if (c.token) return desaparecer(s, c, 'alCementerio');
   if (z === 'runas')
     return limpieza(
       anota(
@@ -1492,6 +1498,7 @@ export function alCementerio(p: Partida, uid: number): Partida {
 export function desterrar(p: Partida, uid: number): Partida {
   const [s, c] = quitar(p, uid);
   if (!c) return p;
+  if (c.token) return desaparecer(s, c, 'desterrar');
   return limpieza(
     anota(
       { ...s, desterradas: [...s.desterradas, { ...c, ocultaDesde: null }] },
@@ -1505,6 +1512,7 @@ export function aZonaCampeon(p: Partida, uid: number): Partida {
   if (p.campeon.length) return rechaza(p, 'La zona del campeón ya está ocupada (CR 108.3.c.1).');
   const [s, c] = quitar(p, uid);
   if (!c) return p;
+  if (c.token) return desaparecer(s, c, 'aZonaCampeon');
   return limpieza(
     anota(
       {
@@ -1520,6 +1528,7 @@ export function aZonaCampeon(p: Partida, uid: number): Partida {
 export function alMazo(p: Partida, uid: number, donde: 'arriba' | 'abajo'): Partida {
   const [s, c, z] = quitar(p, uid);
   if (!c) return p;
+  if (c.token) return desaparecer(s, c, 'alMazo');
   const limpia = { ...c, agotada: false, danio: 0, buffs: 0, aturdida: false, ocultaDesde: null };
   const clave = z === 'runas' ? 'mazoRunas' : 'mazo';
   const pila = donde === 'arriba' ? [limpia, ...s[clave]] : [...s[clave], limpia];
@@ -1602,4 +1611,87 @@ export function prepararLeyenda(p: Partida): Partida {
 
 export function ajustarXp(p: Partida, d: number): Partida {
   return { ...p, xp: Math.max(0, p.xp + d) };
+}
+
+/** Una ficha que sale del tablero deja de existir (CR 179): no va a ninguna zona. */
+function desaparecer(p: Partida, c: Copia, motivo: string): Partida {
+  let s = anota(
+    p,
+    `${c.ficha.nombre} (ficha) ${motivo === 'matar' ? 'muere y ' : ''}deja de existir.`,
+  );
+  if (motivo === 'matar' && c.ficha.disparadores.includes('morir'))
+    s = recordar(s, `${c.ficha.nombre} muere`, c.ficha.texto);
+  return limpieza(s);
+}
+
+/**
+ * Juega una ficha (token) en tu base o en un campo que controles, como cualquier unidad
+ * (CR 350.2: las fichas se juegan aunque no sean cartas; entran agotadas, CR 143.4).
+ * Puede ser una ficha del catálogo (`id`) o una a medida (nombre y fuerza).
+ */
+export function crearToken(
+  p: Partida,
+  destino: DestinoJuego,
+  datos: { id?: string; nombre?: string; fuerza?: number; tipo?: 'Unit' | 'Gear' },
+  carta: Catalogo,
+): Partida {
+  if (p.fase !== 'principal' && !(p.fase === 'rival' && p.enfrentamiento))
+    return rechaza(
+      p,
+      'Las fichas se juegan en tu fase principal (o en un enfrentamiento si el efecto lo permite).',
+    );
+  const base = datos.id ? ficha(datos.id, carta(datos.id)) : null;
+  const fi: Ficha = base
+    ? base
+    : {
+        ...ficha('ficha', undefined),
+        nombre: datos.nombre || `Ficha ${datos.fuerza ?? 1}`,
+        tipo: datos.tipo ?? 'Unit',
+        fuerza: datos.fuerza ?? 1,
+      };
+  const esCampo = destino !== 'base';
+  const i = destino === 'campo0' ? 0 : 1;
+  const despliegue = /\[Deploy\]/.test(fi.texto);
+  if (fi.tipo === 'Gear' && !despliegue && esCampo)
+    return rechaza(p, 'El equipo solo se juega en la base (CR 148).');
+  if (despliegue && !esCampo)
+    return rechaza(p, `${fi.nombre} tiene Deploy: solo se juega en un campo de batalla.`);
+  if (fi.tipo === 'Unit' && esCampo && p.campos[i].control !== 'yo')
+    return rechaza(
+      p,
+      'Una unidad solo se juega en tu base o en un campo que controles (CR 355.2.a).',
+    );
+  if (p.enfrentamiento && esCampo && p.enfrentamiento.campo !== i)
+    return rechaza(p, 'Hay un enfrentamiento en el otro campo: resuélvelo antes.');
+  const uid = p.siguienteUid + 1;
+  const copia: Copia = {
+    uid,
+    id: fi.id,
+    ficha: fi,
+    agotada: fi.tipo === 'Unit',
+    danio: 0,
+    buffs: 0,
+    aturdida: false,
+    ocultaDesde: null,
+    token: true,
+  };
+  let s: Partida = { ...p, siguienteUid: uid };
+  s = conLista(s, destino, [...lista(s, destino), copia]);
+  s = anota(
+    s,
+    `Juegas la ficha ${fi.nombre}${fi.tipo === 'Unit' ? ` (${fi.fuerza} de fuerza)` : ''} en ${destino === 'base' ? 'tu base' : `el campo ${i + 1}`}${fi.tipo === 'Unit' ? ', agotada' : ''}.`,
+  );
+  if (fi.disparadores.includes('jugar')) s = recordar(s, `Al jugar ${fi.nombre}`, fi.texto);
+  if (esCampo) s = contestar(s, i as 0 | 1, 'yo');
+  return limpieza(s);
+}
+
+/** Recursos añadidos a mano al pozo (efectos de cartas que el motor no ejecuta). */
+export function anadirAlPozo(p: Partida, energia: number, poder: number, dominio = 'Any'): Partida {
+  const pozo: Pozo = { energia: p.pozo.energia + energia, poder: { ...p.pozo.poder } };
+  if (poder) pozo.poder[dominio] = (pozo.poder[dominio] ?? 0) + poder;
+  return anota(
+    { ...p, pozo },
+    `Añades al pozo ${energia ? `${energia} de energía` : ''}${energia && poder ? ' y ' : ''}${poder ? `${poder} de poder (${dominio === 'Any' ? 'cualquier dominio' : dominio})` : ''}.`,
+  );
 }

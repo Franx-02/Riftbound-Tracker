@@ -83,6 +83,12 @@
                 Canalizar 1 (efecto)
               </button>
               <button type="button" class="secondary" (click)="barajar()">Barajar el mazo</button>
+              <button type="button" class="secondary" (click)="pozoManual(1, 0)">
+                +1 ⚡ al pozo (efecto)
+              </button>
+              <button type="button" class="secondary" (click)="pozoManual(0, 1)">
+                +1 ✦ al pozo (efecto)
+              </button>
               <button type="button" class="secondary" (click)="reiniciar()">
                 Reiniciar partida
               </button>
@@ -302,6 +308,16 @@
           <div class="lado-mio">
             <span class="etiqueta nombre-campo">
               {{ nombreCampo(i) }}
+              @if (campo.control === 'yo' && p().fase === 'principal') {
+                <button
+                  type="button"
+                  class="mini"
+                  (click)="tokenDestino.set(i === 0 ? 'campo0' : 'campo1')"
+                  title="Jugar una ficha (token) aquí"
+                >
+                  + ficha
+                </button>
+              }
               @if (campo.unidades.length) {
                 <span class="fuerza-txt mia">⚔ {{ fuerzas()[i].mia }}</span>
               }
@@ -370,12 +386,14 @@
           (click)="robarDeTurno()"
           [title]="p().fase === 'robo' ? 'Robar 1 (fase de robo)' : 'Mazo'"
         >
-          {{ p().mazo.length }}
+          <span class="cuenta">{{ p().mazo.length }}</span>
         </button>
         <span class="etiqueta">Mazo</span>
       </div>
       <div class="pila">
-        <div class="dorso runa" aria-label="Mazo de runas">{{ p().mazoRunas.length }}</div>
+        <div class="dorso runa" aria-label="Mazo de runas">
+          <span class="cuenta">{{ p().mazoRunas.length }}</span>
+        </div>
         <span class="etiqueta">Runas</span>
       </div>
     </section>
@@ -428,7 +446,19 @@
       [class.sobre]="sobre() === 'base'"
       aria-label="Tu base"
     >
-      <span class="etiqueta">Tu base · {{ p().base.length }}</span>
+      <span class="etiqueta">
+        Tu base · {{ p().base.length }}
+        @if (p().fase === 'principal') {
+          <button
+            type="button"
+            class="mini"
+            (click)="tokenDestino.set('base')"
+            title="Jugar una ficha (token) aquí"
+          >
+            + ficha
+          </button>
+        }
+      </span>
       <div class="fila" [style.--n]="p().base.length">
         @for (c of p().base; track c.uid) {
           <ng-container *ngTemplateOutlet="tCarta; context: { $implicit: c }" />
@@ -548,6 +578,92 @@
           </button>
           <button type="button" (click)="leyendaAbierta.set(false)">Cerrar</button>
         </div>
+      </div>
+    }
+
+    @if (p().fase === 'mulligan' && !p().ganador) {
+      <div class="telon">
+        <div class="modal modal-mulligan" role="dialog" aria-label="Mulligan">
+          <strong>Mano inicial</strong>
+          <span class="hueco">
+            Elige hasta {{ mulliganMax }} cartas para reciclarlas al fondo y robar otras tantas (CR
+            117), o quédate la mano.
+            @if (!empiezoYo()) {
+              Vas segundo: canalizarás 3 runas en tu primer turno.
+            }
+          </span>
+          <div class="mano-modal">
+            @for (c of p().mano; track c.uid) {
+              <div class="en-modal" [class.elegida]="elegidas().has(c.uid)">
+                <ng-container *ngTemplateOutlet="tCarta; context: { $implicit: c }" />
+                <span class="nombre-modal">{{ c.ficha.nombre }} · {{ coste(c) }}</span>
+              </div>
+            }
+          </div>
+          <div class="botones-fila">
+            <label class="opcion">
+              <input
+                type="checkbox"
+                [checked]="empiezoYo()"
+                (change)="empiezoYo.set(!empiezoYo()); reiniciar()"
+              />
+              Empiezo yo
+            </label>
+            <button type="button" (click)="hacerMulligan()">
+              {{ elegidas().size ? 'Mulligan de ' + elegidas().size : 'Me quedo la mano' }}
+            </button>
+            <button type="button" class="secondary" (click)="reiniciar()">Barajar de nuevo</button>
+          </div>
+        </div>
+      </div>
+    }
+
+    @if (tokenDestino(); as destino) {
+      <div class="modal modal-fichas" role="dialog" aria-label="Jugar una ficha">
+        <strong
+          >Ficha en
+          {{ destino === 'base' ? 'tu base' : nombreCampo(destino === 'campo0' ? 0 : 1) }}</strong
+        >
+        <span class="hueco"
+          >Las fichas se juegan como unidades: entran agotadas y, si salen del tablero, dejan de
+          existir (CR 179).</span
+        >
+        <div class="lista-fichas">
+          @for (tk of tokensCatalogo(); track tk.cardId) {
+            <button
+              type="button"
+              class="ficha-opcion"
+              (click)="crearFicha(tk.cardId)"
+              [title]="t.texto(tk.text).valor"
+            >
+              <img [src]="tk.imgUrl | thumb: 160" [alt]="tk.nombre" />
+              <span>{{ tk.nombre }}</span>
+              <small>{{ tk.type === 'Unit' ? '⚔ ' + (tk.might ?? 0) : t.etiqueta('Gear') }}</small>
+            </button>
+          }
+        </div>
+        <div class="botones-fila">
+          <input
+            type="text"
+            placeholder="Ficha a medida"
+            [value]="tokenNombre()"
+            (input)="tokenNombre.set($any($event.target).value)"
+            aria-label="Nombre de la ficha"
+          />
+          <input
+            type="number"
+            min="0"
+            max="20"
+            [value]="tokenFuerza()"
+            (input)="tokenFuerza.set(+$any($event.target).value)"
+            aria-label="Fuerza"
+          />
+          <button type="button" class="secondary" (click)="crearFicha()">Crear a medida</button>
+          <button type="button" (click)="tokenDestino.set(null)">Cerrar</button>
+        </div>
+        @if (p().aviso; as a) {
+          <span class="razon">{{ a }}</span>
+        }
       </div>
     }
 

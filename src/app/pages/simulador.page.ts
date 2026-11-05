@@ -21,6 +21,8 @@ import {
   alternarAgotada,
   anadirEnergia,
   anadirPoder,
+  anadirAlPozo,
+  crearToken,
   aturdir,
   barajarMazo,
   buff,
@@ -112,6 +114,21 @@ export class SimuladorPage {
   protected readonly avisosAbiertos = signal(false);
   protected readonly recAbierto = signal<number | null>(null);
   protected readonly leyendaAbierta = signal(false);
+  /** Zona donde se va a jugar una ficha (abre el selector). */
+  protected readonly tokenDestino = signal<DestinoJuego | null>(null);
+  protected readonly tokenNombre = signal('');
+  protected readonly tokenFuerza = signal(1);
+  /** Fichas del catálogo (una por nombre): Recruit, Sprite, Mech, Bird, Gold, Bomb… */
+  protected readonly tokensCatalogo = computed(() => {
+    const vistos = new Set<string>();
+    const fuera = ['XP Tracker', 'Empowered', 'Buff'];
+    return this.catalog
+      .cards()
+      .filter((c) => c.supertype === 'Token' && (c.type === 'Unit' || c.type === 'Gear'))
+      .map((c) => ({ ...c, nombre: c.name.split(' // ')[0].replace(/\s*\([A-Z]+\)$/, '') }))
+      .filter((c) => !fuera.includes(c.nombre) && !vistos.has(c.nombre) && vistos.add(c.nombre))
+      .sort((a, b) => a.type.localeCompare(b.type) || a.nombre.localeCompare(b.nombre));
+  });
   protected readonly leyenda = computed(() => this.carta(this.mazo()?.leyenda));
   protected readonly leyendaKw = computed(() => listarPalabrasClave(this.leyenda()?.text));
   protected readonly leyendaActivable = computed(() =>
@@ -263,6 +280,7 @@ export class SimuladorPage {
         this.seleccion.set(null);
         this.logAbierto.set(false);
         this.leyendaAbierta.set(false);
+        this.tokenDestino.set(null);
         break;
     }
   }
@@ -383,6 +401,26 @@ export class SimuladorPage {
 
   protected barajar(): void {
     this.mutar(barajarMazo);
+  }
+
+  protected crearFicha(id?: string): void {
+    const destino = this.tokenDestino();
+    if (!destino) return;
+    this.mutar((p) =>
+      crearToken(
+        p,
+        destino,
+        id
+          ? { id }
+          : { nombre: this.tokenNombre().trim(), fuerza: Math.max(0, this.tokenFuerza()) },
+        (cid) => this.catalog.card(cid),
+      ),
+    );
+    if (!this.p().aviso) this.tokenDestino.set(null);
+  }
+
+  protected pozoManual(energia: number, poder: number): void {
+    this.mutar((p) => anadirAlPozo(p, energia, poder));
   }
 
   protected mutarEnergia(): void {
