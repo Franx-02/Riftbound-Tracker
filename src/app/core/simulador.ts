@@ -413,3 +413,24 @@ export function cambiarCampo(p: Partida, i: 0 | 1, id: string): Partida {
     camposReserva: [...p.camposReserva.filter((x) => x !== id), ...(campo.id ? [campo.id] : [])],
   };
 }
+
+/** Devuelve una carta a su mazo (runas al de runas), arriba o abajo. */
+export function alMazo(
+  p: Partida,
+  uid: number,
+  donde: 'arriba' | 'abajo',
+  nombre?: string,
+): Partida {
+  const desde = zonaDe(p, uid);
+  if (!desde) return p;
+  const copia = { ...zonaLista(p, desde).find((c) => c.uid === uid)!, agotada: false };
+  let s = conZona(
+    { ...p, aviso: null },
+    desde,
+    zonaLista(p, desde).filter((c) => c.uid !== uid),
+  );
+  const clave = desde === 'runas' ? 'mazoRunas' : 'mazo';
+  const pila = donde === 'arriba' ? [copia, ...s[clave]] : [...s[clave], copia];
+  s = { ...s, [clave]: pila };
+  return anota(s, `${nombre ?? copia.id} ${donde === 'arriba' ? 'encima' : 'al fondo'} del mazo.`);
+}

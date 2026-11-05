@@ -1,6 +1,7 @@
 import { mazoVacio } from './mazos';
 import {
   PUNTOS_PARA_GANAR,
+  alMazo,
   alternarAgotada,
   mover,
   mulligan,
@@ -107,5 +108,15 @@ describe('simulador', () => {
     expect(pagar(p, 2, 0)).toBeNull();
     p = siguienteTurno(p);
     expect(p.runas.every((r) => !r.agotada)).toBe(true);
+  });
+  it('devuelve una carta de la mano encima o al fondo del mazo', () => {
+    const p = mulligan(nuevaPartida(mazo()), []);
+    const c = p.mano[0];
+    const arriba = alMazo(p, c.uid, 'arriba');
+    expect(arriba.mano).toHaveLength(p.mano.length - 1);
+    expect(arriba.mazo[0].uid).toBe(c.uid);
+    const abajo = alMazo(p, c.uid, 'abajo');
+    expect(abajo.mazo.at(-1)?.uid).toBe(c.uid);
+    expect(abajo.mazo).toHaveLength(p.mazo.length + 1);
   });
 });

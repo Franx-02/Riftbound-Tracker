@@ -252,6 +252,7 @@ import { TraduccionService } from '../core/traduccion.service';
         display: block;
         padding-left: 236px;
         --alto-barra: 0px;
+        --ancho-barra: 236px;
       }
       .barra {
         position: fixed;
