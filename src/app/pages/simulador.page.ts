@@ -152,7 +152,10 @@ export class SimuladorPage {
       .filter((c) => c.supertype === 'Token' && (c.type === 'Unit' || c.type === 'Gear'))
       .map((c) => ({
         id: c.cardId as string | undefined,
-        nombre: c.name.split(' // ')[0].replace(/\s*\([A-Z]+\)$/, ''),
+        nombre: c.name
+          .split(' // ')[0]
+          .replace(/\s*\([^)]*\)\s*$/, '')
+          .trim(),
         tipo: c.type,
         fuerza: c.might ?? 0,
         imgUrl: c.imgUrl as string | undefined,
@@ -662,6 +665,11 @@ export class SimuladorPage {
         });
         return;
       }
+    }
+    // En juego o en las runas: el clic solo gira la carta (agotar/preparar); el menú, con botón derecho.
+    if (this.enJuego(c) || this.zona(c) === 'runas') {
+      this.mutar((p) => alternarAgotada(p, c.uid));
+      return;
     }
     this.seleccion.set(this.seleccion()?.uid === c.uid ? null : { uid: c.uid, rival: false });
   }
