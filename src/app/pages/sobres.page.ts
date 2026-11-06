@@ -154,6 +154,12 @@ export class SobresPage {
     sonar('mover');
   }
 
+  /** Posición en el carrusel circular: de -2 a 2, para que siempre haya sobres a ambos lados. */
+  protected offset(i: number): number {
+    const n = SETS_SOBRE.length;
+    return ((((i - this.sel()) % n) + n + Math.floor(n / 2)) % n) - Math.floor(n / 2);
+  }
+
   protected anterior(): void {
     this.elegir(this.sel() - 1);
   }

@@ -77,7 +77,7 @@
             type="button"
             class="booster"
             [class.centro]="i === sel()"
-            [style.--off]="i - sel()"
+            [style.--off]="offset(i)"
             [style.--c]="s.color"
             [style.--arte]="'url(' + s.arte + ')'"
             (click)="i === sel() ? abrir() : elegir(i)"
