@@ -22,6 +22,14 @@ import { ThumbPipe } from '../ui/pipes';
 
 type Vista = 'sobres' | 'album';
 const CLAVE_LIBRE = 'riftbound-sobres-libre';
+/** Color de cada sobre, como los reales. */
+const COLORES: Record<string, string> = {
+  OGN: '#1f3f8f',
+  SFD: '#b9a070',
+  UNL: '#7c2fa6',
+  VEN: '#b3123a',
+  RAD: '#6fa8dc',
+};
 
 /**
  * Sobres: eliges un sobre en el carrusel, lo rasgas deslizando por arriba, revelas las 14
@@ -72,7 +80,7 @@ export class SobresPage {
         id,
         nombre: s?.name ?? id,
         progreso: p,
-        color: colorDominio(legend?.domains[0]),
+        color: COLORES[id] ?? colorDominio(legend?.domains[0]),
         arte: arte?.imgUrl ?? '',
       };
     }),
