@@ -1,0 +1,223 @@
+<main class="pagina">
+  <app-cabecera
+    titulo="Sobres"
+    subtitulo="Abre sobres virtuales y completa un álbum aparte. No tiene nada que ver con tu colección real."
+  >
+    <div class="pestanas" role="tablist">
+      <button
+        type="button"
+        role="tab"
+        [class.activa]="vista() === 'sobres'"
+        [attr.aria-selected]="vista() === 'sobres'"
+        (click)="vista.set('sobres')"
+      >
+        Sobres
+      </button>
+      <button
+        type="button"
+        role="tab"
+        [class.activa]="vista() === 'album'"
+        [attr.aria-selected]="vista() === 'album'"
+        (click)="vista.set('album')"
+      >
+        Álbum · {{ distintas() }}
+      </button>
+    </div>
+  </app-cabecera>
+
+  @if (albumSrv.error(); as e) {
+    <p class="aviso error" role="alert">{{ e }}</p>
+  }
+
+  @if (vista() === 'sobres') {
+    <!-- Energía: sobres disponibles y cuenta atrás -->
+    <section class="energia" aria-label="Sobres disponibles">
+      <div class="pips">
+        @for (i of [0, 1]; track i) {
+          <span class="pip" [class.lleno]="i < restantes()"></span>
+        }
+      </div>
+      <div class="energia-texto">
+        <strong>{{ restantes() }}/{{ max }} sobres</strong>
+        @if (cuentaAtras()) {
+          <span class="muted">siguiente en {{ cuentaAtras() }}</span>
+        } @else {
+          <span class="muted">llenos</span>
+        }
+      </div>
+      <span class="muted total"
+        >{{ albumSrv.album().abiertos }} abiertos · {{ totalCartas() }} cartas en el álbum</span
+      >
+    </section>
+
+    <!-- Elección de set -->
+    <section class="sobres" aria-label="Elige un sobre">
+      @for (s of sets(); track s.id) {
+        <button
+          type="button"
+          class="sobre-tile"
+          [class.elegido]="setElegido() === s.id"
+          [style.--c]="s.color"
+          (click)="setElegido.set(s.id)"
+        >
+          <span class="sobre-arte">
+            <span class="sello">{{ s.id }}</span>
+          </span>
+          <strong>{{ s.nombre }}</strong>
+          <span class="barra"><span [style.width.%]="porcentaje(s.progreso)"></span></span>
+          <small
+            >{{ s.progreso.tengo }}/{{ s.progreso.total }} · {{ porcentaje(s.progreso) }} %</small
+          >
+        </button>
+      }
+    </section>
+
+    <div class="abrir-fila">
+      <button
+        type="button"
+        class="abrir"
+        [disabled]="restantes() <= 0 || abriendo() || !albumSrv.listo()"
+        (click)="abrir()"
+      >
+        @if (abriendo()) {
+          Abriendo…
+        } @else if (restantes() <= 0) {
+          Sin sobres · {{ cuentaAtras() }}
+        } @else {
+          Abrir sobre de {{ setActual()?.nombre }}
+        }
+      </button>
+      <span class="muted"
+        >3 comunes, 1 infrecuente y 1 rara, épica o Showcase. Muy de vez en cuando, un sobre
+        dorado.</span
+      >
+    </div>
+  } @else {
+    <!-- Álbum -->
+    <section class="album-cabecera">
+      <div class="selector-set">
+        @for (s of sets(); track s.id) {
+          <button
+            type="button"
+            class="chip-set"
+            [class.activa]="setElegido() === s.id"
+            [style.--c]="s.color"
+            (click)="setElegido.set(s.id)"
+          >
+            {{ s.nombre }} <small>{{ porcentaje(s.progreso) }} %</small>
+          </button>
+        }
+      </div>
+      @if (setActual(); as s) {
+        <div class="progreso-set">
+          <span class="barra grande"><span [style.width.%]="porcentaje(s.progreso)"></span></span>
+          <span class="rarezas">
+            @for (z of rarezas; track z) {
+              <button
+                type="button"
+                class="chip-rareza"
+                [class.activa]="filtroRareza() === z"
+                [attr.data-rareza]="z"
+                (click)="filtroRareza.set(filtroRareza() === z ? '' : z)"
+              >
+                {{ etiquetaRareza(z) }} {{ s.progreso.porRareza[z].tengo }}/{{
+                  s.progreso.porRareza[z].total
+                }}
+              </button>
+            }
+          </span>
+        </div>
+      }
+    </section>
+    <ul class="rejilla">
+      @for (c of cartasAlbum(); track c.cardId) {
+        <li class="hueco" [class.tengo]="copias(c) > 0" [attr.data-rareza]="rareza(c)">
+          <button
+            type="button"
+            (click)="copias(c) > 0 && ampliada.set(c)"
+            [disabled]="copias(c) === 0"
+            [title]="c.name"
+          >
+            <img [src]="c.imgUrl | thumb: 240" [alt]="c.name" loading="lazy" />
+            @if (copias(c) > 1) {
+              <span class="veces">×{{ copias(c) }}</span>
+            }
+            @if (copias(c) === 0) {
+              <span class="num">{{ c.num }}</span>
+            }
+          </button>
+        </li>
+      }
+    </ul>
+  }
+
+  <!-- Apertura del sobre -->
+  @if (abriendo() || sobre()) {
+    <div class="telon">
+      @if (abriendo()) {
+        <div class="paquete" [style.--c]="setActual()?.color">
+          <span class="sello">{{ setElegido() }}</span>
+          <span class="rasgado"></span>
+        </div>
+      } @else if (sobre(); as s) {
+        <div class="revelado" [class.dorado]="s.dorado">
+          @if (s.dorado) {
+            <p class="dorado-txt">✦ Sobre dorado ✦</p>
+          }
+          <div class="cartas">
+            @for (c of s.cartas; track $index; let i = $index) {
+              <button
+                type="button"
+                class="carta3d"
+                [class.volteada]="reveladas().has(i)"
+                [attr.data-rareza]="rareza(c)"
+                [style.--i]="i"
+                (click)="revelar(i)"
+                [attr.aria-label]="reveladas().has(i) ? c.name : 'Revelar carta ' + (i + 1)"
+              >
+                <span class="cara dorso" [style.background]="dorso"></span>
+                <span
+                  class="cara frente"
+                  [appInclinar]="8"
+                  [holo]="rareza(c) === 'Showcase' || rareza(c) === 'Epic'"
+                >
+                  <img [src]="c.imgUrl | thumb: 400" [alt]="c.name" />
+                  @if (nuevas().has(c.cardId)) {
+                    <span class="nueva">¡Nueva!</span>
+                  }
+                  <span class="rareza-tag">{{ etiquetaRareza(rareza(c)) }}</span>
+                </span>
+              </button>
+            }
+          </div>
+          <div class="acciones-sobre">
+            @if (!todasReveladas()) {
+              <span class="muted">Pulsa cada carta para darle la vuelta</span>
+              <button type="button" class="secondary" (click)="revelarTodas()">
+                Revelar todas
+              </button>
+            } @else {
+              <button type="button" class="secondary" (click)="cerrarSobre()">Al álbum</button>
+              <button type="button" [disabled]="restantes() <= 0" (click)="otroSobre()">
+                {{ restantes() > 0 ? 'Otro sobre' : 'Sin sobres · ' + cuentaAtras() }}
+              </button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  @if (ampliada(); as c) {
+    <div class="telon claro" (click)="ampliada.set(null)">
+      <img
+        class="grande"
+        [src]="c.imgUrl | thumb: 600"
+        [alt]="c.name"
+        [appInclinar]="10"
+        [holo]="true"
+      />
+      <p>{{ c.name }} · ×{{ copias(c) }} en el álbum</p>
+    </div>
+  }
+</main>

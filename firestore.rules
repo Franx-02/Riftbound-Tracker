@@ -75,6 +75,22 @@ service cloud.firestore {
 
     // Datos públicos del usuario: users/{uid}/publico/intercambiables = { cardIds: [...] },
     // las cartas que ofrece para cambiar. Las leen todos (Intercambios); solo escribe el dueño.
+    // Álbum virtual (módulo Sobres): users/{uid}/album/virtual =
+    // { cartas: {cardId: copias}, aperturas: {restantes, desde}, abiertos, actualizado }.
+    // No tiene nada que ver con la colección real; solo lo lee y escribe el dueño.
+    match /users/{uid}/album/{documento} {
+      allow read, delete: if owner(uid);
+      allow create, update: if owner(uid)
+        && documento == 'virtual'
+        && request.resource.data.keys().hasOnly(['cartas', 'aperturas', 'abiertos', 'actualizado'])
+        && request.resource.data.cartas is map
+        && request.resource.data.cartas.size() <= 3000
+        && request.resource.data.aperturas is map
+        && request.resource.data.abiertos is int
+        && request.resource.data.abiertos >= 0
+        && shortString(request.resource.data.actualizado, 40);
+    }
+
     match /users/{uid}/publico/{documento} {
       allow read: if signedIn();
       allow delete: if owner(uid);

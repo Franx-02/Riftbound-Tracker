@@ -371,8 +371,9 @@
 .dorso-fijo {
   border: 0;
   color: transparent;
-  background: url('data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%20744%201039%27%3E%0A%3Cdefs%3E%3CradialGradient%20id%3D%27g%27%20cx%3D%2750%25%27%20cy%3D%2750%25%27%20r%3D%2770%25%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%2313505c%27%2F%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%230b2d38%27%2F%3E%3C%2FradialGradient%3E%3C%2Fdefs%3E%0A%3Crect%20width%3D%27744%27%20height%3D%271039%27%20rx%3D%2736%27%20fill%3D%27url%28%23g%29%27%2F%3E%0A%3Crect%20x%3D%2734%27%20y%3D%2734%27%20width%3D%27676%27%20height%3D%27971%27%20rx%3D%2726%27%20fill%3D%27none%27%20stroke%3D%27%23d9b15c%27%20stroke-width%3D%279%27%2F%3E%0A%3Crect%20x%3D%2758%27%20y%3D%2758%27%20width%3D%27628%27%20height%3D%27923%27%20rx%3D%2718%27%20fill%3D%27none%27%20stroke%3D%27%23d9b15c%27%20stroke-width%3D%273%27%20opacity%3D%27.7%27%2F%3E%0A%3Cg%20fill%3D%27none%27%20stroke%3D%27%23d9b15c%27%20stroke-width%3D%278%27%20stroke-linejoin%3D%27round%27%3E%0A%3Cpolygon%20points%3D%27372%2C282%20592%2C519%20372%2C756%20152%2C519%27%2F%3E%0A%3Cpolygon%20points%3D%27372%2C318%20556%2C519%20372%2C720%20188%2C519%27%20stroke-width%3D%273%27%20opacity%3D%27.7%27%2F%3E%0A%3C%2Fg%3E%0A%3Cg%20fill%3D%27%23d9b15c%27%3E%0A%3Cpolygon%20points%3D%27372%2C96%20390%2C124%20372%2C152%20354%2C124%27%2F%3E%0A%3Cpolygon%20points%3D%27372%2C887%20390%2C915%20372%2C943%20354%2C915%27%2F%3E%0A%3Cpolygon%20points%3D%2792%2C519%20112%2C537%2092%2C555%2072%2C537%27%2F%3E%0A%3Cpolygon%20points%3D%27652%2C519%20672%2C537%20652%2C555%20632%2C537%27%2F%3E%0A%3C%2Fg%3E%0A%3Cg%20font-family%3D%27Georgia%2C%20%22Times%20New%20Roman%22%2C%20serif%27%20font-weight%3D%27700%27%20text-anchor%3D%27middle%27%20fill%3D%27%23e9c46a%27%3E%0A%3Ctext%20x%3D%27372%27%20y%3D%27500%27%20font-size%3D%2758%27%20letter-spacing%3D%274%27%3ELEAGUE%20OF%3C%2Ftext%3E%0A%3Ctext%20x%3D%27372%27%20y%3D%27580%27%20font-size%3D%2774%27%20letter-spacing%3D%276%27%3ELEGENDS%3C%2Ftext%3E%0A%3C%2Fg%3E%0A%3C%2Fsvg%3E')
-    center / 100% 100% no-repeat;
+  background:
+    url('/img/dorso.png') center / 100% 100% no-repeat,
+    url('/img/dorso-respaldo.svg') center / 100% 100% no-repeat;
   box-shadow: 0 4px 10px rgb(0 0 0 / 0.4);
 }
 .pila {
@@ -415,8 +416,10 @@
   border-radius: 7px;
   border: 0;
   color: transparent;
-  background: url('data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%20744%201039%27%3E%0A%3Cdefs%3E%3CradialGradient%20id%3D%27g%27%20cx%3D%2750%25%27%20cy%3D%2750%25%27%20r%3D%2770%25%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%2313505c%27%2F%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%230b2d38%27%2F%3E%3C%2FradialGradient%3E%3C%2Fdefs%3E%0A%3Crect%20width%3D%27744%27%20height%3D%271039%27%20rx%3D%2736%27%20fill%3D%27url%28%23g%29%27%2F%3E%0A%3Crect%20x%3D%2734%27%20y%3D%2734%27%20width%3D%27676%27%20height%3D%27971%27%20rx%3D%2726%27%20fill%3D%27none%27%20stroke%3D%27%23d9b15c%27%20stroke-width%3D%279%27%2F%3E%0A%3Crect%20x%3D%2758%27%20y%3D%2758%27%20width%3D%27628%27%20height%3D%27923%27%20rx%3D%2718%27%20fill%3D%27none%27%20stroke%3D%27%23d9b15c%27%20stroke-width%3D%273%27%20opacity%3D%27.7%27%2F%3E%0A%3Cg%20fill%3D%27none%27%20stroke%3D%27%23d9b15c%27%20stroke-width%3D%278%27%20stroke-linejoin%3D%27round%27%3E%0A%3Cpolygon%20points%3D%27372%2C282%20592%2C519%20372%2C756%20152%2C519%27%2F%3E%0A%3Cpolygon%20points%3D%27372%2C318%20556%2C519%20372%2C720%20188%2C519%27%20stroke-width%3D%273%27%20opacity%3D%27.7%27%2F%3E%0A%3C%2Fg%3E%0A%3Cg%20fill%3D%27%23d9b15c%27%3E%0A%3Cpolygon%20points%3D%27372%2C96%20390%2C124%20372%2C152%20354%2C124%27%2F%3E%0A%3Cpolygon%20points%3D%27372%2C887%20390%2C915%20372%2C943%20354%2C915%27%2F%3E%0A%3Cpolygon%20points%3D%2792%2C519%20112%2C537%2092%2C555%2072%2C537%27%2F%3E%0A%3Cpolygon%20points%3D%27652%2C519%20672%2C537%20652%2C555%20632%2C537%27%2F%3E%0A%3C%2Fg%3E%0A%3Cg%20font-family%3D%27Georgia%2C%20%22Times%20New%20Roman%22%2C%20serif%27%20font-weight%3D%27700%27%20text-anchor%3D%27middle%27%20fill%3D%27%23e9c46a%27%3E%0A%3Ctext%20x%3D%27372%27%20y%3D%27500%27%20font-size%3D%2758%27%20letter-spacing%3D%274%27%3ELEAGUE%20OF%3C%2Ftext%3E%0A%3Ctext%20x%3D%27372%27%20y%3D%27580%27%20font-size%3D%2774%27%20letter-spacing%3D%276%27%3ELEGENDS%3C%2Ftext%3E%0A%3C%2Fg%3E%0A%3C%2Fsvg%3E')
-    center / 100% 100% no-repeat;
+  /* Primero la imagen real (public/img/dorso.png); si no está, el dibujo SVG. */
+  background:
+    url('/img/dorso.png') center / 100% 100% no-repeat,
+    url('/img/dorso-runa-respaldo.svg') center / 100% 100% no-repeat;
   box-shadow:
     2px 2px 0 #071c24,
     4px 4px 0 #05161c,
@@ -478,7 +481,9 @@
   border-color: rgb(220 60 60 / 0.4);
 }
 .dorso.runa {
-  background-image: url('data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%20744%201039%27%3E%0A%3Cdefs%3E%3CradialGradient%20id%3D%27g%27%20cx%3D%2750%25%27%20cy%3D%2750%25%27%20r%3D%2770%25%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%23ffffff%27%2F%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%23dfe6f2%27%2F%3E%3C%2FradialGradient%3E%3C%2Fdefs%3E%0A%3Crect%20width%3D%27744%27%20height%3D%271039%27%20rx%3D%2736%27%20fill%3D%27url%28%23g%29%27%2F%3E%0A%3Crect%20x%3D%2734%27%20y%3D%2734%27%20width%3D%27676%27%20height%3D%27971%27%20rx%3D%2726%27%20fill%3D%27none%27%20stroke%3D%27%232b4f9e%27%20stroke-width%3D%279%27%2F%3E%0A%3Crect%20x%3D%2758%27%20y%3D%2758%27%20width%3D%27628%27%20height%3D%27923%27%20rx%3D%2718%27%20fill%3D%27none%27%20stroke%3D%27%232b4f9e%27%20stroke-width%3D%273%27%20opacity%3D%27.7%27%2F%3E%0A%3Cg%20fill%3D%27none%27%20stroke%3D%27%232b4f9e%27%20stroke-width%3D%278%27%20stroke-linejoin%3D%27round%27%3E%0A%3Cpolygon%20points%3D%27372%2C282%20592%2C519%20372%2C756%20152%2C519%27%2F%3E%0A%3Cpolygon%20points%3D%27372%2C318%20556%2C519%20372%2C720%20188%2C519%27%20stroke-width%3D%273%27%20opacity%3D%27.7%27%2F%3E%0A%3C%2Fg%3E%0A%3Cg%20fill%3D%27%232b4f9e%27%3E%0A%3Cpolygon%20points%3D%27372%2C96%20390%2C124%20372%2C152%20354%2C124%27%2F%3E%0A%3Cpolygon%20points%3D%27372%2C887%20390%2C915%20372%2C943%20354%2C915%27%2F%3E%0A%3Cpolygon%20points%3D%2792%2C519%20112%2C537%2092%2C555%2072%2C537%27%2F%3E%0A%3Cpolygon%20points%3D%27652%2C519%20672%2C537%20652%2C555%20632%2C537%27%2F%3E%0A%3C%2Fg%3E%0A%3Cg%20font-family%3D%27Georgia%2C%20%22Times%20New%20Roman%22%2C%20serif%27%20font-weight%3D%27700%27%20text-anchor%3D%27middle%27%20fill%3D%27%232b4f9e%27%3E%0A%3Ctext%20x%3D%27372%27%20y%3D%27500%27%20font-size%3D%2758%27%20letter-spacing%3D%274%27%3ELEAGUE%20OF%3C%2Ftext%3E%0A%3Ctext%20x%3D%27372%27%20y%3D%27580%27%20font-size%3D%2774%27%20letter-spacing%3D%276%27%3ELEGENDS%3C%2Ftext%3E%0A%3C%2Fg%3E%0A%3C%2Fsvg%3E');
+  background:
+    url('/img/dorso-runa.png') center / 100% 100% no-repeat,
+    url('/img/dorso-respaldo.svg') center / 100% 100% no-repeat;
   box-shadow:
     2px 2px 0 #b9c3d6,
     4px 4px 0 #9fabc2,
