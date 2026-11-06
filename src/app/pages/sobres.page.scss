@@ -419,6 +419,8 @@
 }
 .nueva {
   position: absolute;
+  z-index: 2;
+  transform: translateZ(2px);
   top: -10px;
   left: 50%;
   translate: -50% 0;
@@ -439,6 +441,8 @@
 }
 .rareza-tag {
   position: absolute;
+  z-index: 2;
+  transform: translateZ(2px);
   bottom: -10px;
   left: 50%;
   translate: -50% 0;
