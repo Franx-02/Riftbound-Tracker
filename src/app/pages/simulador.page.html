@@ -45,6 +45,24 @@
           <button
             type="button"
             class="secondary"
+            [class.activo]="ayuda()"
+            (click)="ayuda.set(!ayuda())"
+            title="Pistas de la fase"
+            aria-label="Pistas"
+          >
+            ?
+          </button>
+          <button
+            type="button"
+            class="secondary"
+            (click)="alternarSonido()"
+            [title]="sonido() ? 'Silenciar' : 'Activar sonido'"
+          >
+            {{ sonido() ? '🔊' : '🔇' }}
+          </button>
+          <button
+            type="button"
+            class="secondary"
             (click)="logAbierto.set(!logAbierto())"
             [attr.aria-expanded]="logAbierto()"
           >
@@ -73,7 +91,9 @@
           </details>
         </span>
       </header>
-      <p class="ultimo muted" aria-live="polite">{{ ultimo() }}</p>
+      @if (ayuda()) {
+        <p class="ultimo muted" aria-live="polite">{{ ultimo() }}</p>
+      }
       @if (p().recordatorios.length) {
         <div class="recordatorios" aria-label="Efectos pendientes de resolver a mano">
           <span class="etiqueta">Efectos pendientes</span>
@@ -86,32 +106,35 @@
       }
       @if (p().aviso; as a) {
         <p class="aviso error" role="alert">{{ a }}</p>
-      } @else if (p().fase === 'mulligan') {
-        <p class="aviso">
-          Pulsa hasta {{ mulliganMax }} cartas de tu mano para reciclarlas y robar otras tantas (CR
-          117), o quédate la mano.
-          @if (!empiezoYo()) {
-            Como vas segundo, canalizarás 3 runas en tu primer turno.
-          }
-        </p>
-      } @else if (p().fase === 'robo') {
-        <p class="aviso">
-          Fase de robo (CR 315.4): pulsa el mazo o "Robar" para robar 1 y entrar en la fase
-          principal. Ya has despertado, puntuado por Hold y canalizado.
-        </p>
-      } @else if (p().enfrentamiento; as e) {
-        <p class="aviso combate">
-          @if (e.tipo === 'combate') {
-            Combate en {{ nombreCampo(e.campo) }}:
-            {{ e.atacante === 'yo' ? 'atacas' : 'defiendes' }} con {{ fuerzas()[e.campo].mia }} ⚔
-            contra {{ fuerzas()[e.campo].rival }} ⚔. Puedes jugar cartas con Action o Reaction;
-            después pulsa Resolver (el daño se reparte según CR 465: Tank primero, Backline al
-            final).
-          } @else {
-            Nadie defiende {{ nombreCampo(e.campo) }}: ventana para Action/Reaction. Al resolver,
-            {{ e.atacante === 'yo' ? 'lo conquistas' : 'el rival lo conquista' }} (CR 348.2).
-          }
-        </p>
+      }
+      @if (ayuda()) {
+        @if (p().fase === 'mulligan') {
+          <p class="aviso">
+            Pulsa hasta {{ mulliganMax }} cartas de tu mano para reciclarlas y robar otras tantas
+            (CR 117), o quédate la mano.
+            @if (!empiezoYo()) {
+              Como vas segundo, canalizarás 3 runas en tu primer turno.
+            }
+          </p>
+        } @else if (p().fase === 'robo') {
+          <p class="aviso">
+            Fase de robo (CR 315.4): pulsa el mazo para robar 1 y entrar en la fase principal. Ya
+            has despertado, puntuado por Hold y canalizado.
+          </p>
+        } @else if (p().enfrentamiento; as e) {
+          <p class="aviso combate">
+            @if (e.tipo === 'combate') {
+              Combate en {{ nombreCampo(e.campo) }}:
+              {{ e.atacante === 'yo' ? 'atacas' : 'defiendes' }} con {{ fuerzas()[e.campo].mia }} ⚔
+              contra {{ fuerzas()[e.campo].rival }} ⚔. Puedes jugar cartas con Action o Reaction;
+              después pulsa Resolver (el daño se reparte según CR 465: Tank primero, Backline al
+              final).
+            } @else {
+              Nadie defiende {{ nombreCampo(e.campo) }}: ventana para Action/Reaction. Al resolver,
+              {{ e.atacante === 'yo' ? 'lo conquistas' : 'el rival lo conquista' }} (CR 348.2).
+            }
+          </p>
+        }
       }
     </div>
 
@@ -234,45 +257,25 @@
                 class="campo-img"
                 [src]="c.imgUrl | thumb: 400"
                 [alt]="c.name"
-                [title]="t.texto(c.text).valor"
+                (mouseenter)="previsualizarId(campo.id)"
+                (mouseleave)="previsualizar(null)"
               />
             } @else {
               <span class="campo-img sin">Sin campo</span>
             }
-            <span
-              class="control"
-              [class.mio]="campo.control === 'yo'"
-              [class.suyo]="campo.control === 'rival'"
-            >
-              {{ campo.control === 'yo' ? 'Tuyo' : campo.control === 'rival' ? 'Suyo' : 'Libre' }}
-              · {{ campo.de === 'yo' ? 'lo pones tú' : 'lo pone el rival' }}
-            </span>
+            @if (campo.control) {
+              <span
+                class="control"
+                [class.mio]="campo.control === 'yo'"
+                [class.suyo]="campo.control === 'rival'"
+              >
+                {{ campo.control === 'yo' ? 'Tuyo' : 'Suyo' }}
+              </span>
+            }
             @if (campo.puntuado.yo === p().ronda && p().fase === 'principal') {
               <span class="puntuado" title="Ya has puntuado aquí este turno (CR 470)"
                 >✓ puntuado</span
               >
-            }
-            @if (!campo.unidades.length && !campo.rival.length && !campo.control) {
-              <select
-                class="cambiar"
-                aria-label="Cambiar campo de batalla"
-                (change)="
-                  campo.de === 'yo'
-                    ? cambiarCampoMio($any($event.target).value)
-                    : cambiarCampoRival($any($event.target).value)
-                "
-              >
-                <option value="">Cambiar por…</option>
-                @if (campo.de === 'yo') {
-                  @for (id of p().camposMios; track id) {
-                    <option [value]="id">{{ carta(id)?.name ?? id }}</option>
-                  }
-                } @else {
-                  @for (c of camposCatalogo(); track c.cardId) {
-                    <option [value]="c.cardId">{{ c.name }}</option>
-                  }
-                }
-              </select>
             }
           </div>
 
@@ -446,6 +449,8 @@
             class="carta-btn leyenda-btn"
             [class.agotada]="p().leyendaAgotada"
             [title]="l.name + ': ' + t.texto(l.text).valor"
+            (mouseenter)="previsualizarId(m.leyenda)"
+            (mouseleave)="previsualizar(null)"
             (click)="leyendaAbierta.set(!leyendaAbierta())"
           >
             <img [src]="l.imgUrl | thumb: 240" [alt]="l.name" class="carta" draggable="false" />
@@ -618,6 +623,49 @@
               Vas segundo: canalizarás 3 runas en tu primer turno.
             }
           </span>
+          <div class="campos-inicio">
+            <div class="elige">
+              <span class="etiqueta">Tu campo de batalla (uno de tus tres)</span>
+              <div class="opciones-campo">
+                @for (id of p().camposMios; track id) {
+                  <button
+                    type="button"
+                    class="opcion-campo"
+                    [class.activa]="p().campos[0].id === id"
+                    (click)="cambiarCampoMio(id)"
+                    (mouseenter)="previsualizarId(id)"
+                    (mouseleave)="previsualizar(null)"
+                  >
+                    @if (carta(id); as c) {
+                      <img [src]="c.imgUrl | thumb: 240" [alt]="c.name" />
+                      <span>{{ c.name }}</span>
+                    }
+                  </button>
+                }
+              </div>
+            </div>
+            <div class="elige">
+              <span class="etiqueta">Campo del rival</span>
+              <select
+                aria-label="Campo del rival"
+                [value]="campoRival()"
+                (change)="cambiarCampoRival($any($event.target).value)"
+              >
+                @for (c of camposCatalogo(); track c.cardId) {
+                  <option [value]="c.cardId">{{ c.name }}</option>
+                }
+              </select>
+              @if (carta(p().campos[1].id); as cr) {
+                <img
+                  class="campo-rival-img"
+                  [src]="cr.imgUrl | thumb: 240"
+                  [alt]="cr.name"
+                  (mouseenter)="previsualizarId(cr.cardId)"
+                  (mouseleave)="previsualizar(null)"
+                />
+              }
+            </div>
+          </div>
           <div class="mano-modal">
             @for (c of p().mano; track c.uid) {
               <div class="en-modal" [class.elegida]="elegidas().has(c.uid)">
@@ -655,16 +703,20 @@
           existir (CR 179).</span
         >
         <div class="lista-fichas">
-          @for (tk of tokensCatalogo(); track tk.cardId) {
+          @for (tk of tokensCatalogo(); track tk.nombre) {
             <button
               type="button"
               class="ficha-opcion"
-              (click)="crearFicha(tk.cardId)"
-              [title]="t.texto(tk.text).valor"
+              (click)="crearFicha(tk.id, tk.nombre, tk.fuerza)"
+              [title]="t.texto(tk.texto).valor"
             >
-              <img [src]="tk.imgUrl | thumb: 160" [alt]="tk.nombre" />
+              @if (tk.imgUrl) {
+                <img [src]="tk.imgUrl | thumb: 160" [alt]="tk.nombre" />
+              } @else {
+                <span class="ficha-generica">⚔ {{ tk.fuerza }}</span>
+              }
               <span>{{ tk.nombre }}</span>
-              <small>{{ tk.type === 'Unit' ? '⚔ ' + (tk.might ?? 0) : t.etiqueta('Gear') }}</small>
+              <small>{{ tk.tipo === 'Unit' ? '⚔ ' + tk.fuerza : t.etiqueta('Gear') }}</small>
             </button>
           }
         </div>
@@ -1034,6 +1086,8 @@
         [class.origen]="arrastre()?.uid === c.uid"
         [class.seleccionada]="seleccion()?.uid === c.uid"
         [class.elegida]="elegidas().has(c.uid)"
+        [class.robada]="recienRobadas().has(c.uid)"
+        [class.jugada]="recienJugadas().has(c.uid)"
         [class.gasto-energia]="gasto()?.runasEnergia?.includes(c.uid)"
         [class.gasto-poder]="gasto()?.runasPoder?.includes(c.uid)"
         [title]="c.ficha.nombre"

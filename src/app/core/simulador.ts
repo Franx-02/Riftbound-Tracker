@@ -1606,16 +1606,28 @@ export function cambiarCampo(p: Partida, i: 0 | 1, id: string): Partida {
   return anota(conCampo(p, i, { id }), `Campo ${i + 1} cambiado.`);
 }
 
+/** Fichas que crean las cartas ("Play a 2 :rb_might: Sand Soldier unit token"). */
+export function fichasDelTexto(
+  texto: string | null | undefined,
+): { nombre: string; fuerza: number; preparada: boolean }[] {
+  const res: { nombre: string; fuerza: number; preparada: boolean }[] = [];
+  for (const m of (texto ?? '').matchAll(
+    /(?:[Pp]lay|[Cc]reate|[Ss]ummon)s? (?:a|an|two|three|\d+) (ready )?(\d+) :rb_might: ([A-Z][A-Za-z' -]+?) (?:unit )?tokens?/g,
+  )) {
+    res.push({ nombre: m[3].trim(), fuerza: Number(m[2]), preparada: !!m[1] });
+  }
+  return res;
+}
+
 /**
- * Habilidad de la leyenda (CR 174.8). Si su coste es agotarla (:rb_exhaust:), se agota y solo
- * puede usarse preparada. Las habilidades "[Add]" añaden al pozo lo que indiquen sus iconos
- * (energía, poder de un dominio o :rb_rune_rainbow: = poder de cualquier dominio); el resto
- * queda como recordatorio para aplicarlo a mano.
+ * Habilidad de la leyenda (CR 174.8). Se interpreta su texto:
+ * - Coste (lo que va antes de ":"): agotarla (:rb_exhaust:), energía (:rb_energy_N:) y
+ *   poder (iconos de runa). Se paga del pozo o con runas, como cualquier coste.
+ * - Efecto: "[Add]" añade recursos al pozo; "Draw N" roba; "Channel N" canaliza;
+ *   "Play a N :rb_might: X unit token" crea la ficha en la base. Lo demás queda como
+ *   recordatorio para resolverlo a mano (las pasivas y los disparadores también).
  */
-export function usarLeyenda(p: Partida, nombre: string, texto: string): Partida {
-  const agota = /:rb_exhaust:/.test(texto);
-  if (agota && p.leyendaAgotada)
-    return rechaza(p, `${nombre} ya está agotada: se prepara al despertar.`);
+export function usarLeyenda(p: Partida, nombre: string, texto: string, carta?: Catalogo): Partida {
   if (p.fase === 'mulligan' || p.fase === 'fin')
     return rechaza(p, 'La leyenda se usa durante la partida.');
   const kw = palabrasClave(texto);
@@ -1623,36 +1635,113 @@ export function usarLeyenda(p: Partida, nombre: string, texto: string): Partida 
     return rechaza(p, 'En el turno del rival solo valen habilidades con Action o Reaction.');
   if (p.fase === 'rival' && !p.enfrentamiento)
     return rechaza(p, 'En el turno del rival solo en enfrentamientos (CR 310.1.a).');
-  let s: Partida = { ...p, leyendaAgotada: p.leyendaAgotada || agota };
-  const add = texto.match(/\[Add\]\s*((?::rb_[a-z_0-9]+:\s*)+)/i);
+  const linea = texto.split('\n')[0];
+  const plano = linea.replace(/:rb_([a-z_0-9]+):/g, '§$1§');
+  const sep = plano.indexOf(': ');
+  const costeTxt = sep >= 0 ? plano.slice(0, sep) : '';
+  const efecto = sep >= 0 ? plano.slice(sep + 2) : plano;
+  // Solo es un coste activable si antes de ":" no hay más que iconos y palabras clave.
+  const esActivada =
+    sep >= 0 &&
+    /^[\s,§a-z_0-9\[\]A-Z-]*$/.test(costeTxt) &&
+    !/\b(When|At|If|While|Your)\b/.test(costeTxt);
+  if (!esActivada) {
+    return recordar(
+      anota(p, `${nombre}: habilidad pasiva o disparada; aplícala a mano.`),
+      `Habilidad de ${nombre}`,
+      texto,
+    );
+  }
+  const agota = /§exhaust§/.test(costeTxt);
+  if (agota && p.leyendaAgotada)
+    return rechaza(p, `${nombre} ya está agotada: se prepara al despertar.`);
+  let energia = 0;
+  const dominios: string[] = [];
+  let poder = 0;
+  for (const m of costeTxt.matchAll(/§([a-z_0-9]+)§/g)) {
+    const e = m[1].match(/^energy_(\d+)$/);
+    if (e) energia += Number(e[1]);
+    else if (m[1].startsWith('rune_')) {
+      poder++;
+      const dom = m[1].slice(5);
+      if (dom !== 'rainbow') dominios.push(dom.replace(/^./, (c) => c.toUpperCase()));
+    }
+  }
+  const coste: Coste = {
+    energia,
+    poder,
+    dominios: poder && dominios.length === poder ? dominios : [],
+  };
+  const falta = porQueNoPagar(p, coste);
+  if (falta) return rechaza(p, `No puedes pagar la habilidad de ${nombre}: ${falta}.`);
+  let s: Partida = pagar(p, coste);
+  s = { ...s, leyendaAgotada: s.leyendaAgotada || agota };
+  const pagado = [agota ? 'se agota' : '', energia ? `${energia}⚡` : '', poder ? `${poder}✦` : '']
+    .filter(Boolean)
+    .join(', ');
+  s = anota(
+    s,
+    `${nombre}${pagado ? ` (${pagado})` : ''}: ${efecto
+      .replace(/§[a-z_0-9]+§/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 80)}`,
+  );
+  const add = efecto.match(/\[Add\]\s*((?:§[a-z_0-9]+§\s*)+)/i);
   if (add) {
     const pozo: Pozo = { energia: s.pozo.energia, poder: { ...s.pozo.poder } };
     const partes: string[] = [];
-    for (const m of add[1].matchAll(/:rb_([a-z_0-9]+):/g)) {
-      const icono = m[1];
-      const energia = icono.match(/^energy_(\d+)$/);
-      if (energia) {
-        pozo.energia += Number(energia[1]);
-        partes.push(`${energia[1]} de energía`);
-      } else if (icono === 'rune_rainbow') {
+    for (const m of add[1].matchAll(/§([a-z_0-9]+)§/g)) {
+      const e = m[1].match(/^energy_(\d+)$/);
+      if (e) {
+        pozo.energia += Number(e[1]);
+        partes.push(`${e[1]} de energía`);
+      } else if (m[1] === 'rune_rainbow') {
         pozo.poder['Any'] = (pozo.poder['Any'] ?? 0) + 1;
         partes.push('1 de poder de cualquier dominio');
-      } else if (icono.startsWith('rune_')) {
-        const dom = icono.slice(5).replace(/^./, (c) => c.toUpperCase());
+      } else if (m[1].startsWith('rune_')) {
+        const dom = m[1].slice(5).replace(/^./, (c) => c.toUpperCase());
         pozo.poder[dom] = (pozo.poder[dom] ?? 0) + 1;
         partes.push(`1 de poder de ${dom}`);
       }
     }
-    s = { ...s, pozo };
-    const nota = /Use only to play spells/i.test(texto)
-      ? ' (solo para hechizos, según su texto)'
-      : '';
-    return anota(
-      s,
-      `${nombre}${agota ? ' se agota' : ''}: añades ${partes.join(' y ')} al pozo${nota}.`,
-    );
+    const nota = /Use only to play spells/i.test(efecto)
+      ? ' (solo para hechizos)'
+      : /Use only to play gear/i.test(efecto)
+        ? ' (solo para equipo)'
+        : '';
+    return anota({ ...s, pozo }, `Añades ${partes.join(' y ')} al pozo${nota}.`);
   }
-  s = anota(s, `${nombre}${agota ? ' se agota' : ''}: aplica su efecto a mano.`);
+  const roba = efecto.match(/\bDraw (\d+)/i);
+  if (roba) return limpieza(robar(s, Number(roba[1])));
+  const canal = efecto.match(/\bChannel (\d+) runes?( exhausted)?/i);
+  if (canal) {
+    let r = canalizar(s, Number(canal[1]));
+    if (canal[2])
+      r = {
+        ...r,
+        runas: r.runas.map((x, i) =>
+          i >= r.runas.length - Number(canal[1]) ? { ...x, agotada: true } : x,
+        ),
+      };
+    return r;
+  }
+  const fichas = fichasDelTexto(linea.replace(/§([a-z_0-9]+)§/g, ':rb_$1:'));
+  if (fichas.length && carta) {
+    let r = s;
+    for (const fi of fichas) {
+      r = crearToken(r, 'base', { nombre: fi.nombre, fuerza: fi.fuerza }, carta);
+      if (fi.preparada && !r.aviso) {
+        const ultima = r.base.at(-1);
+        if (ultima)
+          r = {
+            ...r,
+            base: r.base.map((c) => (c.uid === ultima.uid ? { ...c, agotada: false } : c)),
+          };
+      }
+    }
+    return r;
+  }
   return recordar(s, `Habilidad de ${nombre}`, texto);
 }
 

@@ -348,21 +348,15 @@
 }
 .hueco-zona,
 .dorso-fijo {
-  display: grid;
-  place-content: center;
-  flex: 0 0 auto;
-  width: var(--w-carta);
-  height: calc(var(--w-carta) * 1.4);
-  padding: 2px;
-  border-radius: 6px;
-  border: 1px dashed rgb(170 190 240 / 0.35);
-  font-size: 0.44rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  text-align: center;
-  overflow: hidden;
-  color: rgb(170 190 240 / 0.55);
+  border-style: solid;
+  border-color: #0b2430;
+  color: transparent;
+  background:
+    linear-gradient(135deg, rgb(255 255 255 / 0.08), transparent 45%),
+    radial-gradient(circle at 50% 50%, #176b73 0, #0f4a55 40%, #0b2f3b 100%);
+  box-shadow:
+    inset 0 0 0 2px #0f4a55,
+    inset 0 0 0 3px rgb(233 196 106 / 0.7);
 }
 .leyenda-rival {
   border-color: rgb(220 60 60 / 0.4);
@@ -411,24 +405,48 @@
   padding: 0;
   min-height: 0;
   border-radius: 7px;
-  border: 2px solid #c9a24a;
-  color: var(--accent);
+  border: 2px solid #0b2430;
+  color: #e9c46a;
   background:
-    radial-gradient(
-      circle at 50% 50%,
-      rgb(245 184 28 / 0.35) 0,
-      rgb(245 184 28 / 0.12) 22%,
-      transparent 46%
-    ),
-    repeating-linear-gradient(45deg, rgb(255 255 255 / 0.05) 0 2px, transparent 2px 9px),
-    repeating-linear-gradient(-45deg, rgb(255 255 255 / 0.05) 0 2px, transparent 2px 9px),
-    linear-gradient(160deg, #1a3a6e, #0b1a3a 55%, #071027);
+    linear-gradient(135deg, rgb(255 255 255 / 0.08), transparent 45%),
+    radial-gradient(circle at 50% 50%, #176b73 0, #0f4a55 40%, #0b2f3b 100%);
   box-shadow:
-    inset 0 0 0 3px #071027,
-    inset 0 0 0 4px rgb(201 162 74 / 0.6),
-    2px 2px 0 #0b1a33,
-    4px 4px 0 #091428,
+    inset 0 0 0 3px #0f4a55,
+    inset 0 0 0 4px rgb(233 196 106 / 0.75),
+    inset 0 0 0 7px #0f4a55,
+    inset 0 0 0 8px rgb(233 196 106 / 0.35),
+    2px 2px 0 #071c24,
+    4px 4px 0 #05161c,
     0 8px 16px rgb(0 0 0 / 0.5);
+}
+.dorso::before {
+  content: '';
+  width: 46%;
+  aspect-ratio: 1;
+  rotate: 45deg;
+  border: 2px solid rgb(233 196 106 / 0.9);
+  outline: 1px solid rgb(233 196 106 / 0.4);
+  outline-offset: 4px;
+  background:
+    linear-gradient(45deg, transparent 46%, rgb(233 196 106 / 0.9) 46% 54%, transparent 54%),
+    linear-gradient(-45deg, transparent 46%, rgb(233 196 106 / 0.9) 46% 54%, transparent 54%);
+  box-shadow: 0 0 14px rgb(233 196 106 / 0.35);
+}
+.dorso .cuenta {
+  position: absolute;
+  right: -10px;
+  top: -8px;
+  min-width: 26px;
+  padding: 0 6px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 24px;
+  text-align: center;
+  color: #10203f;
+  background: #fff;
+  border: 2px solid #10203f;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.5);
 }
 .dorso::before {
   content: '✦';
@@ -469,32 +487,32 @@
   border-color: rgb(220 60 60 / 0.4);
 }
 .dorso.runa {
-  border-color: #3fb5aa;
+  border-color: #cfd6e6;
+  color: #1f3b73;
   background:
-    radial-gradient(
-      circle at 50% 50%,
-      rgb(10 200 185 / 0.35) 0,
-      rgb(10 200 185 / 0.12) 22%,
-      transparent 46%
-    ),
-    repeating-linear-gradient(45deg, rgb(255 255 255 / 0.05) 0 2px, transparent 2px 9px),
-    repeating-linear-gradient(-45deg, rgb(255 255 255 / 0.05) 0 2px, transparent 2px 9px),
-    linear-gradient(160deg, #2a2160, #171240 55%, #0d0b28);
+    linear-gradient(135deg, rgb(255 255 255 / 0.6), transparent 50%),
+    radial-gradient(circle at 50% 50%, #ffffff 0, #eef2fa 55%, #d9e0ee 100%);
   box-shadow:
-    inset 0 0 0 3px #0d0b28,
-    inset 0 0 0 4px rgb(63 181 170 / 0.6),
-    2px 2px 0 #0b1a33,
-    4px 4px 0 #091428,
-    0 8px 16px rgb(0 0 0 / 0.5);
+    inset 0 0 0 3px #eef2fa,
+    inset 0 0 0 4px rgb(31 59 115 / 0.55),
+    inset 0 0 0 7px #eef2fa,
+    inset 0 0 0 8px rgb(31 59 115 / 0.25),
+    2px 2px 0 #b9c3d6,
+    4px 4px 0 #9fabc2,
+    0 8px 16px rgb(0 0 0 / 0.4);
+}
+.dorso.runa::before {
+  border-color: rgb(31 59 115 / 0.85);
+  outline-color: rgb(31 59 115 / 0.35);
+  background:
+    linear-gradient(45deg, transparent 46%, rgb(31 59 115 / 0.85) 46% 54%, transparent 54%),
+    linear-gradient(-45deg, transparent 46%, rgb(31 59 115 / 0.85) 46% 54%, transparent 54%);
+  box-shadow: none;
 }
 .dorso.runa::before {
   content: '◈';
   color: rgb(10 200 185 / 0.9);
   text-shadow: 0 0 12px rgb(10 200 185 / 0.6);
-}
-.dorso.runa .cuenta {
-  color: #10203f;
-  background: #fff;
 }
 
 /* ── Pistas de puntos ───────────────────────────────────────────────────────── */
@@ -1069,8 +1087,9 @@
 }
 .carta-btn.gasto-energia,
 .carta-btn.gasto-poder {
-  transform: translateY(-6px);
+  transform: translateY(-10px) scale(1.06);
   z-index: 3;
+  filter: brightness(1.15);
 }
 .carta-btn.gasto-energia .carta {
   box-shadow:
@@ -1124,6 +1143,89 @@
 .mio-der .etiqueta {
   font-size: 0.56rem;
   white-space: nowrap;
+}
+.campos-inicio {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 16px;
+  width: 100%;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.elige {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+.opciones-campo {
+  display: flex;
+  gap: 10px;
+}
+.opcion-campo {
+  display: grid;
+  gap: 4px;
+  justify-items: center;
+  padding: 6px;
+  min-height: 0;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background: rgb(255 255 255 / 0.04);
+  color: var(--text);
+  font-size: 0.74rem;
+}
+.opcion-campo img,
+.campo-rival-img {
+  width: 140px;
+  aspect-ratio: 1039 / 744;
+  object-fit: cover;
+  border-radius: 6px;
+}
+.opcion-campo.activa {
+  border-color: var(--accent);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.ficha-generica {
+  display: grid;
+  place-content: center;
+  width: 72px;
+  aspect-ratio: 744 / 1039;
+  border-radius: 5px;
+  font-weight: 800;
+  color: #1a1305;
+  background: linear-gradient(160deg, #f5d77a, var(--accent));
+}
+/* Robo: la carta llega desde el mazo (abajo a la derecha) girando. Juego: cae sobre la zona. */
+@keyframes robo-carta {
+  from {
+    opacity: 0;
+    transform: translate(40vw, -30vh) rotate(25deg) scale(0.6);
+  }
+  60% {
+    opacity: 1;
+  }
+}
+@keyframes juego-carta {
+  0% {
+    transform: translateY(-40px) scale(1.25);
+    filter: brightness(1.6) drop-shadow(0 0 18px var(--accent));
+  }
+  70% {
+    transform: translateY(2px) scale(0.98);
+  }
+  100% {
+    transform: none;
+    filter: none;
+  }
+}
+.en-mano .carta-btn.robada {
+  animation: robo-carta 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.carta-btn.jugada {
+  animation: juego-carta 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.acciones .activo {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 .modal-rec {
   max-width: min(480px, calc(100vw - 32px));
@@ -1371,6 +1473,8 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  .carta-btn.robada,
+  .carta-btn.jugada,
   .carta-btn,
   .ficha-rival,
   .log-cajon,

@@ -35,6 +35,8 @@ import {
   danar,
   desterrar,
   fijarPuntos,
+  ficha,
+  fichasDelTexto,
   fuerzaDe,
   jugar,
   listarPalabrasClave,
@@ -63,6 +65,7 @@ import {
   validarMazo,
   zonaDe,
 } from '../core/simulador';
+import { fijarSonido, sonar, sonidoActivo } from '../core/sonidos';
 import { TraduccionService } from '../core/traduccion.service';
 import { InclinarDirective } from '../ui/inclinar.directive';
 import { ThumbPipe } from '../ui/pipes';
@@ -115,6 +118,12 @@ export class SimuladorPage {
   protected readonly avisosAbiertos = signal(false);
   protected readonly recAbierto = signal<number | null>(null);
   protected readonly leyendaAbierta = signal(false);
+  /** Pistas de la fase (plegadas tras el botón "?"). */
+  protected readonly ayuda = signal(false);
+  protected readonly sonido = signal(sonidoActivo());
+  /** Cartas recién robadas / recién jugadas: llevan la animación un instante. */
+  protected readonly recienRobadas = signal<ReadonlySet<number>>(new Set());
+  protected readonly recienJugadas = signal<ReadonlySet<number>>(new Set());
   /** Zona donde se va a jugar una ficha (abre el selector). */
   protected readonly tokenDestino = signal<DestinoJuego | null>(null);
   /** Carta de la mano con varios destinos legales: se pregunta dónde jugarla. */
@@ -124,8 +133,8 @@ export class SimuladorPage {
   } | null>(null);
   /** Al pasar el ratón por una carta jugable: qué runas se gastarían. */
   protected readonly gasto = computed(() => {
-    const c = this.vistaPrevia();
-    if (!c || !this.enMano(c) || this.p().fase !== 'principal') return null;
+    const c = this.cartaEleccion() ?? this.vistaPrevia();
+    if (!c || c.uid < 0 || !this.enMano(c)) return null;
     return planDePago(this.p(), costeDe(this.p(), c, this.acelerar() && c.ficha.kw.accelerate));
   });
   protected readonly cartaEleccion = computed(() => {
@@ -138,17 +147,45 @@ export class SimuladorPage {
   protected readonly tokensCatalogo = computed(() => {
     const vistos = new Set<string>();
     const fuera = ['XP Tracker', 'Empowered', 'Buff'];
-    return this.catalog
-      .cards()
+    const cartas = this.catalog.cards();
+    const delCatalogo = cartas
       .filter((c) => c.supertype === 'Token' && (c.type === 'Unit' || c.type === 'Gear'))
-      .map((c) => ({ ...c, nombre: c.name.split(' // ')[0].replace(/\s*\([A-Z]+\)$/, '') }))
-      .filter((c) => !fuera.includes(c.nombre) && !vistos.has(c.nombre) && vistos.add(c.nombre))
-      .sort((a, b) => a.type.localeCompare(b.type) || a.nombre.localeCompare(b.nombre));
+      .map((c) => ({
+        id: c.cardId as string | undefined,
+        nombre: c.name.split(' // ')[0].replace(/\s*\([A-Z]+\)$/, ''),
+        tipo: c.type,
+        fuerza: c.might ?? 0,
+        imgUrl: c.imgUrl as string | undefined,
+        texto: c.text,
+      }))
+      .filter((c) => !fuera.includes(c.nombre) && !vistos.has(c.nombre) && vistos.add(c.nombre));
+    // Fichas que solo existen en el texto de otras cartas.
+    const delTexto: typeof delCatalogo = [];
+    for (const c of cartas) {
+      for (const f of fichasDelTexto(c.text)) {
+        if (vistos.has(f.nombre)) continue;
+        vistos.add(f.nombre);
+        delTexto.push({
+          id: undefined,
+          nombre: f.nombre,
+          tipo: 'Unit',
+          fuerza: f.fuerza,
+          imgUrl: undefined,
+          texto: `Ficha de ${f.fuerza} de fuerza que crea ${c.name}.`,
+        });
+      }
+    }
+    return [...delCatalogo, ...delTexto].sort(
+      (a, b) => a.tipo.localeCompare(b.tipo) || a.nombre.localeCompare(b.nombre),
+    );
   });
   protected readonly leyenda = computed(() => this.carta(this.mazo()?.leyenda));
   protected readonly leyendaKw = computed(() => listarPalabrasClave(this.leyenda()?.text));
-  protected readonly leyendaActivable = computed(() =>
-    /:rb_exhaust:|\[Add\]|:\s*\[Reaction\]|:\s*\[Action\]/.test(this.leyenda()?.text ?? ''),
+  protected readonly leyendaActivable = computed(
+    () =>
+      /^(?:\s*(?::rb_[a-z_0-9]+:|\[[^\]]+\]|,))+\s*:\s/.test(
+        (this.leyenda()?.text ?? '').split('\n')[0],
+      ) || /:rb_exhaust:|\[Add\]|:\s*\[Reaction\]|:\s*\[Action\]/.test(this.leyenda()?.text ?? ''),
   );
   protected readonly recordatorioAbierto = computed(() => {
     const id = this.recAbierto();
@@ -232,10 +269,53 @@ export class SimuladorPage {
     if (despues === antes) return;
     if (despues.aviso && despues.log === antes.log) {
       this.p.set(despues);
+      sonar('error');
       return;
     }
     this.historial.update((h) => [...h.slice(-39), antes]);
     this.p.set(despues);
+    this.efectos(antes, despues);
+  }
+
+  /** Sonidos y animaciones según lo que ha cambiado entre dos estados. */
+  private efectos(antes: Partida, despues: Partida): void {
+    const uids = (l: Copia[]) => new Set(l.map((c) => c.uid));
+    const manoAntes = uids(antes.mano);
+    const robadas = despues.mano.filter((c) => !manoAntes.has(c.uid)).map((c) => c.uid);
+    const enJuegoAntes = uids([
+      ...antes.base,
+      ...antes.campos[0].unidades,
+      ...antes.campos[1].unidades,
+    ]);
+    const jugadas = [...despues.base, ...despues.campos[0].unidades, ...despues.campos[1].unidades]
+      .filter((c) => !enJuegoAntes.has(c.uid))
+      .map((c) => c.uid);
+    if (robadas.length) {
+      this.recienRobadas.set(new Set(robadas));
+      setTimeout(() => this.recienRobadas.set(new Set()), 700);
+    }
+    if (jugadas.length) {
+      this.recienJugadas.set(new Set(jugadas));
+      setTimeout(() => this.recienJugadas.set(new Set()), 700);
+    }
+    if (!antes.enfrentamiento && despues.enfrentamiento?.tipo === 'combate') sonar('combate');
+    else if (despues.puntos > antes.puntos || despues.ganador) sonar('punto');
+    else if (jugadas.length)
+      sonar(
+        jugadas.some((u) => manoAntes.has(u) || antes.campeon.some((c) => c.uid === u))
+          ? 'jugar'
+          : 'mover',
+      );
+    else if (robadas.length) sonar('robar');
+    else if (despues.cementerio.length > antes.cementerio.length && despues.fase === antes.fase)
+      sonar('jugar');
+  }
+
+  protected alternarSonido(): void {
+    const v = !this.sonido();
+    this.sonido.set(v);
+    fijarSonido(v);
+    if (v) sonar('punto');
   }
 
   protected deshacer(): void {
@@ -404,7 +484,7 @@ export class SimuladorPage {
   protected usarLaLeyenda(): void {
     const l = this.leyenda();
     if (!l) return;
-    this.mutar((p) => usarLeyenda(p, l.name, l.text));
+    this.mutar((p) => usarLeyenda(p, l.name, l.text, (id) => this.catalog.card(id)));
     if (!this.p().aviso) this.leyendaAbierta.set(false);
   }
 
@@ -420,7 +500,7 @@ export class SimuladorPage {
     this.mutar(barajarMazo);
   }
 
-  protected crearFicha(id?: string): void {
+  protected crearFicha(id?: string, nombre?: string, fuerza?: number): void {
     const destino = this.tokenDestino();
     if (!destino) return;
     this.mutar((p) =>
@@ -429,7 +509,10 @@ export class SimuladorPage {
         destino,
         id
           ? { id }
-          : { nombre: this.tokenNombre().trim(), fuerza: Math.max(0, this.tokenFuerza()) },
+          : {
+              nombre: (nombre ?? this.tokenNombre()).trim(),
+              fuerza: Math.max(0, fuerza ?? this.tokenFuerza()),
+            },
         (cid) => this.catalog.card(cid),
       ),
     );
@@ -612,6 +695,22 @@ export class SimuladorPage {
   protected pulsarRival(r: Rival): void {
     if (this.ignorarClick) return;
     this.seleccion.set(this.seleccion()?.uid === r.uid ? null : { uid: r.uid, rival: true });
+  }
+
+  /** Vista previa de una carta que no es una copia en juego (leyenda, campo). */
+  protected previsualizarId(id: string | null | undefined): void {
+    if (!id || this.arrastre()) return;
+    this.vistaPrevia.set({
+      uid: -1,
+      id,
+      ficha: ficha(id, this.carta(id)),
+      agotada: false,
+      danio: 0,
+      buffs: 0,
+      aturdida: false,
+      ocultaDesde: null,
+      token: false,
+    });
   }
 
   protected previsualizar(c: Copia | null): void {
