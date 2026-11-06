@@ -8,7 +8,7 @@ import { CatalogCard } from './catalog.service';
 
 /** Sets con sobre: los de expansión, con sus rarezas completas. */
 export const SETS_SOBRE = ['OGN', 'SFD', 'UNL', 'VEN', 'RAD'] as const;
-export const CARTAS_POR_SOBRE = 5;
+export const CARTAS_POR_SOBRE = 14;
 /** Sobres que se acumulan como máximo y cada cuánto se recarga uno. */
 export const MAX_APERTURAS = 2;
 export const RECARGA_MS = 12 * 60 * 60 * 1000;
@@ -109,13 +109,7 @@ export function reparto(
   return r;
 }
 
-/** Última carta del sobre: pesos acumulados (Rare 70 %, Epic 24 %, Showcase 6 %). */
-const PESOS_ULTIMA: [Rareza, number][] = [
-  ['Rare', 0.7],
-  ['Epic', 0.94],
-  ['Showcase', 1],
-];
-/** Probabilidad del "sobre dorado": las cinco cartas Showcase. */
+/** Probabilidad del "sobre dorado": todas las cartas Showcase. */
 export const PROB_SOBRE_DORADO = 0.005;
 
 function elegir<T>(lista: readonly T[], azar: () => number, evitar: Set<T>): T | null {
@@ -132,8 +126,11 @@ export interface Sobre {
 }
 
 /**
- * Abre un sobre: 3 comunes, 1 infrecuente y una última carta rara o mejor, sin repetir
- * dentro del sobre si hay de dónde elegir. Con poca suerte (0,5 %) sale un sobre dorado.
+ * Abre un sobre de 14 cartas, como los reales: 7 comunes, 3 infrecuentes, 2 raras (cada una
+ * puede subir a épica, 25 %), 1 hueco especial (épica 85 % / Showcase 15 %) y 1 hueco
+ * "foil" con cualquier rareza (común 40 %, infrecuente 30 %, rara 20 %, épica 8 %, Showcase
+ * 2 %). Sin repetir dentro del sobre si hay de dónde elegir. Con poca suerte (0,5 %) sale un
+ * sobre dorado, todo Showcase. Las probabilidades son inventadas.
  */
 export function abrirSobre(
   set: string,
@@ -145,24 +142,30 @@ export function abrirSobre(
   const salida: CatalogCard[] = [];
   const vistas = new Set<CatalogCard>();
   const pon = (z: Rareza) => {
-    const c = elegir(r[z].length ? r[z] : r.Common, azar, vistas);
+    const lista = r[z].length ? r[z] : r.Rare.length ? r.Rare : r.Common;
+    const c = elegir(lista, azar, vistas);
     if (c) {
       salida.push(c);
       vistas.add(c);
     }
   };
-  const dorado = r.Showcase.length >= CARTAS_POR_SOBRE && azar() < PROB_SOBRE_DORADO;
+  const dorado = r.Showcase.length >= 5 && azar() < PROB_SOBRE_DORADO;
   if (dorado) {
     for (let i = 0; i < CARTAS_POR_SOBRE; i++) pon('Showcase');
     return { set, cartas: salida, dorado: true };
   }
-  pon('Common');
-  pon('Common');
-  pon('Common');
-  pon(r.Uncommon.length ? 'Uncommon' : 'Common');
+  for (let i = 0; i < 7; i++) pon('Common');
+  for (let i = 0; i < 3; i++) pon(r.Uncommon.length ? 'Uncommon' : 'Common');
+  for (let i = 0; i < 2; i++) pon(azar() < 0.25 && r.Epic.length ? 'Epic' : 'Rare');
+  pon(azar() < 0.15 && r.Showcase.length ? 'Showcase' : r.Epic.length ? 'Epic' : 'Rare');
   const x = azar();
-  const ultima = PESOS_ULTIMA.find(([, acumulado]) => x < acumulado)?.[0] ?? 'Rare';
-  pon(r[ultima].length ? ultima : 'Rare');
+  const foil: Rareza =
+    x < 0.4 ? 'Common' : x < 0.7 ? 'Uncommon' : x < 0.9 ? 'Rare' : x < 0.98 ? 'Epic' : 'Showcase';
+  pon(foil);
+  // El álbum muestra lo mejor al final: se ordena de menor a mayor rareza.
+  salida.sort(
+    (a, b) => ORDEN_RAREZA[rarezaDe(a) ?? 'Common'] - ORDEN_RAREZA[rarezaDe(b) ?? 'Common'],
+  );
   return { set, cartas: salida, dorado: false };
 }
 

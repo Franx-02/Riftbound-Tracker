@@ -66,7 +66,7 @@ export class AlbumService {
   abrir(
     set: string,
     catalogo: readonly CatalogCard[],
-    azar: () => number = Math.random,
+    opciones: { gratis?: boolean; azar?: () => number } = {},
   ): Sobre | null {
     this.comprobarSesion();
     const uid = this.uid();
@@ -75,7 +75,11 @@ export class AlbumService {
       return null;
     }
     const ahora = new Date();
-    const aperturas = consumir(this.album().aperturas, ahora);
+    const azar = opciones.azar ?? Math.random;
+    // Modo libre: no gasta sobres (solo se aplica la recarga por tiempo).
+    const aperturas = opciones.gratis
+      ? recargar(this.album().aperturas, ahora)
+      : consumir(this.album().aperturas, ahora);
     if (!aperturas) return null;
     const sobre = abrirSobre(set, catalogo, azar);
     if (!sobre) return null;

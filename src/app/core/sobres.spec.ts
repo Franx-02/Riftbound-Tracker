@@ -56,22 +56,28 @@ const secuencia = (valores: number[]) => {
 };
 
 describe('sobres', () => {
-  it('un sobre trae 3 comunes, 1 infrecuente y una rara o mejor, sin fichas ni otros sets', () => {
-    const s = abrirSobre('OGN', CATALOGO, secuencia([0.9, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.5]))!;
-    expect(s.cartas).toHaveLength(5);
-    expect(s.cartas.slice(0, 3).every((c) => c.rarity === 'Common' && !c.supertype)).toBe(true);
-    expect(s.cartas[3].rarity).toBe('Uncommon');
-    expect(['Rare', 'Epic']).toContain(s.cartas[4].rarity);
-    expect(s.cartas.every((c) => c.set === 'OGN')).toBe(true);
-    expect(new Set(s.cartas.map((c) => c.cardId)).size).toBe(5);
+  it('un sobre trae 14 cartas: 7 comunes, 3 infrecuentes y 4 raras o mejores, sin fichas ni otros sets', () => {
+    const s = abrirSobre('OGN', CATALOGO, () => 0.5)!;
+    expect(s.cartas).toHaveLength(14);
+    const cuenta = (z: string) => s.cartas.filter((c) => c.rarity === z && !c.alt).length;
+    // Con azar 0,5 el hueco foil sale infrecuente: 7 comunes y 3 + 1 infrecuentes.
+    expect(cuenta('Common')).toBe(7);
+    expect(cuenta('Uncommon')).toBe(4);
+    expect(s.cartas.every((c) => c.set === 'OGN' && !c.supertype)).toBe(true);
+    expect(
+      s.cartas.filter((c) => ['Rare', 'Epic'].includes(c.rarity) || c.alt).length,
+    ).toBeGreaterThanOrEqual(3);
+    expect(new Set(s.cartas.map((c) => c.cardId)).size).toBe(14);
   });
 
-  it('la última carta es Showcase con el peso alto y el sobre dorado trae cinco', () => {
-    const s = abrirSobre('OGN', CATALOGO, secuencia([0.9, 0, 0.1, 0.2, 0.3, 0.97, 0.1]))!;
-    expect(s.cartas[4].alt).toBe(true);
-    const dorado = abrirSobre('OGN', CATALOGO, secuencia([0.001, 0, 0.2, 0.4, 0.6, 0.8]))!;
+  it('el sobre dorado trae todo Showcase y el hueco especial puede dar Showcase', () => {
+    const dorado = abrirSobre('OGN', CATALOGO, secuencia([0.001]))!;
     expect(dorado.dorado).toBe(true);
     expect(dorado.cartas.every((c) => c.alt)).toBe(true);
+    // Primer azar: dorado no (0.9). Luego 7+3 elecciones, 2 raras (0.5 → no épica), especial 0.1 → Showcase.
+    const vals = [0.9, ...Array(10).fill(0.3), 0.5, 0.3, 0.5, 0.3, 0.1, 0.3, 0.5, 0.3];
+    const s = abrirSobre('OGN', CATALOGO, secuencia(vals))!;
+    expect(s.cartas.some((c) => c.alt)).toBe(true);
   });
 
   it('sin cartas del set no hay sobre', () => {
@@ -94,14 +100,14 @@ describe('sobres', () => {
   });
 
   it('el álbum suma copias y el progreso cuenta cartas distintas por rareza', () => {
-    const s = abrirSobre('OGN', CATALOGO, secuencia([0.9, 0.1, 0.1, 0.2, 0.3, 0.5, 0.5]))!;
+    const s = abrirSobre('OGN', CATALOGO, () => 0.5)!;
     let album = guardarEnAlbum(albumVacio(), s);
     album = guardarEnAlbum(album, s);
     expect(album.abiertos).toBe(2);
     expect(Object.values(album.cartas).every((n) => n === 2)).toBe(true);
     const p = progreso('OGN', album, CATALOGO);
     expect(p.total).toBe(29);
-    expect(p.tengo).toBe(5);
+    expect(p.tengo).toBe(Object.keys(album.cartas).length);
     expect(p.porRareza.Common.total).toBe(10);
   });
 });
