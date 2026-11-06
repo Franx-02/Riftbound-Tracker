@@ -63,6 +63,8 @@ export class SobresPage {
   protected readonly abierto = signal(false);
   protected readonly sobre = signal<Sobre | null>(null);
   protected readonly reveladas = signal<ReadonlySet<number>>(new Set());
+  /** Carta que está en el centro de la fila; las anteriores se deslizan a la izquierda. */
+  protected readonly actual = signal(0);
   protected readonly nuevas = signal<ReadonlySet<string>>(new Set());
   protected readonly ampliada = signal<CatalogCard | null>(null);
   protected readonly ahora = signal(Date.now());
@@ -104,6 +106,11 @@ export class SobresPage {
   protected readonly todasReveladas = computed(() => {
     const s = this.sobre();
     return !!s && this.reveladas().size >= s.cartas.length;
+  });
+  /** Ya han pasado todas por el centro: se enseñan juntas. */
+  protected readonly terminado = computed(() => {
+    const s = this.sobre();
+    return !!s && this.actual() >= s.cartas.length;
   });
   protected readonly cartasAlbum = computed(() => {
     const set = this.setElegido();
@@ -233,6 +240,7 @@ export class SobresPage {
       }
       this.nuevas.set(new Set(s.cartas.map((c) => c.cardId).filter((id) => !(antes[id] > 0))));
       this.reveladas.set(new Set());
+      this.actual.set(0);
       this.sobre.set(s);
     }, 750);
   }
@@ -247,15 +255,47 @@ export class SobresPage {
     sonar(z === 'Showcase' || z === 'Epic' ? 'punto' : 'jugar');
   }
 
+  /**
+   * Pulsar la carta del centro: la primera vez se da la vuelta; la segunda pasa a la fila
+   * de la izquierda y entra la siguiente. Una ya pasada se amplía.
+   */
+  protected pulsarCarta(i: number): void {
+    const s = this.sobre();
+    if (!s) return;
+    if (i < this.actual()) {
+      this.ampliada.set(s.cartas[i]);
+      return;
+    }
+    if (i > this.actual()) return;
+    if (!this.reveladas().has(i)) {
+      this.revelar(i);
+      return;
+    }
+    this.actual.set(i + 1);
+    sonar('mover');
+  }
+
   protected revelarTodas(): void {
     const s = this.sobre();
     if (!s) return;
-    s.cartas.forEach((_, i) => setTimeout(() => this.revelar(i), i * 120));
+    const desde = this.actual();
+    const paso = 650;
+    for (let i = desde; i < s.cartas.length; i++) {
+      const t = (i - desde) * paso;
+      setTimeout(() => this.revelar(i), t);
+      setTimeout(
+        () => {
+          if (this.sobre() === s && this.actual() === i) this.actual.set(i + 1);
+        },
+        t + paso * 0.7,
+      );
+    }
   }
 
   protected cerrarSobre(): void {
     this.sobre.set(null);
     this.reveladas.set(new Set());
+    this.actual.set(0);
   }
 
   protected otroSobre(): void {
@@ -275,6 +315,11 @@ export class SobresPage {
       if (this.ampliada()) this.ampliada.set(null);
       else if (this.rasgando()) this.cancelar();
       else if (this.todasReveladas()) this.cerrarSobre();
+      return;
+    }
+    if (this.sobre() && !this.terminado() && ['Enter', ' ', 'ArrowRight'].includes(e.key)) {
+      e.preventDefault();
+      this.pulsarCarta(this.actual());
       return;
     }
     if (this.vista() !== 'sobres' || this.rasgando() || this.sobre()) return;

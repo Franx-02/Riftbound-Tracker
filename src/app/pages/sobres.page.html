@@ -239,39 +239,50 @@
         @if (s.dorado) {
           <p class="dorado-txt">✦ Sobre dorado ✦</p>
         }
-        <div class="cartas">
+        <div class="cartas" [class.resumen]="terminado()">
           @for (c of s.cartas; track $index; let i = $index) {
             <button
               type="button"
               class="carta3d"
               [class.volteada]="reveladas().has(i)"
+              [class.centro]="i === actual()"
+              [class.pasada]="i < actual()"
+              [class.pendiente]="i > actual()"
               [attr.data-rareza]="rareza(c)"
               [style.--i]="i"
-              (click)="revelar(i)"
-              [attr.aria-label]="reveladas().has(i) ? c.name : 'Revelar carta ' + (i + 1)"
+              [style.--k]="i - actual()"
+              (click)="pulsarCarta(i)"
+              [attr.aria-label]="
+                reveladas().has(i) ? c.name : i === actual() ? 'Dar la vuelta' : 'Carta ' + (i + 1)
+              "
             >
-              <span class="cara dorso" [style.background]="dorso"></span>
-              <span class="cara frente">
-                <img
-                  [src]="c.imgUrl | thumb: 400"
-                  [alt]="c.name"
-                  [appInclinar]="8"
-                  [holo]="rareza(c) === 'Showcase' || rareza(c) === 'Epic'"
-                />
-                @if (nuevas().has(c.cardId)) {
-                  <span class="nueva">¡Nueva!</span>
-                }
-                <span class="rareza-tag">{{ etiquetaRareza(rareza(c)) }}</span>
+              <span class="giro">
+                <span class="cara dorso" [style.background]="dorso"></span>
+                <span class="cara frente">
+                  <img
+                    [src]="c.imgUrl | thumb: 400"
+                    [alt]="c.name"
+                    [appInclinar]="8"
+                    [holo]="rareza(c) === 'Showcase' || rareza(c) === 'Epic'"
+                  />
+                  @if (nuevas().has(c.cardId)) {
+                    <span class="nueva">¡Nueva!</span>
+                  }
+                  <span class="rareza-tag">{{ etiquetaRareza(rareza(c)) }}</span>
+                </span>
               </span>
             </button>
           }
         </div>
         <div class="acciones-sobre">
-          @if (!todasReveladas()) {
+          @if (!terminado()) {
             <span class="muted"
-              >Pulsa cada carta para darle la vuelta · {{ reveladas().size }}/{{
-                s.cartas.length
-              }}</span
+              >{{
+                reveladas().has(actual())
+                  ? 'Pulsa otra vez para pasar a la siguiente'
+                  : 'Pulsa la carta para darle la vuelta'
+              }}
+              · {{ actual() + 1 }}/{{ s.cartas.length }}</span
             >
             <button type="button" class="secondary" (click)="revelarTodas()">Revelar todas</button>
           } @else {

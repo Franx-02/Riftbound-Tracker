@@ -562,41 +562,82 @@
   color: #f5d77a;
   text-shadow: 0 0 20px rgb(245 184 28 / 0.8);
 }
+/* Fila deslizante: la carta actual en el centro, las pasadas se apilan a la izquierda y las
+   pendientes esperan boca abajo a la derecha. Al terminar, todas juntas (.resumen). */
 .cartas {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 14px;
-  max-width: min(1200px, calc(100vw - 32px));
+  --w: clamp(150px, 26vh, 260px);
+  --paso: 26px;
+  position: relative;
+  width: min(1200px, calc(100vw - 32px));
+  height: calc(var(--w) * 1039 / 744 + 36px);
   perspective: 1400px;
 }
 .carta3d {
-  --w: clamp(96px, 11vw, 150px);
-  position: relative;
+  position: absolute;
+  left: 50%;
+  top: 18px;
   width: var(--w);
+  margin-left: calc(var(--w) / -2);
   aspect-ratio: 744 / 1039;
   padding: 0;
   min-height: 0;
   border: 0;
   background: none;
-  transform-style: preserve-3d;
-  transition: transform 0.65s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition:
+    transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 0.4s ease;
   animation: entra 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-  animation-delay: calc(var(--i) * 60ms);
+  animation-delay: calc(var(--i) * 40ms);
   cursor: pointer;
 }
 @keyframes entra {
   from {
     opacity: 0;
-    transform: translateY(60px) scale(0.8);
+    transform: translate(40%, 60px) scale(0.6);
   }
 }
-.carta3d:not(.volteada):hover {
-  transform: translateY(-8px) rotateY(-8deg);
+.carta3d.centro {
+  z-index: 20;
+  transform: none;
 }
-.carta3d.volteada {
-  transform: rotateY(180deg);
+.carta3d.centro:not(.volteada):hover .giro {
+  transform: translateY(-8px) rotateY(-10deg);
+}
+.carta3d.pasada {
+  z-index: calc(20 + var(--k));
+  transform: translateX(calc(var(--w) * -0.95 + var(--k) * var(--paso))) scale(0.6);
+  opacity: calc(1 + (var(--k) + 9) / 3);
+}
+.carta3d.pendiente {
+  z-index: calc(20 - var(--k));
+  transform: translateX(calc(var(--w) * 0.95 + var(--k) * 7px)) scale(0.8)
+    rotate(calc(var(--k) * 1.5deg));
+  opacity: calc(1 - (var(--k) - 5) / 3);
   cursor: default;
+}
+.cartas.resumen {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+  height: auto;
+}
+.resumen .carta3d {
+  --w: clamp(96px, 11vw, 150px);
+  position: static;
+  margin: 0;
+  transform: none;
+  opacity: 1;
+  z-index: auto;
+}
+.giro {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transition: transform 0.65s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.volteada .giro {
+  transform: rotateY(180deg);
 }
 .cara {
   position: absolute;
@@ -705,7 +746,11 @@
   .booster.centro {
     --w: 170px;
   }
-  .carta3d {
+  .cartas {
+    --w: min(46vw, 30vh);
+    --paso: 12px;
+  }
+  .resumen .carta3d {
     --w: 27vw;
   }
   .rejilla {
@@ -722,6 +767,7 @@
     animation: none;
   }
   .carta3d,
+  .giro,
   .booster {
     transition: none;
   }
