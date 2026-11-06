@@ -176,12 +176,13 @@
                 [attr.aria-label]="reveladas().has(i) ? c.name : 'Revelar carta ' + (i + 1)"
               >
                 <span class="cara dorso" [style.background]="dorso"></span>
-                <span
-                  class="cara frente"
-                  [appInclinar]="8"
-                  [holo]="rareza(c) === 'Showcase' || rareza(c) === 'Epic'"
-                >
-                  <img [src]="c.imgUrl | thumb: 400" [alt]="c.name" />
+                <span class="cara frente">
+                  <img
+                    [src]="c.imgUrl | thumb: 400"
+                    [alt]="c.name"
+                    [appInclinar]="8"
+                    [holo]="rareza(c) === 'Showcase' || rareza(c) === 'Epic'"
+                  />
                   @if (nuevas().has(c.cardId)) {
                     <span class="nueva">¡Nueva!</span>
                   }
