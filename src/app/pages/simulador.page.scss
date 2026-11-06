@@ -307,6 +307,10 @@
 .runas-mias {
   min-height: 0;
   height: 100%;
+  overflow: visible;
+}
+.runas-mias .fila {
+  overflow: visible;
 }
 .runas-mias .etiqueta {
   flex-wrap: nowrap;
@@ -419,7 +423,7 @@
   /* Primero la imagen real (public/img/dorso.png); si no está, el dibujo SVG. */
   background:
     url('/img/dorso.png') center / 100% 100% no-repeat,
-    url('/img/dorso-runa-respaldo.svg') center / 100% 100% no-repeat;
+    url('/img/dorso-respaldo.svg') center / 100% 100% no-repeat;
   box-shadow:
     2px 2px 0 #071c24,
     4px 4px 0 #05161c,
@@ -483,7 +487,7 @@
 .dorso.runa {
   background:
     url('/img/dorso-runa.png') center / 100% 100% no-repeat,
-    url('/img/dorso-respaldo.svg') center / 100% 100% no-repeat;
+    url('/img/dorso-runa-respaldo.svg') center / 100% 100% no-repeat;
   box-shadow:
     2px 2px 0 #b9c3d6,
     4px 4px 0 #9fabc2,
@@ -924,14 +928,91 @@
 }
 
 /* ── Capas: recordatorios, Vision, historial, vista previa, menús ───────────── */
-.recordatorios {
+.cola {
+  position: fixed;
+  inset: 50px 16px auto auto;
+  z-index: 45;
+  width: 272px;
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface) 95%, transparent);
+  border: 1px solid var(--accent);
+  box-shadow: 0 16px 40px rgb(0 0 0 / 0.6);
+  animation: entra-carta 0.2s ease both;
+}
+.cola-titulo {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.cola-actual {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 8px;
+}
+.cola-carta,
+.cola-mini {
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: none;
+  line-height: 0;
+}
+.cola-carta img {
+  width: 72px;
+  border-radius: 5px;
+}
+.cola-sin {
+  display: grid;
+  place-content: center;
+  width: 72px;
+  aspect-ratio: 744 / 1039;
+  font-size: 1.4rem;
+  line-height: 1;
+  color: var(--accent);
+}
+.cola-info {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  font-size: 0.74rem;
+}
+.cola-info .mini {
+  justify-self: start;
+}
+.cola-texto {
+  max-height: 112px;
+  overflow: auto;
+}
+.cola-pila {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 8px;
   align-items: center;
+  gap: 4px;
 }
-.rec-chip {
+.cola-mini {
+  border-radius: 4px;
+  font-size: 0.8rem;
+  line-height: 1;
+  color: var(--accent);
+  min-width: 34px;
+  min-height: 46px;
+}
+.cola-mini img {
+  display: block;
+  width: 34px;
+  border-radius: 3px;
+}
+.cola-mini.actual {
   border-color: var(--accent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 60%, transparent);
+}
+.cola-flecha {
+  font-size: 0.8rem;
   color: var(--accent);
 }
 .telon {
@@ -1175,15 +1256,38 @@
   color: #1a1305;
   background: linear-gradient(160deg, #f5d77a, var(--accent));
 }
-/* Robo: la carta llega desde el mazo (abajo a la derecha) girando. Juego: cae sobre la zona. */
+/* Robo: la carta sale del mazo de verdad (--dx/--dy medidos en colocarRobo) y crece hasta la
+   mano. Juego: cae sobre la zona. */
 @keyframes robo-carta {
-  from {
+  0% {
     opacity: 0;
-    transform: translate(40vw, -30vh) rotate(25deg) scale(0.6);
+    transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(var(--escala, 0.6));
   }
-  60% {
+  8% {
     opacity: 1;
   }
+  55% {
+    transform: translate(calc(var(--dx, 0px) * 0.35), calc(var(--dy, 0px) * 0.35 - 30px))
+      rotate(-8deg) scale(calc((1 + var(--escala, 0.6)) / 2 + 0.1));
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes mazo-salta {
+  0% {
+    transform: none;
+  }
+  40% {
+    transform: translateY(-8px) scale(1.06);
+  }
+  100% {
+    transform: none;
+  }
+}
+.dorso.robando {
+  animation: mazo-salta 0.35s ease both;
 }
 @keyframes juego-carta {
   0% {
@@ -1199,7 +1303,7 @@
   }
 }
 .en-mano .carta-btn.robada {
-  animation: robo-carta 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: robo-carta 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 .carta-btn.jugada {
   animation: juego-carta 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
@@ -1299,9 +1403,15 @@
   border-radius: 14px;
   box-shadow: 0 30px 70px rgb(0 0 0 / 0.75);
 }
+.vista-previa.apaisada img {
+  height: auto;
+  width: min(62vw, calc(100vw - var(--ancho-barra, 0px) - 360px), 820px);
+}
 .vp-texto {
   display: grid;
   gap: 4px;
+  flex: 0 0 auto;
+  width: 270px;
   max-width: 270px;
   padding: 10px 12px;
   border-radius: 10px;
@@ -1394,6 +1504,10 @@
   .info-rival,
   .vista-previa {
     display: none;
+  }
+  .cola {
+    inset: auto 8px 8px 8px;
+    width: auto;
   }
   .fila {
     flex-wrap: wrap;

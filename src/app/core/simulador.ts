@@ -208,6 +208,8 @@ export interface Recordatorio {
   id: number;
   titulo: string;
   texto: string;
+  /** cardId de la carta que lo origina, para enseñarla en la cola de reacciones. */
+  cardId?: string;
 }
 
 export interface Pozo {
@@ -418,12 +420,12 @@ const anota = (p: Partida, texto: string): Partida => ({
 });
 const rechaza = (p: Partida, aviso: string): Partida => ({ ...p, aviso });
 
-function recordar(p: Partida, titulo: string, texto: string): Partida {
+function recordar(p: Partida, titulo: string, texto: string, cardId?: string): Partida {
   const id = p.siguienteUid + 1;
   return {
     ...p,
     siguienteUid: id,
-    recordatorios: [...p.recordatorios, { id, titulo, texto }],
+    recordatorios: [...p.recordatorios, { id, titulo, texto, ...(cardId ? { cardId } : {}) }],
   };
 }
 
@@ -669,7 +671,7 @@ function empezarTurno(p: Partida): Partida {
   for (const { c } of enJuego(s)) {
     if (c.ficha.kw.temporary) s = matar(s, c.uid, 'Temporary');
     else if (c.ficha.disparadores.includes('inicio'))
-      s = recordar(s, c.ficha.nombre, c.ficha.texto);
+      s = recordar(s, c.ficha.nombre, c.ficha.texto, c.id);
   }
   // Puntuación: Hold de cada campo que controlo (CR 315.2.b, 469.2).
   for (const i of [0, 1] as const) if (s.campos[i].control === 'yo') s = puntuar(s, i, 'hold');
@@ -754,7 +756,7 @@ function puntuar(p: Partida, i: 0 | 1, motivo: 'hold' | 'conquista'): Partida {
   if (xp) s = anota({ ...s, xp: s.xp + xp }, `Hunt: ganas ${xp} XP.`);
   for (const c of campo.unidades) {
     if (c.ficha.disparadores.includes(motivo === 'hold' ? 'hold' : 'conquer'))
-      s = recordar(s, c.ficha.nombre, c.ficha.texto);
+      s = recordar(s, c.ficha.nombre, c.ficha.texto, c.id);
   }
   // El punto final por conquista exige haber puntuado todos los campos este turno (CR 471.1.b).
   if (motivo === 'conquista' && s.puntos >= PUNTOS_PARA_GANAR - 1) {
@@ -1056,7 +1058,7 @@ export function jugar(p: Partida, uid: number, destino: DestinoJuego, acelerar =
       { ...s, cementerio: [...s.cementerio, nueva] },
       `Juegas el hechizo ${c.ficha.nombre}${pagado}: resuelve su efecto y va al cementerio.`,
     );
-    s = recordar(s, `Efecto de ${c.ficha.nombre}`, c.ficha.texto);
+    s = recordar(s, `Efecto de ${c.ficha.nombre}`, c.ficha.texto, c.id);
   } else {
     const z: ZonaSim = c.ficha.tipo === 'Gear' && destino === 'base' ? 'base' : destino;
     s = conLista(s, z, [...lista(s, z), nueva]);
@@ -1065,7 +1067,7 @@ export function jugar(p: Partida, uid: number, destino: DestinoJuego, acelerar =
       `Juegas ${c.ficha.nombre}${pagado} en ${destino === 'base' ? 'tu base' : `el campo ${destino === 'campo0' ? 1 : 2}`}${c.ficha.tipo === 'Unit' ? (acelerar ? ', preparada (Accelerate)' : ', agotada (CR 143.4)') : ''}.`,
     );
     if (c.ficha.disparadores.includes('jugar') || c.ficha.kw.weaponmaster)
-      s = recordar(s, `Al jugar ${c.ficha.nombre}`, c.ficha.texto);
+      s = recordar(s, `Al jugar ${c.ficha.nombre}`, c.ficha.texto, c.id);
     if (c.ficha.kw.vision)
       s = anota(
         { ...s, pendiente: { tipo: 'vision', de: c.ficha.nombre } },
@@ -1224,7 +1226,7 @@ export function resolverEnfrentamiento(p: Partida): Partida {
   const suDanio = campo.rival.reduce((t, r) => t + r.fuerza, 0);
   for (const c of unidadesEn(campo)) {
     if (c.ficha.disparadores.includes(yoAtaco ? 'atacar' : 'defender'))
-      s = recordar(s, c.ficha.nombre, c.ficha.texto);
+      s = recordar(s, c.ficha.nombre, c.ficha.texto, c.id);
   }
   // Asignación (CR 465.2.c): letal a una antes de pasar a otra; Tank primero, Backline al final.
   const rivalesOrden = [...campo.rival].sort(
@@ -1506,7 +1508,7 @@ export function matar(p: Partida, uid: number, motivo = ''): Partida {
   };
   r = anota(r, `${c.ficha.nombre} muere${motivo ? ` (${motivo})` : ''}.`);
   if (c.ficha.disparadores.includes('morir'))
-    r = recordar(r, `${c.ficha.nombre} muere`, c.ficha.texto);
+    r = recordar(r, `${c.ficha.nombre} muere`, c.ficha.texto, c.id);
   return r;
 }
 
@@ -1627,7 +1629,13 @@ export function fichasDelTexto(
  *   "Play a N :rb_might: X unit token" crea la ficha en la base. Lo demás queda como
  *   recordatorio para resolverlo a mano (las pasivas y los disparadores también).
  */
-export function usarLeyenda(p: Partida, nombre: string, texto: string, carta?: Catalogo): Partida {
+export function usarLeyenda(
+  p: Partida,
+  nombre: string,
+  texto: string,
+  carta?: Catalogo,
+  cardId?: string,
+): Partida {
   if (p.fase === 'mulligan' || p.fase === 'fin')
     return rechaza(p, 'La leyenda se usa durante la partida.');
   const kw = palabrasClave(texto);
@@ -1650,6 +1658,7 @@ export function usarLeyenda(p: Partida, nombre: string, texto: string, carta?: C
       anota(p, `${nombre}: habilidad pasiva o disparada; aplícala a mano.`),
       `Habilidad de ${nombre}`,
       texto,
+      cardId,
     );
   }
   const agota = /§exhaust§/.test(costeTxt);
@@ -1742,7 +1751,7 @@ export function usarLeyenda(p: Partida, nombre: string, texto: string, carta?: C
     }
     return r;
   }
-  return recordar(s, `Habilidad de ${nombre}`, texto);
+  return recordar(s, `Habilidad de ${nombre}`, texto, cardId);
 }
 
 export function prepararLeyenda(p: Partida): Partida {
@@ -1763,7 +1772,7 @@ function desaparecer(p: Partida, c: Copia, motivo: string): Partida {
     `${c.ficha.nombre} (ficha) ${motivo === 'matar' ? 'muere y ' : ''}deja de existir.`,
   );
   if (motivo === 'matar' && c.ficha.disparadores.includes('morir'))
-    s = recordar(s, `${c.ficha.nombre} muere`, c.ficha.texto);
+    s = recordar(s, `${c.ficha.nombre} muere`, c.ficha.texto, c.id);
   return limpieza(s);
 }
 
@@ -1824,7 +1833,8 @@ export function crearToken(
     s,
     `Juegas la ficha ${fi.nombre}${fi.tipo === 'Unit' ? ` (${fi.fuerza} de fuerza)` : ''} en ${destino === 'base' ? 'tu base' : `el campo ${i + 1}`}${fi.tipo === 'Unit' ? ', agotada' : ''}.`,
   );
-  if (fi.disparadores.includes('jugar')) s = recordar(s, `Al jugar ${fi.nombre}`, fi.texto);
+  if (fi.disparadores.includes('jugar'))
+    s = recordar(s, `Al jugar ${fi.nombre}`, fi.texto, copia.id);
   if (esCampo && fi.tipo === 'Unit') s = contestar(s, i as 0 | 1, 'yo');
   return limpieza(s);
 }

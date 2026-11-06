@@ -94,16 +94,6 @@
       @if (ayuda()) {
         <p class="ultimo muted" aria-live="polite">{{ ultimo() }}</p>
       }
-      @if (p().recordatorios.length) {
-        <div class="recordatorios" aria-label="Efectos pendientes de resolver a mano">
-          <span class="etiqueta">Efectos pendientes</span>
-          @for (r of p().recordatorios; track r.id) {
-            <button type="button" class="mini rec-chip" (click)="recAbierto.set(r.id)">
-              ⚑ {{ r.titulo }}
-            </button>
-          }
-        </div>
-      }
       @if (p().aviso; as a) {
         <p class="aviso error" role="alert">{{ a }}</p>
       }
@@ -471,6 +461,7 @@
           type="button"
           class="dorso"
           [class.pulsa]="p().fase === 'robo'"
+          [class.robando]="mazoRobando()"
           (click)="pulsarMazo()"
           [title]="p().fase === 'robo' ? 'Robar 1 (fase de robo)' : 'Robar 1 por efecto'"
         >
@@ -745,6 +736,61 @@
       </div>
     }
 
+    @if (cola().length) {
+      <aside class="cola" aria-label="Cola de reacciones">
+        <span class="cola-titulo">Cola de reacciones · {{ cola().length }}</span>
+        @if (cola()[0]; as u) {
+          <div class="cola-actual">
+            <button
+              type="button"
+              class="cola-carta"
+              title="Ver el efecto"
+              (click)="recAbierto.set(u.id)"
+              (mouseenter)="previsualizarId(u.cardId)"
+              (mouseleave)="previsualizar(null)"
+            >
+              @if (u.cardId) {
+                <img [src]="carta(u.cardId)?.imgUrl ?? '' | thumb: 300" [alt]="u.titulo" />
+              } @else {
+                <span class="cola-sin">⚑</span>
+              }
+            </button>
+            <div class="cola-info">
+              <strong>{{ u.titulo }}</strong>
+              <div class="texto-carta cola-texto">
+                <app-rules-text [text]="t.texto(u.texto).valor" />
+              </div>
+              <button type="button" class="mini" (click)="cerrarRec(u.id)">Resuelto</button>
+            </div>
+          </div>
+        }
+        @if (cola().length > 1) {
+          <div class="cola-pila" aria-label="Orden de resolución: de izquierda a derecha">
+            @for (r of cola(); track r.id; let i = $index) {
+              @if (i) {
+                <span class="cola-flecha" aria-hidden="true">←</span>
+              }
+              <button
+                type="button"
+                class="cola-mini"
+                [class.actual]="!i"
+                [title]="r.titulo"
+                (click)="recAbierto.set(r.id)"
+                (mouseenter)="previsualizarId(r.cardId)"
+                (mouseleave)="previsualizar(null)"
+              >
+                @if (r.cardId) {
+                  <img [src]="carta(r.cardId)?.imgUrl ?? '' | thumb: 120" [alt]="r.titulo" />
+                } @else {
+                  ⚑
+                }
+              </button>
+            }
+          </div>
+        }
+      </aside>
+    }
+
     @if (recordatorioAbierto(); as r) {
       <div class="modal modal-rec" role="dialog" aria-label="Efecto pendiente">
         <strong>{{ r.titulo }}</strong>
@@ -791,7 +837,11 @@
     }
 
     @if (vistaPrevia(); as vp) {
-      <aside class="vista-previa" aria-hidden="true">
+      <aside
+        class="vista-previa"
+        aria-hidden="true"
+        [class.apaisada]="vp.ficha.tipo === 'Battlefield'"
+      >
         <img [src]="carta(vp.id)?.imgUrl ?? '' | thumb: 600" [alt]="vp.ficha.nombre" />
         <div class="vp-texto">
           <strong>{{ vp.ficha.nombre }}</strong>

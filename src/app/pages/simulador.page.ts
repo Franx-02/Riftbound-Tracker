@@ -1,5 +1,14 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { Component, HostListener, computed, effect, inject, input, signal } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  HostListener,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CatalogService } from '../core/catalog.service';
 import { estiloDominios } from '../core/dominios';
@@ -124,6 +133,9 @@ export class SimuladorPage {
   /** Cartas recién robadas / recién jugadas: llevan la animación un instante. */
   protected readonly recienRobadas = signal<ReadonlySet<number>>(new Set());
   protected readonly recienJugadas = signal<ReadonlySet<number>>(new Set());
+  /** El mazo da un pequeño salto cuando sale una carta de él. */
+  protected readonly mazoRobando = signal(false);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   /** Zona donde se va a jugar una ficha (abre el selector). */
   protected readonly tokenDestino = signal<DestinoJuego | null>(null);
   /** Carta de la mano con varios destinos legales: se pregunta dónde jugarla. */
@@ -190,6 +202,8 @@ export class SimuladorPage {
         (this.leyenda()?.text ?? '').split('\n')[0],
       ) || /:rb_exhaust:|\[Add\]|:\s*\[Reaction\]|:\s*\[Action\]/.test(this.leyenda()?.text ?? ''),
   );
+  /** Cola de reacciones: el último efecto pendiente se resuelve primero (CR 430). */
+  protected readonly cola = computed(() => [...this.p().recordatorios].reverse());
   protected readonly recordatorioAbierto = computed(() => {
     const id = this.recAbierto();
     return id === null ? null : (this.p().recordatorios.find((r) => r.id === id) ?? null);
@@ -280,6 +294,30 @@ export class SimuladorPage {
     this.efectos(antes, despues);
   }
 
+  /**
+   * Mide dónde está el mazo y dónde acaba cada carta robada, y se lo pasa a la animación
+   * para que la carta salga de verdad del mazo (CSS: --dx, --dy, --escala).
+   */
+  private colocarRobo(): void {
+    const raiz = this.host.nativeElement;
+    const mazo = raiz.querySelector<HTMLElement>('.pila[data-zona="mazo"] .dorso');
+    const cartas = raiz.querySelectorAll<HTMLElement>('.en-mano .carta-btn.robada');
+    if (!mazo || !cartas.length) {
+      if (!cartas.length && mazo) requestAnimationFrame(() => this.colocarRobo());
+      return;
+    }
+    const m = mazo.getBoundingClientRect();
+    for (const carta of cartas) {
+      // El contenedor .en-mano no se anima: su caja es el destino final de la carta.
+      const destino = (carta.parentElement ?? carta).getBoundingClientRect();
+      const dx = m.left + m.width / 2 - (destino.left + destino.width / 2);
+      const dy = m.top + m.height / 2 - (destino.top + destino.height / 2);
+      carta.style.setProperty('--dx', `${dx.toFixed(1)}px`);
+      carta.style.setProperty('--dy', `${dy.toFixed(1)}px`);
+      carta.style.setProperty('--escala', (m.width / Math.max(1, destino.width)).toFixed(3));
+    }
+  }
+
   /** Sonidos y animaciones según lo que ha cambiado entre dos estados. */
   private efectos(antes: Partida, despues: Partida): void {
     const uids = (l: Copia[]) => new Set(l.map((c) => c.uid));
@@ -296,6 +334,11 @@ export class SimuladorPage {
     if (robadas.length) {
       this.recienRobadas.set(new Set(robadas));
       setTimeout(() => this.recienRobadas.set(new Set()), 700);
+      if (despues.mazo.length < antes.mazo.length) {
+        this.mazoRobando.set(true);
+        setTimeout(() => this.mazoRobando.set(false), 400);
+        requestAnimationFrame(() => this.colocarRobo());
+      }
     }
     if (jugadas.length) {
       this.recienJugadas.set(new Set(jugadas));
@@ -487,7 +530,7 @@ export class SimuladorPage {
   protected usarLaLeyenda(): void {
     const l = this.leyenda();
     if (!l) return;
-    this.mutar((p) => usarLeyenda(p, l.name, l.text, (id) => this.catalog.card(id)));
+    this.mutar((p) => usarLeyenda(p, l.name, l.text, (id) => this.catalog.card(id), l.cardId));
     if (!this.p().aviso) this.leyendaAbierta.set(false);
   }
 
