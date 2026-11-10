@@ -48,6 +48,16 @@ export class RedService {
           dtype: 'q8',
         })) as unknown as Extractor;
         this.RawImage = modulo.RawImage as unknown as typeof this.RawImage;
+        // La primera pasada de la red es la más lenta (reserva memoria y compila): se hace
+        // aquí, con una imagen en blanco, y no con la primera carta que se enseña.
+        try {
+          const lado = 32;
+          const gris = new Uint8ClampedArray(lado * lado * 3).fill(128);
+          const Imagen = this.RawImage;
+          if (Imagen) await this.extractor(new Imagen(gris, lado, lado, 3));
+        } catch {
+          // Si el calentamiento falla, la primera lectura real dirá por qué.
+        }
         this.listo.set(true);
         this.error.set(null);
       } catch (e) {

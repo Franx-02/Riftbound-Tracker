@@ -5,6 +5,8 @@ import {
   huellasConMargen,
   leerHuella,
   masParecidas,
+  menorDistancia,
+  prepararPixeles,
   serializarHuella,
 } from './huella';
 
@@ -46,5 +48,63 @@ describe('huella', () => {
     const foto = imagen(3, 240, 336);
     const r = masParecidas(huellasConMargen(foto, { x: 0, y: 0, w: 240, h: 336 }), catalogo, 3);
     expect(r[0].cardId).toBe('C-3');
+  });
+
+  // Las tres siguientes fijan que las optimizaciones del escáner no cambian ningún resultado.
+  it('con la imagen preparada sale exactamente la misma huella', () => {
+    const regiones = [
+      { x: 0, y: 0, w: 240, h: 336 },
+      { x: 19.2, y: 23.5, w: 201.6, h: 144.5 }, // la ilustración de una carta
+      { x: -30, y: -12, w: 150, h: 90 }, // se sale por arriba y por la izquierda
+      { x: 200, y: 300, w: 120, h: 120 }, // se sale por abajo y por la derecha
+      { x: 10.4, y: 7.7, w: 13.3, h: 9.5 }, // más pequeña que la rejilla de 32×32
+      { x: 500, y: 500, w: 40, h: 40 }, // fuera del todo
+    ];
+    for (const semilla of [1, 2, 3]) {
+      const sinPreparar = regiones.map((r) => calcularHuella(imagen(semilla, 240, 336), r));
+      const foto = imagen(semilla, 240, 336);
+      prepararPixeles(foto);
+      regiones.forEach((r, i) => {
+        const h = calcularHuella(foto, r);
+        expect(h.hash).toEqual(sinPreparar[i].hash);
+        expect(Array.from(h.color)).toEqual(Array.from(sinPreparar[i].color));
+      });
+    }
+  });
+
+  it('masParecidas da las mismas distancias y el mismo orden que comparar una a una', () => {
+    const catalogo = new Map(
+      Array.from({ length: 40 }, (_, s) => [`C-${s}`, calcularHuella(imagen(s))] as const),
+    );
+    const variantes = huellasConMargen(imagen(7, 240, 336), { x: 0, y: 0, w: 240, h: 336 });
+    const aMano = [...catalogo]
+      .map(([cardId, h]) => ({
+        cardId,
+        distancia: Math.min(...variantes.map((q) => distancia(q, h))),
+      }))
+      .sort((a, b) => a.distancia - b.distancia);
+    expect(masParecidas(variantes, catalogo, 40)).toEqual(aMano);
+    // Con otro peso del color también (lo usa la herramienta de medir).
+    const conPeso = [...catalogo]
+      .map(([cardId, h]) => ({
+        cardId,
+        distancia: Math.min(...variantes.map((q) => distancia(q, h, 0.5))),
+      }))
+      .sort((a, b) => a.distancia - b.distancia);
+    expect(masParecidas(variantes, catalogo, 5, 0.5)).toEqual(conPeso.slice(0, 5));
+  });
+
+  it('menorDistancia es la distancia de la primera de masParecidas', () => {
+    const catalogo = new Map(
+      Array.from({ length: 40 }, (_, s) => [`C-${s}`, calcularHuella(imagen(s))] as const),
+    );
+    for (const semilla of [3, 11, 99]) {
+      const q = calcularHuella(imagen(semilla, 200, 280, 0.8));
+      expect(menorDistancia(q, catalogo)).toBe(masParecidas([q], catalogo, 1)[0].distancia);
+      expect(menorDistancia(q, catalogo)).toBe(
+        Math.min(...[...catalogo.values()].map((h) => distancia(q, h))),
+      );
+    }
+    expect(menorDistancia(calcularHuella(imagen(1)), new Map())).toBeUndefined();
   });
 });
