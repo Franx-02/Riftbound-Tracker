@@ -11,12 +11,13 @@ import { DescartadasService } from '../core/descartadas.service';
 import { MappingOverridesService } from '../core/mapping-overrides.service';
 import { PricesService } from '../core/prices.service';
 import { TraduccionService } from '../core/traduccion.service';
+import { AccionesCartaComponent } from '../ui/acciones-carta.component';
 import { IMPORTAR, SECCIONES } from '../ui/secciones';
 
 /** Marco de la app con sesión: barra, navegación y carga de los datos compartidos. */
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, AccionesCartaComponent],
   template: `
     <a class="saltar" href="#contenido">Saltar al contenido</a>
     <header class="barra">
@@ -102,6 +103,9 @@ import { IMPORTAR, SECCIONES } from '../ui/secciones';
     <div id="contenido" tabindex="-1"><router-outlet /></div>
     <!-- Hueco para que la barra inferior del móvil no tape el final de la página. -->
     <div class="hueco-barra" aria-hidden="true"></div>
+
+    <!-- Una sola hoja de acciones para todas las cartas de la app. -->
+    <app-acciones-carta />
 
     <!-- Los fallos al guardar salen aquí, flotando: al pie de una rejilla de cientos de
          cartas nadie los vería, y el cambio se deshace solo. -->
