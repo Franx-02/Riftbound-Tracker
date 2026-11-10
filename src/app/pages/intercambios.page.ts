@@ -4,6 +4,7 @@ import { AuthService } from '../core/auth.service';
 import { CatalogCard, CatalogService } from '../core/catalog.service';
 import { CollectionMap, CollectionService } from '../core/collection.service';
 import { IntercambiablesService } from '../core/intercambiables.service';
+import { nombreBase } from '../core/mazos';
 import { UsersService } from '../core/users.service';
 import { ValuationService } from '../core/valuation.service';
 import { EurPipe, ThumbPipe } from '../ui/pipes';
@@ -53,6 +54,17 @@ interface Oferta {
             }
           </select>
         </label>
+        <label class="casilla">
+          <input
+            type="checkbox"
+            [checked]="porVersion()"
+            (change)="porVersion.set($any($event.target).checked)"
+          />
+          <span>
+            Contar cada versión por separado
+            <small class="muted">(promo, alt art, firmada…)</small>
+          </span>
+        </label>
       </section>
 
       @if (!otro()) {
@@ -71,7 +83,9 @@ interface Oferta {
           </div>
           <p class="muted nota">
             Cartas de las que {{ nombreOtro() }} tiene {{ minimo() }} o más copias, o que ha marcado
-            para cambiar, y tú no tienes.
+            para cambiar, y tú no tienes{{
+              porVersion() ? ' en esa versión' : ' en ninguna versión'
+            }}.
           </p>
           <ul class="cartas">
             @for (o of pedir(); track o.card.cardId) {
@@ -114,7 +128,9 @@ interface Oferta {
           </div>
           <p class="muted nota">
             Cartas de las que tú tienes {{ minimo() }} o más copias, o que has marcado para cambiar,
-            y {{ nombreOtro() }} no tiene.
+            y {{ nombreOtro() }} no tiene{{
+              porVersion() ? ' en esa versión' : ' en ninguna versión'
+            }}.
           </p>
           <ul class="cartas">
             @for (o of ofrecer(); track o.card.cardId) {
@@ -143,6 +159,14 @@ interface Oferta {
     </main>
   `,
   styles: `
+    .casilla {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
     .pagina {
       padding: var(--pad-pagina);
       max-width: 1100px;
@@ -237,6 +261,12 @@ export class IntercambiosPage implements OnInit {
 
   protected readonly otro = signal('');
   protected readonly minimo = signal(1);
+  /**
+   * false (por defecto): a alguien le "falta" una carta si no tiene ninguna versión de ella.
+   * Antes se comparaba código a código, y quien tenía siete Reckless Innovator de Radiance
+   * salía como que le faltaba porque no tenía la promo (OPP-105). true: modo coleccionista.
+   */
+  protected readonly porVersion = signal(false);
   protected readonly copiado = signal<'pedir' | 'ofrecer' | null>(null);
 
   protected readonly otros = computed(() =>
@@ -256,6 +286,13 @@ export class IntercambiosPage implements OnInit {
     marcadas: ReadonlySet<string>,
   ): Oferta[] {
     const salida: Oferta[] = [];
+    // Las cartas (por nombre, sin "(Alternate Art)" y demás) de las que `para` ya tiene algo.
+    const yaTiene = new Set<string>();
+    if (!this.porVersion())
+      for (const [id, q] of para) {
+        const c = q.normal + q.foil > 0 ? this.catalog.card(id) : undefined;
+        if (c) yaTiene.add(nombreBase(c.name));
+      }
     for (const [cardId, q] of de) {
       const copias = q.normal + q.foil;
       const marcada = marcadas.has(cardId.toUpperCase());
@@ -264,6 +301,7 @@ export class IntercambiosPage implements OnInit {
       if (suyas && suyas.normal + suyas.foil > 0) continue;
       const card = this.catalog.card(cardId);
       if (!card) continue;
+      if (yaTiene.has(nombreBase(card.name))) continue;
       const p = this.valuation.pricing(cardId);
       salida.push({ card, copias, foil: q.foil, marcada, precio: p.normal ?? p.foil });
     }
@@ -294,7 +332,8 @@ export class IntercambiosPage implements OnInit {
     this.otro.set(uid);
     this.copiado.set(null);
     if (uid) {
-      void this.col.loadOther(uid);
+      // Siempre se relee: lo que añadió desde la última vez tiene que contar.
+      void this.col.loadOther(uid, true);
       void this.intercambiables.loadDe(uid);
     }
   }
