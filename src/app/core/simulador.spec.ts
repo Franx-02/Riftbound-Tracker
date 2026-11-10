@@ -295,6 +295,34 @@ describe('simulador (Core Rules 1v1)', () => {
     expect(p.mazo).toHaveLength(4);
   });
 
+  it('una keyword que la carta solo menciona no cuenta como suya', () => {
+    // Sprite Mother (OGN-106) crea una ficha con [Temporary]: ella no es Temporary.
+    const madre = palabrasClave(
+      "When you play me, play a ready 3 :rb_might: Sprite unit token with [Temporary] here. (Kill it at the start of its controller's Beginning Phase, before scoring.)",
+    );
+    expect(madre.temporary).toBe(false);
+    // Yuumi (OPP-056) da [Tank] a otra unidad.
+    const yuumi = palabrasClave(
+      'When I attack or defend, give one of your other units here +3 :rb_might: and [Tank] this turn. (It must be assigned combat damage first.)',
+    );
+    expect(yuumi.tank).toBe(false);
+    // Lillia (UNL-082): Accelerate es suya, la ficha Temporary no.
+    const lillia = palabrasClave(
+      '[Accelerate] (You may pay :rb_energy_1::rb_rune_mind: as an additional cost to have me enter ready.)\nWhen I move from a location, play a 3 :rb_might: Sprite unit token with [Temporary] there.',
+    );
+    expect(lillia).toMatchObject({ accelerate: true, temporary: false });
+    // La ficha sí lo es, y un recordatorio entre paréntesis no añade keywords.
+    expect(
+      palabrasClave('[Temporary] (Kill me at the start of your Beginning Phase.)').temporary,
+    ).toBe(true);
+    expect(
+      palabrasClave("[Shield 2] (+2 :rb_might: while I'm a defender, like [Tank].)"),
+    ).toMatchObject({
+      shield: 2,
+      tank: false,
+    });
+  });
+
   it('lee las palabras clave del texto y valida la construcción del mazo', () => {
     const kw = palabrasClave('[Accelerate] (…)\n[Assault 2] [Tank] [Deflect]');
     expect(kw).toMatchObject({

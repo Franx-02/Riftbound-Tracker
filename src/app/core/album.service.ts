@@ -4,7 +4,16 @@ import { AuthService } from './auth.service';
 import { CatalogCard } from './catalog.service';
 import { DEMO, escribirDemo, leerDemo } from './demo';
 import { db } from './firebase';
-import { Album, Sobre, abrirSobre, albumVacio, consumir, guardarEnAlbum, recargar } from './sobres';
+import {
+  MAX_APERTURAS,
+  Album,
+  Sobre,
+  abrirSobre,
+  albumVacio,
+  consumir,
+  guardarEnAlbum,
+  recargar,
+} from './sobres';
 
 /**
  * Álbum virtual del módulo Sobres: lo que has sacado abriendo sobres. Vive en un solo
@@ -94,7 +103,10 @@ export class AlbumService {
   refrescar(): void {
     const a = this.album();
     const r = recargar(a.aperturas);
-    if (r.restantes !== a.aperturas.restantes || r.desde !== a.aperturas.desde) {
+    // Con los sobres llenos `desde` es siempre "ahora": compararlo reescribía el álbum cada
+    // segundo y la página recalculaba el progreso de todos los sets con cada tic del reloj.
+    const lleno = r.restantes >= MAX_APERTURAS && a.aperturas.restantes >= MAX_APERTURAS;
+    if (r.restantes !== a.aperturas.restantes || (!lleno && r.desde !== a.aperturas.desde)) {
       this.album.set({ ...a, aperturas: r });
     }
   }

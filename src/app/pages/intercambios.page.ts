@@ -168,9 +168,10 @@ interface Oferta {
       flex: 1 1 200px;
     }
     .bloque {
-      padding: 14px;
-      background: var(--surface);
+      padding: 16px;
+      background: linear-gradient(180deg, rgb(255 255 255 / 2.5%), transparent 60%), var(--surface);
       border: 1px solid var(--border);
+      border-radius: var(--radio);
     }
     .cabecera-bloque {
       display: flex;

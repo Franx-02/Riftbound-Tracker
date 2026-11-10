@@ -1015,21 +1015,30 @@
   font-size: 0.8rem;
   color: var(--accent);
 }
+/* Las capas fijas viven dentro de `.mesa` (isolation), o sea, por debajo del menú de la
+   app: se colocan en lo que este deja libre, no en la ventana entera. Antes la ventana
+   inicial quedaba medio tapada por la barra lateral. */
 .telon {
   position: fixed;
-  inset: 0;
+  inset: var(--alto-barra, 56px) 0 var(--alto-nav, 0px) var(--ancho-barra, 0px);
   z-index: 54;
   display: grid;
-  place-content: center;
+  /* `safe`: si la ventana no cabe, empieza arriba y se puede bajar hasta sus botones. */
+  place-content: safe center;
+  padding: 12px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background: rgb(5 8 20 / 0.72);
   backdrop-filter: blur(6px);
 }
 .telon .modal {
   position: static;
   translate: none;
+  max-height: none;
+  overflow: visible;
 }
 .modal-mulligan {
-  max-width: min(1100px, calc(100vw - 48px));
+  max-width: min(1100px, calc(100vw - var(--ancho-barra, 0px) - 24px));
 }
 .mano-modal {
   display: flex;
@@ -1067,7 +1076,7 @@
   color: var(--muted);
 }
 .modal.modal-fichas {
-  max-width: min(760px, calc(100vw - 32px));
+  max-width: min(760px, calc(100vw - var(--ancho-barra, 0px) - 32px));
   width: min(760px, calc(100vw - 32px));
   justify-items: stretch;
 }
@@ -1321,9 +1330,13 @@
 }
 .modal {
   position: fixed;
-  inset: 50% auto auto 50%;
+  /* Centrada en la zona de juego, sin contar la barra lateral de la app. */
+  inset: 50% auto auto calc(var(--ancho-barra, 0px) + (100vw - var(--ancho-barra, 0px)) / 2);
   translate: -50% -50%;
   z-index: 55;
+  max-width: calc(100vw - var(--ancho-barra, 0px) - 24px);
+  max-height: calc(100dvh - var(--alto-barra, 56px) - var(--alto-nav, 0px) - 16px);
+  overflow-y: auto;
   display: grid;
   gap: 10px;
   justify-items: center;
@@ -1506,8 +1519,36 @@
     display: none;
   }
   .cola {
-    inset: auto 8px 8px 8px;
+    inset: auto 8px calc(var(--alto-nav, 0px) + 8px) 8px;
     width: auto;
+  }
+  .log-cajon {
+    bottom: var(--alto-nav, 0px);
+  }
+  /* Ventana inicial en pantallas estrechas: una columna, cartas más pequeñas y campos
+     que saltan de línea, para llegar a "Me quedo la mano" sin que nada se salga. */
+  .campos-inicio {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .opciones-campo {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .opcion-campo img,
+  .campo-rival-img {
+    width: min(26vw, 120px);
+  }
+  .mano-modal {
+    gap: 6px;
+  }
+  .en-modal {
+    padding: 4px;
+  }
+  .en-modal .carta-btn,
+  .en-modal .carta {
+    width: min(36vw, 150px);
+    /* Dentro de la ventana las cartas no se arrastran: que el dedo pueda desplazarla. */
+    touch-action: pan-y;
   }
   .fila {
     flex-wrap: wrap;
@@ -1543,8 +1584,10 @@
     transform: none;
   }
   .menu {
-    inset: auto 8px 8px 8px;
+    inset: auto 8px calc(var(--alto-nav, 0px) + 8px) 8px;
     flex-direction: column;
+    max-height: calc(100dvh - var(--alto-barra, 56px) - var(--alto-nav, 0px) - 16px);
+    overflow-y: auto;
   }
   .menu img {
     width: 110px;

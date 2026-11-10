@@ -1,7 +1,7 @@
 import { Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { CollectionService } from '../core/collection.service';
 import { ValuationService } from '../core/valuation.service';
-import { GraficaPrecioComponent, PuntoPrecio } from './grafica-precio.component';
+import { GraficaPrecioComponent, PuntoPrecio, puntosValidos } from './grafica-precio.component';
 
 /** Tras el último cambio en la colección, cuánto se espera antes de volver a pedir el historial. */
 const ESPERA_MS = 2000;
@@ -98,7 +98,7 @@ export class ValorColeccionComponent {
           })
             .then(async (r) => {
               if (!r.ok) throw new Error(`HTTP ${r.status}`);
-              const puntos = ((await r.json()) as { puntos: PuntoPrecio[] }).puntos;
+              const puntos = puntosValidos(await r.json());
               cache.clear();
               cache.set(cuerpo, puntos);
               this.historial.set(puntos);

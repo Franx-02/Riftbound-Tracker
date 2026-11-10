@@ -171,6 +171,13 @@ button:disabled {
   padding-left: 18px;
 }
 
+/* Las páginas (`<main class="pagina">`) son rejillas de una columna, y una columna implícita
+   no encoge por debajo de su contenido: sin esto, un hijo ancho (un input, una fila de
+   botones) sacaba la página por la derecha en móvil. Las que definen sus columnas ganan. */
+main.pagina {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .muted {
   color: var(--muted);
 }

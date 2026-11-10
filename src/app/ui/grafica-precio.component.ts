@@ -14,6 +14,20 @@ import { EurPipe } from './pipes';
 /** Un día del historial: [fecha AAAA-MM-DD, normal, foil]. null = sin datos. */
 export type PuntoPrecio = [string, number | null, number | null];
 
+/**
+ * Lo que llega de `/api/historial*`, comprobado: solo los puntos con la forma esperada.
+ * Una respuesta rara (otra versión de la función, un proxy que devuelve otra cosa) hacía
+ * fallar el dibujo y, con él, el pintado de toda la página.
+ */
+export function puntosValidos(datos: unknown): PuntoPrecio[] {
+  const puntos = (datos as { puntos?: unknown } | null)?.puntos;
+  if (!Array.isArray(puntos)) return [];
+  const numero = (v: unknown): number | null => (typeof v === 'number' && isFinite(v) ? v : null);
+  return puntos
+    .filter((p): p is unknown[] => Array.isArray(p) && typeof p[0] === 'string')
+    .map((p) => [p[0] as string, numero(p[1]), numero(p[2])]);
+}
+
 type Rango = '1M' | '3M' | '1A' | 'todo';
 const DIAS: Record<Rango, number> = { '1M': 31, '3M': 92, '1A': 366, todo: Infinity };
 
@@ -32,6 +46,22 @@ const FECHA_LARGA = new Intl.DateTimeFormat('es-ES', {
   year: 'numeric',
 });
 const EUROS = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' });
+const SIN_CENTIMOS = new Intl.NumberFormat('es-ES', {
+  style: 'currency',
+  currency: 'EUR',
+  maximumFractionDigits: 0,
+});
+const MILES = new Intl.NumberFormat('es-ES', { maximumFractionDigits: 2 });
+
+/**
+ * Texto de una marca del eje. Caben unos 8 caracteres a la izquierda de la gráfica: con el
+ * valor de una colección ("10.100,00 €") la cifra salía cortada. Los céntimos solo se
+ * enseñan cuando importan, y a partir de 10.000 € se cuenta en miles.
+ */
+function etiquetaEje(v: number, max: number): string {
+  if (max >= 10_000) return `${MILES.format(v / 1000)} k €`;
+  return max >= 100 ? SIN_CENTIMOS.format(v) : EUROS.format(v);
+}
 
 const aFecha = (s: string) => new Date(`${s}T12:00:00`);
 
@@ -373,7 +403,7 @@ export class GraficaPrecioComponent {
 
     const ticks: { v: number; y: number; texto: string }[] = [];
     for (let v = min; v <= max + paso / 2; v += paso)
-      ticks.push({ v, y: y(v), texto: EUROS.format(v) });
+      ticks.push({ v, y: y(v), texto: etiquetaEje(v, max) });
 
     const fechas =
       datos.length === 1

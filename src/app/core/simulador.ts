@@ -81,20 +81,33 @@ export const GLOSARIO_KW: Record<string, string> = {
 export function palabrasClave(texto: string | null | undefined): PalabrasClave {
   const t = texto ?? '';
   const tiene = (k: string) => new RegExp(`\\[${k}(?: \\d+)?\\]`).test(t);
+  /**
+   * Las keywords que la carta tiene de por sí encabezan una línea (`[Tank]`, `[Assault 2]
+   * (…)`). Si salen en mitad de una frase son de otra cosa: Sprite Mother crea una ficha
+   * "with [Temporary]" y Yuumi da [Tank] a otra unidad; contarlas mataba a Sprite Mother al
+   * empezar el turno. Las que dependen de una condición ([Level 6], "while I'm Mighty…")
+   * tampoco se dan por puestas: se aplican a mano con el menú de la carta.
+   */
+  const propias = t
+    .split('\n')
+    .map((l) => l.match(/^(?:\s*\[[^\]]+\](?:\s*\([^)]*\))?)+/)?.[0] ?? '')
+    .join(' ')
+    .replace(/\([^)]*\)/g, '');
+  const propia = (k: string) => new RegExp(`\\[${k}(?: \\d+)?\\]`).test(propias);
   const valor = (k: string) => {
-    const m = t.match(new RegExp(`\\[${k}(?: (\\d+))?\\]`));
+    const m = propias.match(new RegExp(`\\[${k}(?: (\\d+))?\\]`));
     return m ? Number(m[1] ?? 1) : 0;
   };
   return {
-    accelerate: tiene('Accelerate'),
+    accelerate: propia('Accelerate'),
     action: tiene('Action'),
     reaction: tiene('Reaction'),
     assault: valor('Assault'),
     shield: valor('Shield'),
-    tank: tiene('Tank'),
-    backline: tiene('Backline'),
-    ganking: tiene('Ganking'),
-    temporary: tiene('Temporary'),
+    tank: propia('Tank'),
+    backline: propia('Backline'),
+    ganking: propia('Ganking'),
+    temporary: propia('Temporary'),
     vision: tiene('Vision'),
     deathknell: tiene('Deathknell'),
     hidden: tiene('Hidden'),
@@ -673,6 +686,8 @@ function empezarTurno(p: Partida): Partida {
     else if (c.ficha.disparadores.includes('inicio'))
       s = recordar(s, c.ficha.nombre, c.ficha.texto, c.id);
   }
+  // Si con eso un campo se queda sin unidades, se pierde antes de puntuar: no da Hold.
+  s = limpieza(s);
   // Puntuación: Hold de cada campo que controlo (CR 315.2.b, 469.2).
   for (const i of [0, 1] as const) if (s.campos[i].control === 'yo') s = puntuar(s, i, 'hold');
   // Canalizar 2; el segundo jugador canaliza 3 en su primer turno (CR 485.7).
@@ -1258,6 +1273,12 @@ export function resolverEnfrentamiento(p: Partida): Partida {
     s,
     `Daño de combate: tú ${miDanio} contra ellos, el rival ${suDanio} contra ti (CR 465).`,
   );
+  // Mis unidades mueren o no contando Assault/Shield, igual que se repartió el daño: una
+  // [Shield 2] de 2 con 3 de daño sobrevive. La limpieza general no sabe quién ataca, así
+  // que se resuelve aquí y a las que quedan en pie se les quita ya el daño del combate.
+  for (const c of unidadesEn(s.campos[i]))
+    if (c.danio > 0 && c.danio >= fuerzaDe(c, papel)) s = matar(s, c.uid, 'en combate');
+  s = conCampo(s, i, { unidades: s.campos[i].unidades.map((c) => ({ ...c, danio: 0 })) });
   s = limpieza(s);
   // Limpieza de combate (CR 466.1): se cura todo y, si quedan defensores, los atacantes vuelven a base.
   let c2 = s.campos[i];

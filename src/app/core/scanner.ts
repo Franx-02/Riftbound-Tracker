@@ -57,6 +57,29 @@ export function parseCodigos(texto: string, setsValidos: ReadonlySet<string>): C
   return salida;
 }
 
+/**
+ * Código escrito a mano que no es solo un número: runas (`RAD R01`), fichas (`VEN T04`),
+ * showcase (`VEN SP1`) y variantes con letra (`OPP 7B`, `OGN-299*`). Se busca tal cual en el
+ * catálogo, sin las correcciones de letras del OCR. Con un número a secas devuelve vacío:
+ * eso lo resuelven `parseCodigos` y `cartasDelCodigo`, que además añaden las promos.
+ */
+export function cartasDelCodigoEscrito(
+  cards: readonly CatalogCard[],
+  texto: string,
+): CatalogCard[] {
+  const m =
+    /^\s*([A-Za-z]{2,3})[\s\-•·.:]*([A-Za-z]{0,2})0*(\d{1,3})([A-Za-z*]?)\s*(?:\/\s*\d+)?\s*$/.exec(
+      texto,
+    );
+  if (!m || (!m[2] && !m[4])) return [];
+  const [, set, prefijo, num, sufijo] = m;
+  const final = sufijo ? (sufijo === '*' ? '\\*' : sufijo.toUpperCase()) : '[A-Z*]?';
+  const re = new RegExp(`^${set.toUpperCase()}-${prefijo.toUpperCase()}0*${num}${final}$`);
+  return cards
+    .filter((c) => re.test(c.cardId))
+    .sort((a, b) => a.cardId.length - b.cardId.length || a.cardId.localeCompare(b.cardId));
+}
+
 /** "Akali, Brash (Champion)" y "Akali, Brash" son la misma carta: se compara sin el paréntesis. */
 const nombreBase = (nombre: string) => nombre.replace(/\s*\([^)]*\)\s*$/, '').toLowerCase();
 
