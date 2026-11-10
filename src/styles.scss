@@ -393,7 +393,8 @@ input[type='file']::file-selector-button {
   --brillo: 0;
   position: relative;
   transform: perspective(900px) rotateX(var(--rx)) rotateY(var(--ry));
-  transform-style: preserve-3d;
+  /* Sin preserve-3d: con él, los botones de encima de la carta y los brillos compartían el
+     mismo plano 3D y, al inclinarse, se pisaban unos a otros (parpadeo). */
   /* Misma transición al entrar, moverse y salir: con una corta solo durante el hover, la
      carta saltaba de golpe al ángulo del puntero nada más entrar. */
   transition: transform 0.25s ease-out;

@@ -382,16 +382,18 @@ const CIERRE_MS = 2500;
       place-items: center;
       line-height: 1;
       color: #fff;
-      background: rgb(8 10 14 / 0.72);
+      /* Fondo opaco y sin desenfoque: un backdrop-filter que aparece con opacidad sobre una
+         carta inclinada en 3D se pinta de golpe en vez de fundirse. */
+      background: rgb(8 10 14 / 0.86);
       border: 1px solid rgb(255 255 255 / 0.22);
       box-shadow: 0 2px 8px rgb(0 0 0 / 0.5);
-      backdrop-filter: blur(6px);
     }
     .mas-acciones {
       position: absolute;
       top: 6px;
       right: 6px;
-      z-index: 2;
+      /* Por encima de los brillos de la carta (z-index 1 y 2 en styles.scss). */
+      z-index: 3;
       width: 32px;
       height: 32px;
       border-radius: 50%;
@@ -402,7 +404,7 @@ const CIERRE_MS = 2500;
       position: absolute;
       right: 6px;
       bottom: 6px;
-      z-index: 2;
+      z-index: 3;
       display: flex;
       align-items: center;
       gap: 2px;
@@ -442,7 +444,6 @@ const CIERRE_MS = 2500;
       box-shadow:
         0 0 0 1px rgb(255 255 255 / 0.18),
         0 6px 18px rgb(0 0 0 / 0.55);
-      backdrop-filter: blur(6px);
     }
     .rapido.abierto .menos {
       display: grid;
@@ -470,7 +471,7 @@ const CIERRE_MS = 2500;
       .mas-acciones,
       .rapido {
         opacity: 0;
-        transition: opacity 0.12s ease;
+        transition: opacity 0.18s ease;
       }
       :host(:hover) .mas-acciones,
       :host(:hover) .rapido,
