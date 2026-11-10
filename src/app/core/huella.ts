@@ -31,16 +31,95 @@ const LADO = 32;
 const BAJAS = 8;
 const REJILLA = 4;
 
+/**
+ * Sumas acumuladas de una imagen: `r[y * (W + 1) + x]` es la suma del rojo de todos los
+ * píxeles por encima y a la izquierda de (x, y). Con ellas, la suma de cualquier rectángulo
+ * son cuatro lecturas en vez de recorrer sus píxeles.
+ */
+interface Sumas {
+  r: Uint32Array;
+  g: Uint32Array;
+  b: Uint32Array;
+}
+const SUMAS = new WeakMap<object, Sumas>();
+
+/**
+ * Prepara una imagen de la que se van a sacar muchas huellas (el escáner saca más de 200
+ * por fotograma, de zonas que se solapan). A partir de aquí `calcularHuella` da
+ * exactamente lo mismo, bit a bit, pero sin volver a recorrer los píxeles de cada zona:
+ * son sumas de enteros, y un entero se suma igual en cualquier orden. Con una sola
+ * huella por imagen (las herramientas) no hace falta llamarla.
+ */
+export function prepararPixeles(px: Pixeles): void {
+  if (SUMAS.has(px)) return;
+  // Solo con bytes (lo que dan el canvas y sharp) y mientras la suma quepa en 32 bits.
+  if (!(px.data instanceof Uint8Array || px.data instanceof Uint8ClampedArray)) return;
+  const W = px.width;
+  const H = px.height;
+  if (W * H * 255 >= 2 ** 32 || px.data.length < W * H * 4) return;
+  const d = px.data;
+  const ancho = W + 1;
+  const r = new Uint32Array(ancho * (H + 1));
+  const g = new Uint32Array(ancho * (H + 1));
+  const b = new Uint32Array(ancho * (H + 1));
+  for (let y = 0; y < H; y++) {
+    let fr = 0;
+    let fg = 0;
+    let fb = 0;
+    let i = y * W * 4;
+    const arriba = y * ancho;
+    const aqui = arriba + ancho;
+    for (let x = 0; x < W; x++, i += 4) {
+      fr += d[i];
+      fg += d[i + 1];
+      fb += d[i + 2];
+      r[aqui + x + 1] = r[arriba + x + 1] + fr;
+      g[aqui + x + 1] = g[arriba + x + 1] + fg;
+      b[aqui + x + 1] = b[arriba + x + 1] + fb;
+    }
+  }
+  SUMAS.set(px, { r, g, b });
+}
+
 /** Promedia los píxeles de cada celda (remuestreo por área): no depende de cómo escale el navegador. */
 function reducir(px: Pixeles, x0: number, y0: number, w: number, h: number, lado: number) {
   const r = new Float64Array(lado * lado);
   const g = new Float64Array(lado * lado);
   const b = new Float64Array(lado * lado);
-  const n = new Float64Array(lado * lado);
   const xFin = Math.min(px.width, Math.round(x0 + w));
   const yFin = Math.min(px.height, Math.round(y0 + h));
   const xIni = Math.max(0, Math.round(x0));
   const yIni = Math.max(0, Math.round(y0));
+  const sumas = SUMAS.get(px);
+  if (sumas) {
+    // Mismas celdas que el bucle de abajo: el píxel x cae en la celda
+    // ⌊(x − xIni)·lado / anchoZona⌋, o sea, la celda c va de ⌈c·ancho/lado⌉ a ⌈(c+1)·ancho/lado⌉.
+    const anchoZona = xFin - xIni;
+    const altoZona = yFin - yIni;
+    if (anchoZona <= 0 || altoZona <= 0) return { r, g, b };
+    const paso = px.width + 1;
+    for (let cy = 0; cy < lado; cy++) {
+      const ya = yIni + Math.ceil((cy * altoZona) / lado);
+      const yb = yIni + Math.ceil(((cy + 1) * altoZona) / lado);
+      if (yb <= ya) continue;
+      for (let cx = 0; cx < lado; cx++) {
+        const xa = xIni + Math.ceil((cx * anchoZona) / lado);
+        const xb = xIni + Math.ceil(((cx + 1) * anchoZona) / lado);
+        if (xb <= xa) continue;
+        const n = (yb - ya) * (xb - xa);
+        const a = ya * paso + xa;
+        const bb = ya * paso + xb;
+        const cc = yb * paso + xa;
+        const dd = yb * paso + xb;
+        const c = cy * lado + cx;
+        r[c] = (sumas.r[dd] - sumas.r[bb] - sumas.r[cc] + sumas.r[a]) / n;
+        g[c] = (sumas.g[dd] - sumas.g[bb] - sumas.g[cc] + sumas.g[a]) / n;
+        b[c] = (sumas.b[dd] - sumas.b[bb] - sumas.b[cc] + sumas.b[a]) / n;
+      }
+    }
+    return { r, g, b };
+  }
+  const n = new Float64Array(lado * lado);
   for (let y = yIni; y < yFin; y++) {
     const cy = Math.min(lado - 1, Math.floor(((y - yIni) * lado) / (yFin - yIni)));
     for (let x = xIni; x < xFin; x++) {
@@ -216,6 +295,71 @@ export interface Coincidencia {
   distancia: number;
 }
 
+/** El catálogo en vectores planos, para comparar miles de huellas sin saltar entre objetos. */
+interface Compacto {
+  tamano: number;
+  ids: string[];
+  h0: Uint32Array;
+  h1: Uint32Array;
+  /** `celdas` bytes de color por carta, seguidos. */
+  color: Uint8Array;
+  celdas: number;
+}
+const COMPACTOS = new WeakMap<object, Compacto>();
+
+function compactar(catalogo: ReadonlyMap<string, Huella>): Compacto {
+  const previo = COMPACTOS.get(catalogo);
+  if (previo && previo.tamano === catalogo.size) return previo;
+  const celdas = REJILLA * REJILLA * 2;
+  const c: Compacto = {
+    tamano: catalogo.size,
+    ids: [],
+    h0: new Uint32Array(catalogo.size),
+    h1: new Uint32Array(catalogo.size),
+    color: new Uint8Array(catalogo.size * celdas),
+    celdas,
+  };
+  let i = 0;
+  for (const [cardId, h] of catalogo) {
+    c.ids.push(cardId);
+    c.h0[i] = h.hash[0];
+    c.h1[i] = h.hash[1];
+    c.color.set(h.color, i * celdas);
+    i++;
+  }
+  COMPACTOS.set(catalogo, c);
+  return c;
+}
+
+/** Bits a 1 de un entero de 32 bits. */
+function unos(v: number): number {
+  v = v - ((v >>> 1) & 0x55555555);
+  v = (v & 0x33333333) + ((v >>> 2) & 0x33333333);
+  return (((v + (v >>> 4)) & 0x0f0f0f0f) * 0x01010101) >>> 24;
+}
+
+/**
+ * La menor `distancia` entre la huella `q` y la carta `i` del catálogo compacto, si es
+ * menor que `tope`; si no, `tope`. La forma sola ya da un mínimo de la distancia (el color
+ * solo suma): cuando ese mínimo no baja del tope no hace falta mirar el color, y el
+ * resultado es el mismo. La cuenta es la de `distancia()`, operación por operación.
+ */
+function distanciaCompacta(
+  q: Huella,
+  c: Compacto,
+  i: number,
+  pesoColor: number,
+  tope: number,
+): number {
+  const forma = (unos((q.hash[0] ^ c.h0[i]) >>> 0) + unos((q.hash[1] ^ c.h1[i]) >>> 0)) / 64;
+  if (forma / (1 + pesoColor) >= tope) return tope;
+  const base = i * c.celdas;
+  let dc = 0;
+  for (let k = 0; k < c.celdas; k++) dc += Math.abs(q.color[k] - c.color[base + k]);
+  const d = (forma + pesoColor * (dc / c.celdas / 64)) / (1 + pesoColor);
+  return d < tope ? d : tope;
+}
+
 /** Las `n` cartas más parecidas a cualquiera de las huellas dadas, de más a menos. */
 export function masParecidas(
   huellas: readonly Huella[],
@@ -223,11 +367,29 @@ export function masParecidas(
   n = 5,
   pesoColor = PESO_COLOR,
 ): Coincidencia[] {
+  const c = compactar(catalogo);
   const todas: Coincidencia[] = [];
-  for (const [cardId, h] of catalogo) {
+  for (let i = 0; i < c.ids.length; i++) {
     let mejor = Infinity;
-    for (const q of huellas) mejor = Math.min(mejor, distancia(q, h, pesoColor));
-    todas.push({ cardId, distancia: mejor });
+    for (const q of huellas) mejor = distanciaCompacta(q, c, i, pesoColor, mejor);
+    todas.push({ cardId: c.ids[i], distancia: mejor });
   }
   return todas.sort((a, b) => a.distancia - b.distancia).slice(0, n);
+}
+
+/**
+ * La distancia de la carta más parecida a `huella`: lo mismo que
+ * `masParecidas([huella], catalogo, 1)[0]?.distancia`, sin ordenar el catálogo entero.
+ * El escáner la pide para cada sitio donde podría estar la carta.
+ */
+export function menorDistancia(
+  huella: Huella,
+  catalogo: ReadonlyMap<string, Huella>,
+  pesoColor = PESO_COLOR,
+): number | undefined {
+  const c = compactar(catalogo);
+  if (!c.ids.length) return undefined;
+  let mejor = Infinity;
+  for (let i = 0; i < c.ids.length; i++) mejor = distanciaCompacta(huella, c, i, pesoColor, mejor);
+  return mejor;
 }

@@ -28,8 +28,16 @@ import { EurPipe, ThumbPipe } from '../ui/pipes';
 import { QtyControlComponent } from '../ui/qty-control.component';
 import { CabeceraComponent } from '../ui/cabecera.component';
 
-/** Pausa entre lecturas de la cámara. Reconocer un fotograma tarda unos 20-60 ms. */
-const PAUSA_MS = 350;
+/**
+ * Respiro entre lecturas de la cámara. Antes eran 350 ms fijos tras cada fotograma, que
+ * con dos lecturas para dar una carta por buena era casi un segundo parado. Ahora es
+ * proporcional a lo que tardó la lectura: lo justo para que la pantalla responda (el
+ * reconocimiento ocupa el hilo principal) sin esperar de más en un móvil rápido.
+ */
+const PAUSA_MIN_MS = 50;
+const PAUSA_MAX_MS = 200;
+/** Mientras no hay nada que leer (datos sin cargar, vídeo sin arrancar). */
+const PAUSA_ESPERA_MS = 150;
 /** Tras añadir o cerrar, cuánto tarda en poder volver a saltar la misma carta. */
 const BLOQUEO_MS = 4000;
 /** Ancho al que se reduce la carta antes de calcular su huella: de sobra para 32×32. */
@@ -812,12 +820,13 @@ export class ScannerPage implements OnDestroy {
     if (!this.camaraActiva() || this.pausado()) return;
     // Si aún se está procesando el fotograma anterior, se reintenta luego (antes se
     // perdía la vuelta y el bucle se quedaba parado, "buscando" sin hacer nada).
-    if (this.procesando) return this.programar(PAUSA_MS);
+    if (this.procesando) return this.programar(PAUSA_ESPERA_MS);
     if (this.recienAnadida && Date.now() > this.recienAnadidaHasta) this.recienAnadida = null;
     this.procesando = true;
+    const inicio = performance.now();
     try {
       const captura = this.reco.listo() ? this.recuadro() : null;
-      if (!captura) return this.programar(PAUSA_MS);
+      if (!captura) return this.programar(PAUSA_ESPERA_MS);
       const encuadres = this.encuadresCamara(captura.px, captura.guia);
       const r = this.reco.reconocer(captura.px, encuadres, this.descartadas);
       let ganadora: string | null;
@@ -863,7 +872,8 @@ export class ScannerPage implements OnDestroy {
     } finally {
       this.procesando = false;
     }
-    this.programar(PAUSA_MS);
+    const tardo = performance.now() - inicio;
+    this.programar(Math.min(PAUSA_MAX_MS, Math.max(PAUSA_MIN_MS, tardo * 0.25)));
   }
 
   /** Por si no se para sola: usa lo que haya ahora en el recuadro. */
@@ -930,8 +940,9 @@ export class ScannerPage implements OnDestroy {
     const k = ANCHO_MUESTRA / gw;
     const ancho = Math.round(sw * k);
     const alto = Math.round(sh * k);
-    this.lienzo.width = ancho;
-    this.lienzo.height = alto;
+    // Cambiar el tamaño de un canvas lo vacía y lo vuelve a reservar: solo si de verdad cambia.
+    if (this.lienzo.width !== ancho) this.lienzo.width = ancho;
+    if (this.lienzo.height !== alto) this.lienzo.height = alto;
     const ctx = this.lienzo.getContext('2d', { willReadFrequently: true })!;
     ctx.drawImage(v, sx, sy, sw, sh, 0, 0, ancho, alto);
     return {

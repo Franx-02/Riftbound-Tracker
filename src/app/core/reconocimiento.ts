@@ -12,6 +12,8 @@ import {
   distancia,
   huellasConMargen,
   masParecidas,
+  menorDistancia,
+  prepararPixeles,
   regionIlustracion,
 } from './huella';
 
@@ -93,6 +95,8 @@ export function reconocerEn(
   const catalogo = descartadas.size
     ? new Map([...huellas].filter(([id]) => !descartadas.has(id)))
     : huellas;
+  // Más de 200 huellas de zonas que se solapan: se suman los píxeles una sola vez.
+  prepararPixeles(px);
   const ilustracion = (z: Encuadre) => {
     const ilus = regionIlustracion(z.w, z.h);
     return { ...ilus, x: z.x + ilus.x, y: z.y + ilus.y };
@@ -103,7 +107,7 @@ export function reconocerEn(
       : encuadres
           .map((z) => ({
             z,
-            d: masParecidas([calcularHuella(px, ilustracion(z))], catalogo, 1)[0]?.distancia ?? 1,
+            d: menorDistancia(calcularHuella(px, ilustracion(z)), catalogo) ?? 1,
           }))
           .sort((a, b) => a.d - b.d)
           .slice(0, mejoresEncuadres)
@@ -178,7 +182,13 @@ export function localizarCarta(
   const columna = (x: number, y0: number, y1: number) =>
     columnas[x * (H + 1) + y1] - columnas[x * (H + 1) + y0];
 
-  const candidatos: (Encuadre & { puntos: number })[] = [];
+  // Decenas de miles de rectángulos por fotograma: van en vectores planos (un objeto por
+  // candidato y ordenarlos todos costaba más que puntuarlos).
+  const cx: number[] = [];
+  const cy: number[] = [];
+  const cw: number[] = [];
+  const ch: number[] = [];
+  const cp: number[] = [];
   const gw = guia.w * k;
   for (let e = escalaMin; e <= escalaMax + 1e-9; e *= 1.04) {
     const w = Math.round(gw * e);
@@ -187,28 +197,44 @@ export function localizarCarta(
     const paso = Math.max(1, Math.round(w / 40));
     for (let y0 = 1; y0 + h < H - 1; y0 += paso)
       for (let x0 = 1; x0 + w < W - 1; x0 += paso) {
-        const arriba = fila(y0, x0, x0 + w);
-        const abajo = fila(y0 + h, x0, x0 + w);
-        const izq = columna(x0, y0, y0 + h);
-        const der = columna(x0 + w, y0, y0 + h);
+        const arriba = fila(y0, x0, x0 + w) / w;
+        const abajo = fila(y0 + h, x0, x0 + w) / w;
+        const izq = columna(x0, y0, y0 + h) / h;
+        const der = columna(x0 + w, y0, y0 + h) / h;
         // Media de los cuatro lados, pero penalizando que uno falte: con el mínimo, un
         // rectángulo que solo coincide con un borde fuerte de la ilustración puntúa poco.
-        const lados = [arriba / w, abajo / w, izq / h, der / h];
-        const puntos = (lados.reduce((a, b) => a + b, 0) / 4) * 0.5 + Math.min(...lados) * 0.5;
-        candidatos.push({ x: x0, y: y0, w, h, puntos });
+        const puntos =
+          ((arriba + abajo + izq + der) / 4) * 0.5 + Math.min(arriba, abajo, izq, der) * 0.5;
+        cx.push(x0);
+        cy.push(y0);
+        cw.push(w);
+        ch.push(h);
+        cp.push(puntos);
       }
   }
-  candidatos.sort((a, b) => b.puntos - a.puntos);
+  // Los `n` mejores sin solapes casi totales: cada vuelta se queda con el de más puntos
+  // que no pise a los ya elegidos (el primero, si empatan). Es lo mismo que ordenarlos
+  // todos de más a menos e ir descartando, sin ordenar.
   const elegidos: Encuadre[] = [];
-  const solape = (a: Encuadre, b: Encuadre) => {
-    const ix = Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x));
-    const iy = Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
-    return (ix * iy) / (a.w * a.h + b.w * b.h - ix * iy);
+  const solape = (a: Encuadre, i: number) => {
+    const ix = Math.max(0, Math.min(a.x + a.w, cx[i] + cw[i]) - Math.max(a.x, cx[i]));
+    const iy = Math.max(0, Math.min(a.y + a.h, cy[i] + ch[i]) - Math.max(a.y, cy[i]));
+    return (ix * iy) / (a.w * a.h + cw[i] * ch[i] - ix * iy);
   };
-  for (const c of candidatos) {
-    if (elegidos.length >= n) break;
-    if (elegidos.some((o) => solape(o, c) > 0.6)) continue;
-    elegidos.push(c);
+  const fuera = new Uint8Array(cp.length);
+  while (elegidos.length < n) {
+    let mejor = -1;
+    for (let i = 0; i < cp.length; i++) {
+      if (fuera[i] || (mejor >= 0 && !(cp[i] > cp[mejor]))) continue;
+      if (elegidos.some((o) => solape(o, i) > 0.6)) {
+        fuera[i] = 1;
+        continue;
+      }
+      mejor = i;
+    }
+    if (mejor < 0) break;
+    fuera[mejor] = 1;
+    elegidos.push({ x: cx[mejor], y: cy[mejor], w: cw[mejor], h: ch[mejor] });
   }
   return elegidos.map((c) => ({ x: c.x / k, y: c.y / k, w: c.w / k, h: c.h / k }));
 }

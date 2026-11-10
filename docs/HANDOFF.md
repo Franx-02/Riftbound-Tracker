@@ -590,8 +590,19 @@ falsa de Chromium para el escáner. Lo que cambió y conviene saber antes de toc
 - **`--alto-nav`** (styles.scss): alto de la barra inferior (0 fuera del móvil). Todo lo que se
   fije abajo debe usarla (`bottom: calc(var(--alto-nav) + …)`). **`--pad-pagina`**: margen común
   de `<main class="pagina">`. `main.pagina` ya es una columna que encoge (ver F2, punto 5).
-- **Tarjeta de carta en táctil**: sobre la imagen solo van las copias; deseos, "no la quiero" y
-  "para cambiar" se despliegan con el botón ⋯ (con ratón siguen saliendo todas al pasar).
+- **Tarjeta de carta** (`ui/card-tile.component.ts`): sobre la imagen solo queda un "+" que suma
+  una copia normal de un toque y se abre en "− N +" mientras se usa (se cierra solo a los 2,5 s).
+  Foil, deseos, "no la quiero" y "para cambiar" van en **una hoja de acciones compartida**
+  (`ui/acciones-carta.component.ts`, un `<dialog>` nativo montado una vez en el marco) que abre
+  el botón ⋯. De unos 9 botones por carta a 2-3. Se valoraron tres alternativas y se
+  descartaron: gestos de deslizar (no se descubren y chocan con el scroll), dar la vuelta a la
+  carta (un toque más para lo más frecuente) y mantener pulsado (invisible, y en iOS abre el menú
+  de la imagen).
+- **Cambio de sección**: la transición de página solo se usa cuando una carta vuela a su ficha
+  (`hayVuelo()` en `ui/volar.ts`; el resto se salta en `app.config.ts`) y la entrada de las
+  rejillas dura ~0,2 s. Antes, entre la transición y el escalonado, la pantalla tardaba ~1,2 s en
+  quedarse quieta aunque el contenido llegaba en 100 ms. Primera tanda de 30 cartas. No añadir
+  animaciones de entrada largas: se perciben como carga lenta.
 - **Errores de guardado**: salen flotando desde el marco (`falloGuardado`), no al pie de la
   rejilla. Los de carga llevan botón Reintentar.
 - **Firestore sin conexión**: `getDocs` no falla sin red, devuelve vacío. Con eso la colección se
@@ -611,6 +622,16 @@ falsa de Chromium para el escáner. Lo que cambió y conviene saber antes de toc
   una versión elegida no se reabre con la gemela. Los códigos con letra (`OPP 7B`, `RAD R01`) se
   buscan tal cual (`cartasDelCodigoEscrito`). `vectores.bin` va también en el service worker y se
   comprueba que cuadra con `vectores.json`.
+- **Escáner, velocidad**: cada lectura hacía más de 200 huellas recorriendo los píxeles de cada
+  zona, ordenaba el catálogo entero 50 veces y creaba ~100.000 objetos para localizar la carta.
+  Ahora: sumas acumuladas por fotograma (`prepararPixeles`), catálogo en vectores planos con
+  descarte por la forma (`masParecidas`, `menorDistancia`) y localización sin ordenar. **Los
+  resultados son idénticos bit a bit** (comparado con la versión anterior en 150 fotogramas
+  sintéticos y fijado en `huella.spec.ts`): no se ha tocado ningún umbral. Por lectura, de ~205 ms
+  a ~70 ms en Node. La pausa entre lecturas pasa de 350 ms fijos a 50-200 ms según lo que tardó
+  la lectura. En el navegador, con cámara simulada y solo la huella: de 543 ms a 127 ms por
+  ciclo (de 1.193 a 413 ms con la CPU frenada ×4, parecido a un móvil). **Sin medir**: la red
+  neuronal (el entorno no llega a Hugging Face), que en móvil es lo que más pesa; ver pendientes.
 - **Sobres**: el resumen se desplaza por dentro (en móvil los botones de salir quedaban fuera),
   las flechas caben a 320 px, los temporizadores se cancelan al cerrar o salir y Intro/Espacio
   sobre un botón ya no abre además un sobre.
@@ -628,6 +649,12 @@ falsa de Chromium para el escáner. Lo que cambió y conviene saber antes de toc
 - Simulador en táctil: el menú de una carta en juego solo sale con botón derecho y no hay vista
   previa; no se puede leer una carta antes de jugarla.
 - La ventana del escáner no atrapa el foco (no es un `<dialog>` nativo).
+- Escáner, la red neuronal: corre en un solo hilo de WebAssembly y hace hasta dos pasadas por
+  lectura. Lo que la aceleraría de verdad es WebGPU con el modelo en fp16 (otro fichero de pesos,
+  ~44 MB) o hilos (exigen aislar el origen, que rompe el login con ventana de Google). Las dos
+  cosas cambian los vectores o el despliegue: hay que medirlas con `tools/medir-red.mts` antes.
+- `npm run medir:escaner` tras este cambio: debería dar exactamente lo mismo que antes (el código
+  es equivalente), pero no se pudo ejecutar aquí porque necesita bajar las imágenes de Riot.
 - Las fuentes vienen de Google Fonts: sin conexión en la primera visita, la PWA usa las del sistema.
 
 ## 9. Riesgos y avisos
