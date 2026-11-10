@@ -1,5 +1,5 @@
 import { CatalogCard } from './catalog.service';
-import { cartasDelCodigo, parseCodigos } from './scanner';
+import { cartasDelCodigo, cartasDelCodigoEscrito, parseCodigos } from './scanner';
 
 const SETS = new Set(['OGN', 'SFD', 'RAD', 'UNL', 'VEN', 'OPP', 'PR']);
 
@@ -77,5 +77,39 @@ describe('cartasDelCodigo', () => {
       'SFD-198',
       'SFD-198A',
     ]);
+  });
+});
+
+describe('cartasDelCodigoEscrito', () => {
+  const carta = (cardId: string, set: string, num: number) =>
+    ({ cardId, set, num, name: 'X', rarity: 'Rare' }) as CatalogCard;
+  const cards = [
+    carta('OPP-078', 'OPP', 78),
+    carta('OPP-007B', 'OPP', 7),
+    carta('OPP-007', 'OPP', 7),
+    carta('RAD-R01', 'RAD', 1),
+    carta('RAD-001', 'RAD', 1),
+    carta('VEN-SP1', 'VEN', 1),
+    carta('VEN-005', 'VEN', 5),
+    carta('OGN-299', 'OGN', 299),
+    carta('OGN-299*', 'OGN', 299),
+  ];
+  const ids = (texto: string) => cartasDelCodigoEscrito(cards, texto).map((c) => c.cardId);
+
+  it('una variante con letra no se convierte en otro número (B no es 8)', () => {
+    expect(ids('OPP 7B')).toEqual(['OPP-007B']);
+    expect(ids('opp-007b')).toEqual(['OPP-007B']);
+  });
+
+  it('encuentra runas, showcase y firmadas por su código', () => {
+    expect(ids('RAD R01')).toEqual(['RAD-R01']);
+    expect(ids('ven sp1')).toEqual(['VEN-SP1']);
+    expect(ids('OGN 299*')).toEqual(['OGN-299*']);
+  });
+
+  it('un número a secas lo deja para parseCodigos', () => {
+    expect(ids('OPP 7')).toEqual([]);
+    expect(ids('SFD 198/221')).toEqual([]);
+    expect(ids('no es un código')).toEqual([]);
   });
 });

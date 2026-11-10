@@ -577,6 +577,59 @@ escribe solo el dueño): hay que publicarla.
   - **El historial empieza el día del primer despliegue**: Cardmarket no publica precios
     antiguos. Los primeros días la gráfica tendrá uno o pocos puntos (lo explica en pantalla).
 
+### Revisión general (10/11/2026)
+A petición del usuario ("mejora lo que hay, que se vea fluido, critica todo y prueba a fondo").
+Probado con Playwright en modo demo de 320 a 1920 px, con el CSV real cargado, precios e
+imágenes simulados (el entorno de la sesión no llega a Cardmarket ni al CDN de Riot) y cámara
+falsa de Chromium para el escáner. Lo que cambió y conviene saber antes de tocar:
+
+- **Navegación móvil** (`shell.component.ts`, `ui/secciones.ts`): la barra inferior tenía seis
+  botones en cinco columnas y se partía en dos filas. Ahora son cuatro secciones y **Más**, que
+  abre una hoja con deseos, mazos, sobres, intercambios, importar y salir. Las secciones viven en
+  `SECCIONES` (las usa también Inicio): una sección nueva se añade ahí, con `barra: false`.
+- **`--alto-nav`** (styles.scss): alto de la barra inferior (0 fuera del móvil). Todo lo que se
+  fije abajo debe usarla (`bottom: calc(var(--alto-nav) + …)`). **`--pad-pagina`**: margen común
+  de `<main class="pagina">`. `main.pagina` ya es una columna que encoge (ver F2, punto 5).
+- **Tarjeta de carta en táctil**: sobre la imagen solo van las copias; deseos, "no la quiero" y
+  "para cambiar" se despliegan con el botón ⋯ (con ratón siguen saliendo todas al pasar).
+- **Errores de guardado**: salen flotando desde el marco (`falloGuardado`), no al pie de la
+  rejilla. Los de carga llevan botón Reintentar.
+- **Firestore sin conexión**: `getDocs` no falla sin red, devuelve vacío. Con eso la colección se
+  daba por cargada vacía y el primer +1 pisaba las copias reales. Las lecturas de colección,
+  deseos, mazos, correcciones y usuarios usan `getDocsFromServer`. No volver a `getDocs` sin
+  activar antes la caché persistente.
+- **Deshacer un guardado fallido** vuelve a lo último confirmado por el servidor y solo si no hay
+  otro guardado detrás (`confirmado` en los servicios). Test en `collection.service.spec.ts`.
+- **Simulador**: las capas fijas (`.telon`, `.modal`, `.menu`, `.cola`) se colocan con
+  `--ancho-barra`, `--alto-barra` y `--alto-nav` porque viven bajo el menú de la app; la ventana
+  inicial quedaba tapada por la barra lateral y en móvil no dejaba empezar. `palabrasClave` solo
+  cuenta las keywords que encabezan una línea (Sprite Mother no es Temporary por crear una ficha
+  que lo es); las condicionales no se dan por puestas. Shield/Assault cuentan también para
+  sobrevivir al combate y Temporary muere antes de puntuar Hold.
+- **Escáner**: una sola apertura de cámara a la vez, se apaga al salir o al ocultar la pestaña,
+  el bucle no muere con una excepción, la ventana de una foto no la pisa la cámara, y tras añadir
+  una versión elegida no se reabre con la gemela. Los códigos con letra (`OPP 7B`, `RAD R01`) se
+  buscan tal cual (`cartasDelCodigoEscrito`). `vectores.bin` va también en el service worker y se
+  comprueba que cuadra con `vectores.json`.
+- **Sobres**: el resumen se desplaza por dentro (en móvil los botones de salir quedaban fuera),
+  las flechas caben a 320 px, los temporizadores se cancelan al cerrar o salir y Intro/Espacio
+  sobre un botón ya no abre además un sobre.
+
+**Pendiente, detectado y no hecho** (por tamaño o porque es decisión del usuario):
+- El mismo usuario en dos dispositivos: cada guardado escribe valores absolutos leídos al entrar,
+  así que el segundo dispositivo pisa al primero (copias, "para cambiar", álbum de sobres). Arreglo:
+  `increment`/`arrayUnion` o releer al volver a la pestaña.
+- Guardados sin conexión: se ven como hechos y se pierden al cerrar. Falta un indicador de
+  "guardando / sin conexión" o la caché persistente de Firestore.
+- Leer la colección de otro no tiene tope (`limit`): una cuenta hostil con miles de documentos
+  gastaría la cuota de lecturas de todos.
+- El historial de precios en Netlify Blobs crece sin límite y `guardar-precios` hace 64 lecturas y
+  escrituras en serie.
+- Simulador en táctil: el menú de una carta en juego solo sale con botón derecho y no hay vista
+  previa; no se puede leer una carta antes de jugarla.
+- La ventana del escáner no atrapa el foco (no es un `<dialog>` nativo).
+- Las fuentes vienen de Google Fonts: sin conexión en la primera visita, la PWA usa las del sistema.
+
 ## 9. Riesgos y avisos
 
 - **Cuotas gratuitas:** Netlify pausa el sitio si se agotan los 300 créditos/mes; vigilar bucles que llamen a funciones. Firestore Spark: 50k lecturas y 20k escrituras al día.

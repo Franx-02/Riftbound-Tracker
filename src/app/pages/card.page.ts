@@ -17,7 +17,7 @@ import { EurPipe, ThumbPipe } from '../ui/pipes';
 import { QtyControlComponent } from '../ui/qty-control.component';
 import { RulesTextComponent } from '../ui/rules-text.component';
 import { InclinarDirective } from '../ui/inclinar.directive';
-import { GraficaPrecioComponent, PuntoPrecio } from '../ui/grafica-precio.component';
+import { GraficaPrecioComponent, PuntoPrecio, puntosValidos } from '../ui/grafica-precio.component';
 
 @Component({
   selector: 'app-card-page',
@@ -650,8 +650,7 @@ export class CardPage {
     fetch(`/api/historial?id=${id}`, { signal: ctrl.signal })
       .then(async (r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        const { puntos } = (await r.json()) as { puntos: PuntoPrecio[] };
-        this.historial.set(puntos);
+        this.historial.set(puntosValidos(await r.json()));
       })
       .catch((e: unknown) => {
         if (ctrl.signal.aborted) return;

@@ -282,8 +282,11 @@ export class SimuladorPage {
   // ── Estado ───────────────────────────────────────────────────────────────────────────
   private mutar(f: (p: Partida) => Partida): void {
     const antes = this.p();
-    const despues = f(antes);
-    if (despues === antes) return;
+    // El aviso del rechazo anterior se limpia antes: si no, una acción válida que no deja
+    // nada en el registro se tomaba por otro rechazo (sonaba a error y no se podía deshacer).
+    const base = antes.aviso ? { ...antes, aviso: null } : antes;
+    const despues = f(base);
+    if (despues === base) return;
     if (despues.aviso && despues.log === antes.log) {
       this.p.set(despues);
       sonar('error');

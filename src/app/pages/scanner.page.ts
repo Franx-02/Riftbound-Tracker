@@ -19,7 +19,7 @@ import {
   encuadresAlrededor,
   localizarCarta,
 } from '../core/reconocimiento.service';
-import { cartasDelCodigo, parseCodigos } from '../core/scanner';
+import { cartasDelCodigo, cartasDelCodigoEscrito, parseCodigos } from '../core/scanner';
 import { TraduccionService } from '../core/traduccion.service';
 import { VotacionRed, combinarRedYHuella } from '../core/red';
 import { RedService } from '../core/red.service';
@@ -77,7 +77,9 @@ interface Resultado {
             <span class="esquina bi"></span><span class="esquina bd"></span>
           </div>
           <p class="estado-camara" aria-live="polite">
-            @if (!reco.listo()) {
+            @if (reco.error()) {
+              No se pudo preparar el reconocimiento. Revisa la conexión y vuelve a abrir la cámara.
+            } @else if (!reco.listo()) {
               Preparando el reconocimiento…
             } @else if (red.cargando() && !pausado()) {
               Buscando una carta… (preparando el modo preciso, solo la primera vez)
@@ -94,7 +96,9 @@ interface Resultado {
 
       <div class="botones">
         @if (!camaraActiva()) {
-          <button type="button" (click)="abrirCamara()">Abrir cámara</button>
+          <button type="button" [disabled]="abriendo()" (click)="abrirCamara()">
+            {{ abriendo() ? 'Abriendo…' : 'Abrir cámara' }}
+          </button>
         } @else {
           @if (pausado()) {
             <button type="button" (click)="seguir()">Escanear otra</button>
@@ -121,7 +125,12 @@ interface Resultado {
             >{{ anadidas().length }} {{ anadidas().length === 1 ? 'carta' : 'cartas' }}</span
           >
           <h2 id="titulo-escaneos">Tus escaneos</h2>
-          <span class="pastilla">{{ valorEscaneos() | eur: '—' }}</span>
+          <span class="pastilla"
+            >{{ valorEscaneos() | eur: '—' }}
+            @if (escaneosSinPrecio(); as n) {
+              <small>+ {{ n }} sin precio</small>
+            }
+          </span>
         </div>
         @if (!anadidas().length) {
           <p class="muted vacio-escaneos">Lo que escanees saldrá aquí.</p>
@@ -231,13 +240,7 @@ interface Resultado {
     @if (encontrada(); as e) {
       @let c = e.cartas[e.elegida];
       <div class="fondo-modal" (click)="cerrarVentana()"></div>
-      <div
-        class="modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="titulo-encontrada"
-        (keydown.escape)="cerrarVentana()"
-      >
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="titulo-encontrada">
         <button type="button" class="cerrar" aria-label="Cerrar" (click)="cerrarVentana()">
           ×
         </button>
@@ -308,11 +311,19 @@ interface Resultado {
     }
     .camara.activa {
       display: block;
+      scroll-margin-top: 64px;
+    }
+    .pastilla small {
+      color: var(--muted);
+      font-weight: 400;
     }
     video {
       display: block;
       width: 100%;
-      height: min(70vh, 640px);
+      /* Lo que queda de pantalla sin la cabecera ni la barra inferior del móvil: con 70vh
+         los botones y el estado quedaban debajo de la barra. */
+      height: min(calc(100dvh - var(--alto-nav) - 190px), 640px);
+      min-height: 240px;
       object-fit: cover;
     }
     /* Recuadro con la forma de una carta, centrado. */
@@ -450,6 +461,8 @@ interface Resultado {
     }
     .manual {
       display: grid;
+      /* Que la columna encoja: a 320 px el campo y el botón sacaban la página por la derecha. */
+      grid-template-columns: minmax(0, 1fr);
       gap: 6px;
     }
     .manual label {
@@ -614,6 +627,10 @@ interface Resultado {
       border-radius: var(--radio-s);
     }
   `,
+  host: {
+    '(document:keydown.escape)': 'encontrada() && cerrarVentana()',
+    '(document:visibilitychange)': 'alOcultar()',
+  },
 })
 export class ScannerPage implements OnDestroy {
   protected readonly reco = inject(ReconocimientoService);
@@ -682,29 +699,65 @@ export class ScannerPage implements OnDestroy {
     });
   }
 
+  /** Con la pestaña o la app en segundo plano la cámara se apaga: ni batería ni piloto encendido. */
+  protected alOcultar(): void {
+    if (!document.hidden || !this.stream) return;
+    this.cerrarCamara();
+    this.aviso.set('La cámara se cerró al salir de la app. Ábrela otra vez para seguir.');
+  }
+
+  /** Se está pidiendo la cámara (permiso, arranque): el botón no vuelve a pedirla. */
+  protected readonly abriendo = signal(false);
+  private destruido = false;
+
   ngOnDestroy(): void {
+    this.destruido = true;
     this.cerrarCamara();
   }
 
   protected async abrirCamara(): Promise<void> {
+    // Dos toques seguidos pedían dos cámaras y la primera se quedaba encendida sin dueño.
+    if (this.abriendo() || this.stream) return;
     this.error.set(null);
     this.aviso.set(null);
+    // Si los datos del reconocimiento fallaron al entrar, se reintenta aquí.
+    void this.reco.load();
+    void this.red.load();
     if (!navigator.mediaDevices?.getUserMedia) {
       this.error.set(
         'Este navegador no deja usar la cámara desde la web. Prueba con "Usar una foto".',
       );
       return;
     }
+    this.abriendo.set(true);
     try {
-      this.stream = await navigator.mediaDevices.getUserMedia({
+      const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
         audio: false,
       });
+      // Si se salió de la página mientras el navegador pedía permiso, la cámara se apaga.
+      if (this.destruido) {
+        stream.getTracks().forEach((t) => t.stop());
+        return;
+      }
+      this.stream = stream;
+      // Otra app se queda la cámara, o se desenchufa: mejor decirlo que leer un fotograma congelado.
+      stream.getVideoTracks()[0]?.addEventListener('ended', () => {
+        if (this.stream !== stream) return;
+        this.cerrarCamara();
+        this.error.set('La cámara se ha desconectado. Ábrela otra vez para seguir.');
+      });
       const v = this.video().nativeElement;
-      v.srcObject = this.stream;
+      v.srcObject = stream;
       await v.play();
+      if (this.destruido || this.stream !== stream) return;
       this.camaraActiva.set(true);
       this.seguir();
+      // En móvil el vídeo empuja los botones hacia abajo: se lleva la cámara a la vista.
+      // (Tras pintar: hasta entonces el contenedor de la cámara está oculto y no hay a dónde ir.)
+      requestAnimationFrame(() =>
+        v.closest('.camara')?.scrollIntoView({ block: 'start', behavior: 'smooth' }),
+      );
     } catch (e) {
       this.cerrarCamara();
       const nombre = e instanceof DOMException ? e.name : '';
@@ -715,6 +768,8 @@ export class ScannerPage implements OnDestroy {
             ? 'No se ha encontrado ninguna cámara. Usa una foto o escribe el código.'
             : `No se pudo abrir la cámara: ${e instanceof Error ? e.message : String(e)}`,
       );
+    } finally {
+      this.abriendo.set(false);
     }
   }
 
@@ -725,7 +780,10 @@ export class ScannerPage implements OnDestroy {
     this.temporizador = null;
     this.stream?.getTracks().forEach((t) => t.stop());
     this.stream = null;
+    const v = this.video()?.nativeElement;
+    if (v) v.srcObject = null;
     this.camaraActiva.set(false);
+    this.pausado.set(false);
     this.provisional.set(null);
   }
 
@@ -756,10 +814,10 @@ export class ScannerPage implements OnDestroy {
     // perdía la vuelta y el bucle se quedaba parado, "buscando" sin hacer nada).
     if (this.procesando) return this.programar(PAUSA_MS);
     if (this.recienAnadida && Date.now() > this.recienAnadidaHasta) this.recienAnadida = null;
-    const captura = this.reco.listo() ? this.recuadro() : null;
-    if (!captura) return this.programar(PAUSA_MS);
     this.procesando = true;
     try {
+      const captura = this.reco.listo() ? this.recuadro() : null;
+      if (!captura) return this.programar(PAUSA_MS);
       const encuadres = this.encuadresCamara(captura.px, captura.guia);
       const r = this.reco.reconocer(captura.px, encuadres, this.descartadas);
       let ganadora: string | null;
@@ -767,7 +825,8 @@ export class ScannerPage implements OnDestroy {
       let provisional: string | null;
       if (this.red.listo()) {
         // La huella localiza la carta; la red compara lo que hay en los dos mejores sitios.
-        const zonas = [r.encuadre, encuadres[0]].filter((z): z is Encuadre => !!z);
+        // Sin repetir: si el mejor encuadre es el primero, la red miraría dos veces lo mismo.
+        const zonas = [...new Set([r.encuadre, encuadres[0]])].filter((z): z is Encuadre => !!z);
         const puntos = await this.red.puntuar(captura.px, zonas);
         if (!this.camaraActiva() || this.pausado()) return;
         const c = combinarRedYHuella(puntos ?? new Map(), r, this.nombreBase, this.descartadas);
@@ -797,6 +856,10 @@ export class ScannerPage implements OnDestroy {
             : null,
         );
       }
+    } catch (e) {
+      // Un fotograma que falla (memoria, WebAssembly) no debe parar el bucle: antes la
+      // cámara se quedaba en "Buscando una carta…" para siempre.
+      console.error('Escáner: fotograma descartado', e);
     } finally {
       this.procesando = false;
     }
@@ -809,9 +872,19 @@ export class ScannerPage implements OnDestroy {
     if (!captura) return;
     this.pausado.set(true);
     this.provisional.set(null);
-    const encuadres = this.encuadresCamara(captura.px, captura.guia);
-    const { ids, clara } = await this.reconocerCompleto(captura.px, encuadres);
-    this.mostrar(ids, clara ? null : 'No está claro: si no es esta, mira las de abajo.', 'camara');
+    try {
+      const encuadres = this.encuadresCamara(captura.px, captura.guia);
+      const { ids, clara } = await this.reconocerCompleto(captura.px, encuadres);
+      this.mostrar(
+        ids,
+        clara ? null : 'No está claro: si no es esta, mira las de abajo.',
+        'camara',
+      );
+      if (!this.encontrada() && this.camaraActiva()) this.seguir();
+    } catch (e) {
+      this.error.set(`No se pudo reconocer: ${e instanceof Error ? e.message : String(e)}`);
+      if (this.camaraActiva()) this.seguir();
+    }
   }
 
   /**
@@ -900,6 +973,23 @@ export class ScannerPage implements OnDestroy {
     this.error.set(null);
     this.aviso.set(null);
     // A mano se acepta "SFD198", "sfd-198" o "SFD 198/221".
+    const cards0 = this.catalog.cards();
+    // Runas, fichas, showcase y variantes con letra (RAD R01, VEN SP1, OPP 7B) se buscan
+    // tal cual: las correcciones del OCR (B→8, S→5…) las convertían en otra carta.
+    const directas = cartasDelCodigoEscrito(cards0, this.manual());
+    if (directas.length) {
+      this.anadirResultado({
+        clave: `codigo-${directas[0].cardId}`,
+        titulo: directas[0].cardId,
+        nota:
+          directas.length > 1
+            ? `Hay ${directas.length} versiones con este código: suma la que tengas.`
+            : null,
+        cartas: directas,
+      });
+      this.manual.set('');
+      return;
+    }
     const texto = this.manual().replace(/^([A-Za-z]{2,3})(\d)/, '$1 $2');
     const codigos = parseCodigos(texto, this.setsValidos());
     if (!codigos.length) {
@@ -946,12 +1036,20 @@ export class ScannerPage implements OnDestroy {
     }
     this.aviso.set(null);
     this.encontrada.set({ cartas, elegida: 0, nota, origen });
+    // Con la ventana abierta (también la de una foto o un código) la cámara espera: si no,
+    // seguía votando por debajo y cambiaba la carta de la ventana bajo el dedo.
+    if (this.camaraActiva()) this.pausado.set(true);
   }
 
   /** Tendencia de Cardmarket del acabado añadido; null si no hay precio. */
   protected precio(cardId: string, finish: Finish): number | null {
     return this.valuation.pricing(cardId)[finish];
   }
+
+  /** Escaneos sin precio en Cardmarket: no suman al valor, y se dice. */
+  protected readonly escaneosSinPrecio = computed(
+    () => this.anadidas().filter((a) => this.precio(a.card.cardId, a.finish) === null).length,
+  );
 
   protected readonly valorEscaneos = computed(() => {
     let total = 0;
@@ -971,6 +1069,7 @@ export class ScannerPage implements OnDestroy {
     if (!a) return;
     this.col.adjust(a.card.cardId, a.finish, -1);
     this.anadidas.set(this.anadidas().filter((x) => x.clave !== clave));
+    this.aviso.set(null);
   }
 
   protected elegir(i: number): void {
@@ -984,15 +1083,25 @@ export class ScannerPage implements OnDestroy {
     if (!e) return;
     const card = e.cartas[e.elegida];
     this.col.adjust(card.cardId, finish, 1);
-    this.anadidas.set([{ clave: ++this.contador, card, finish }, ...this.anadidas()].slice(0, 50));
+    this.anadidas.set([{ clave: ++this.contador, card, finish }, ...this.anadidas()]);
     this.aviso.set(`Añadida ${card.name} (${finish === 'foil' ? 'foil' : 'normal'}).`);
     this.encontrada.set(null);
     this.descartadas = new Set();
-    if (e.origen === 'camara' && this.camaraActiva()) {
-      this.recienAnadida = card.cardId;
+    this.reanudar(e);
+  }
+
+  /**
+   * Tras cerrar la ventana la cámara sigue. Si la carta venía de la cámara, no vuelve a
+   * saltar mientras siga delante: se bloquea la que la cámara reconoce (la primera), no la
+   * versión que se eligió, o la ventana se reabría al instante con la gemela.
+   */
+  private reanudar(e: Encontrada): void {
+    if (!this.camaraActiva()) return;
+    if (e.origen === 'camara') {
+      this.recienAnadida = e.cartas[0]?.cardId ?? null;
       this.recienAnadidaHasta = Date.now() + BLOQUEO_MS;
-      this.seguir();
     }
+    this.seguir();
   }
 
   /** La enseñada no es: se descarta y se vuelve a buscar sin ella. */
@@ -1001,7 +1110,11 @@ export class ScannerPage implements OnDestroy {
     if (!e) return;
     this.descartadas.add(e.cartas[e.elegida].cardId);
     this.encontrada.set(null);
-    if (e.origen === 'foto') void this.buscarEnFoto();
+    if (e.origen === 'foto')
+      void this.buscarEnFoto().then(() => {
+        // Si la foto no da más candidatas, la cámara (si estaba abierta) no se queda en pausa.
+        if (!this.encontrada() && this.camaraActiva()) this.seguir();
+      });
     else if (this.camaraActiva()) this.seguir();
   }
 
@@ -1013,11 +1126,7 @@ export class ScannerPage implements OnDestroy {
     const e = this.encontrada();
     this.encontrada.set(null);
     this.descartadas = new Set();
-    if (e?.origen === 'camara' && this.camaraActiva()) {
-      this.recienAnadida = e.cartas[e.elegida]?.cardId ?? null;
-      this.recienAnadidaHasta = Date.now() + BLOQUEO_MS;
-      this.seguir();
-    }
+    if (e) this.reanudar(e);
   }
 
   private anadirResultado(r: Resultado): void {

@@ -38,6 +38,10 @@ export class RedService {
         const { ids, dim, modelo } = meta as { ids: string[]; dim: number; modelo: string };
         if (modelo !== MODELO_RED)
           throw new Error('Los vectores son de otro modelo: hay que regenerarlos');
+        // Los dos ficheros tienen que ser de la misma generación: con uno viejo y otro nuevo
+        // cada vector se atribuía a la carta de al lado. Sin red, el escáner sigue con la huella.
+        if (bin.byteLength !== ids.length * dim)
+          throw new Error('vectores.json y vectores.bin no coinciden');
         this.catalogo = { ids, dim, datos: new Int8Array(bin) };
         modulo.env.allowLocalModels = false;
         this.extractor = (await modulo.pipeline('image-feature-extraction', MODELO_RED, {

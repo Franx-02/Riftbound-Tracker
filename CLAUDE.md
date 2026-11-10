@@ -30,3 +30,5 @@ App PWA (Angular 22 + Netlify + Firebase) para colecciones de cartas de Riftboun
 - Herramientas y scripts nuevos en TypeScript/Node, no en Python.
 - Interfaz en español de España. Nombres de cartas, sets y keywords en inglés.
 - Nada de pagos, store ni servicios con coste.
+- Móvil primero: probar cada pantalla a 320-390 px. Lo que se fije abajo usa `--alto-nav`; las secciones del menú viven en `src/app/ui/secciones.ts`.
+- Lecturas de colecciones de Firestore con `getDocsFromServer`: `getDocs` sin red devuelve vacío sin fallar.

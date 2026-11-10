@@ -280,6 +280,8 @@ interface GrupoFaltan {
                     </ul>
                   }
                 </div>
+              } @else {
+                <p class="muted">La curva de energía y el reparto salen al añadir cartas.</p>
               }
             </section>
 
@@ -297,7 +299,11 @@ interface GrupoFaltan {
 
             <section class="panel">
               <h2>Con tu colección</h2>
-              @if (faltan().cartas === 0) {
+              @if (!cartasEnMazo()) {
+                <p class="muted">
+                  Añade cartas al mazo y aquí verás cuáles te faltan y cuánto cuestan.
+                </p>
+              } @else if (faltan().cartas === 0) {
                 <p class="ok">Tienes todas las cartas de este mazo.</p>
               } @else {
                 <p>
@@ -885,6 +891,11 @@ interface GrupoFaltan {
       .columnas {
         grid-template-columns: minmax(0, 1fr);
       }
+      /* En pantallas estrechas el botón ⋯ cae a la izquierda: el menú se abre hacia dentro. */
+      .menu-mas {
+        right: auto;
+        left: 0;
+      }
       .buscador {
         position: static;
         order: -1;
@@ -943,6 +954,18 @@ export class MazoPage {
   });
   protected readonly colores = computed(() => estiloDominios(this.leyenda()?.domains ?? []));
   protected readonly tamano = computed(() => (this.mazo() ? tamanoPrincipal(this.mazo()!) : 0));
+  /** Cuántas cartas lleva el mazo entre todas sus zonas (0 = recién creado). */
+  protected readonly cartasEnMazo = computed(() => {
+    const m = this.mazo();
+    if (!m) return 0;
+    return (
+      (m.leyenda ? 1 : 0) +
+      tamanoPrincipal(m) +
+      contar(m.runas) +
+      m.campos.length +
+      contar(m.banquillo)
+    );
+  });
   protected readonly comprobaciones = computed(() =>
     this.mazo() ? validar(this.mazo()!, (id) => this.catalog.card(id)) : [],
   );

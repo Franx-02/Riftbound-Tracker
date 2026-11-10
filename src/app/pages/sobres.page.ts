@@ -1,4 +1,12 @@
-import { Component, HostListener, computed, effect, inject, signal } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  HostListener,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import { AlbumService } from '../core/album.service';
 import { CatalogCard, CatalogService } from '../core/catalog.service';
 import { DORSO_OSCURO } from '../core/dorsos';
@@ -83,7 +91,8 @@ export class SobresPage {
         nombre: s?.name ?? id,
         progreso: p,
         color: COLORES[id] ?? colorDominio(legend?.domains[0]),
-        arte: arte?.imgUrl ?? '',
+        // Reducida y en WebP, como el resto de imágenes: la original pesa unos 780 KB.
+        arte: arte ? miniatura(arte.imgUrl, 480) : '',
       };
     }),
   );
@@ -131,6 +140,7 @@ export class SobresPage {
   constructor() {
     void this.catalog.load();
     void this.albumSrv.load();
+    inject(DestroyRef).onDestroy(() => this.cancelarPendientes());
     effect((onCleanup) => {
       const reloj = setInterval(() => {
         this.ahora.set(Date.now());
@@ -231,7 +241,7 @@ export class SobresPage {
     sonar('robar');
     const set = this.setElegido();
     const antes = this.albumSrv.album().cartas;
-    setTimeout(() => {
+    this.luego(() => {
       const s = this.albumSrv.abrir(set, this.catalog.cards(), { gratis: this.modoLibre() });
       this.rasgando.set(false);
       if (!s) {
@@ -245,9 +255,27 @@ export class SobresPage {
     }, 750);
   }
 
-  protected revelar(i: number): void {
+  /**
+   * Temporizadores de las animaciones. Se cancelan al cerrar el sobre y al salir de la
+   * página: si no, "Revelar todas" seguía sonando en la página siguiente o daba la vuelta
+   * a las cartas del sobre nuevo.
+   */
+  private readonly pendientes = new Set<ReturnType<typeof setTimeout>>();
+  private luego(f: () => void, ms: number): void {
+    const id = setTimeout(() => {
+      this.pendientes.delete(id);
+      f();
+    }, ms);
+    this.pendientes.add(id);
+  }
+  private cancelarPendientes(): void {
+    for (const id of this.pendientes) clearTimeout(id);
+    this.pendientes.clear();
+  }
+
+  protected revelar(i: number, de: Sobre | null = this.sobre()): void {
     const s = this.sobre();
-    if (!s || this.reveladas().has(i)) return;
+    if (!s || s !== de || this.reveladas().has(i)) return;
     const r = new Set(this.reveladas());
     r.add(i);
     this.reveladas.set(r);
@@ -282,8 +310,8 @@ export class SobresPage {
     const paso = 650;
     for (let i = desde; i < s.cartas.length; i++) {
       const t = (i - desde) * paso;
-      setTimeout(() => this.revelar(i), t);
-      setTimeout(
+      this.luego(() => this.revelar(i, s), t);
+      this.luego(
         () => {
           if (this.sobre() === s && this.actual() === i) this.actual.set(i + 1);
         },
@@ -293,6 +321,7 @@ export class SobresPage {
   }
 
   protected cerrarSobre(): void {
+    this.cancelarPendientes();
     this.sobre.set(null);
     this.reveladas.set(new Set());
     this.actual.set(0);
@@ -300,7 +329,7 @@ export class SobresPage {
 
   protected otroSobre(): void {
     this.cerrarSobre();
-    setTimeout(() => this.abrir(), 50);
+    this.luego(() => this.abrir(), 50);
   }
 
   protected cancelar(): void {
@@ -317,6 +346,11 @@ export class SobresPage {
       else if (this.todasReveladas()) this.cerrarSobre();
       return;
     }
+    // Intro o espacio sobre un botón o un enlace son de ese control (flechas, pestañas,
+    // "Revelar todas", el menú de la app): antes además abrían un sobre o giraban la carta.
+    const enControl = !!t?.closest('button, a, summary, [role="button"]');
+    const esActivar = e.key === 'Enter' || e.key === ' ';
+    if (esActivar && enControl && !t?.closest('.carta3d')) return;
     if (this.sobre() && !this.terminado() && ['Enter', ' ', 'ArrowRight'].includes(e.key)) {
       e.preventDefault();
       this.pulsarCarta(this.actual());
@@ -328,6 +362,9 @@ export class SobresPage {
     if (e.key === 'Enter') this.abrir();
   }
 }
+
+const miniaturas = new ThumbPipe();
+const miniatura = (url: string, ancho: number) => miniaturas.transform(url, ancho);
 
 function leerLibre(): boolean {
   try {
