@@ -394,11 +394,9 @@ input[type='file']::file-selector-button {
   position: relative;
   transform: perspective(900px) rotateX(var(--rx)) rotateY(var(--ry));
   transform-style: preserve-3d;
-  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
-  will-change: transform;
-}
-.inclinable:hover {
-  transition-duration: 0.08s;
+  /* Misma transición al entrar, moverse y salir: con una corta solo durante el hover, la
+     carta saltaba de golpe al ángulo del puntero nada más entrar. */
+  transition: transform 0.25s ease-out;
 }
 .inclinable::after {
   content: '';
@@ -425,8 +423,10 @@ input[type='file']::file-selector-button {
   border-radius: inherit;
   pointer-events: none;
   z-index: 1;
-  opacity: calc(0.25 + var(--brillo) * 0.45);
-  mix-blend-mode: color-dodge;
+  /* Suave en reposo y solo un poco más al pasar: con el salto de antes (y color-dodge)
+     el brillo aparecía de golpe. */
+  opacity: calc(0.4 + var(--brillo) * 0.3);
+  mix-blend-mode: soft-light;
   background: linear-gradient(
     115deg,
     transparent 20%,
@@ -438,7 +438,9 @@ input[type='file']::file-selector-button {
   );
   background-size: 250% 250%;
   background-position: var(--mx) var(--my);
-  transition: opacity 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    background-position 0.25s ease-out;
 }
 
 /* Entrada: los hijos de .entrada aparecen subiendo un poco. Corta a propósito: con el

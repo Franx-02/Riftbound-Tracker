@@ -42,7 +42,7 @@ const CIERRE_MS = 2500;
         <span class="check" aria-hidden="true">✓</span>
       </button>
     }
-    <div class="marco" appInclinar [holo]="owned().foil > 0">
+    <div class="marco" [appInclinar]="5" [holo]="owned().foil > 0">
       <!-- Los botones no pueden ir dentro de un enlace (HTML inválido, y el teclado se
            lía): la imagen es un enlace y los controles, hermanos posicionados encima.
            Fuera del tabulador porque el nombre de abajo lleva al mismo sitio. -->
@@ -279,8 +279,7 @@ const CIERRE_MS = 2500;
       opacity: 0;
       transition:
         opacity 0.2s ease,
-        filter 0.15s ease,
-        transform 0.25s ease;
+        filter 0.2s ease;
     }
     img.cargada {
       opacity: 1;
@@ -413,9 +412,10 @@ const CIERRE_MS = 2500;
         background-color 0.15s ease,
         padding 0.15s ease;
     }
+    /* Tamaño fijo, abierta o cerrada: si cambiara al abrirse, el "+" saltaría bajo el dedo. */
     .paso {
-      width: 36px;
-      height: 36px;
+      width: 34px;
+      height: 34px;
       border-radius: 50%;
       font-size: 1.25rem;
       font-weight: 700;
@@ -448,13 +448,16 @@ const CIERRE_MS = 2500;
       display: grid;
       box-shadow: none;
       background: rgb(255 255 255 / 0.1);
+      animation: asoma 0.15s ease-out both;
     }
     .rapido.abierto .n {
       display: block;
+      animation: asoma 0.15s ease-out both;
     }
-    .rapido.abierto .paso {
-      width: 32px;
-      height: 32px;
+    @keyframes asoma {
+      from {
+        opacity: 0;
+      }
     }
     .paso:active:not(:disabled),
     .mas-acciones:active {
@@ -476,37 +479,18 @@ const CIERRE_MS = 2500;
       .rapido.abierto {
         opacity: 1;
       }
-      :host(:hover) .rapido:has(.menos) {
-        padding: 3px;
-        background: rgb(8 10 14 / 0.86);
-        box-shadow: 0 0 0 1px rgb(255 255 255 / 0.18);
-      }
-      :host(:hover) .rapido .menos {
-        display: grid;
-        box-shadow: none;
-        background: rgb(255 255 255 / 0.1);
-      }
-      :host(:hover) .rapido .n {
-        display: block;
-      }
-      :host(:hover) .rapido:has(.menos) .paso {
-        width: 32px;
-        height: 32px;
-      }
       .paso.menos:hover,
       .mas-acciones:hover {
         filter: none;
         border-color: var(--accent);
       }
+      /* La carta no se mueve ni se amplía al pasar: al levantarla, su borde se iba de
+         debajo del puntero, perdía el hover y volvía (parpadeo). Solo se ilumina. */
       :host(:hover) {
-        transform: translateY(-4px);
         box-shadow:
-          0 14px 32px rgb(0 0 0 / 0.5),
-          0 0 24px color-mix(in srgb, var(--dom-a) 35%, transparent);
+          0 10px 28px rgb(0 0 0 / 0.45),
+          0 0 22px color-mix(in srgb, var(--dom-a) 35%, transparent);
         border-color: var(--dom-a);
-      }
-      :host(:hover) img {
-        transform: scale(1.03);
       }
       :host(.apagada:hover) img,
       :host(.apagada:focus-within) img {
@@ -525,10 +509,6 @@ const CIERRE_MS = 2500;
       }
       .imagen {
         animation: none;
-      }
-      :host(:hover),
-      :host(:hover) img {
-        transform: none;
       }
     }
     .nombre {
