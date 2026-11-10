@@ -1,5 +1,5 @@
 import { CatalogCard } from './catalog.service';
-import { Mazo, esCampeonDe, esCampo, esLeyenda, esRuna, mazoVacio } from './mazos';
+import { Mazo, NUM_CAMPOS, esCampeonDe, esCampo, esLeyenda, esRuna, mazoVacio } from './mazos';
 
 /** Resultado de leer una lista de mazo en texto. */
 export interface MazoImportado {
@@ -120,7 +120,9 @@ export function importarMazo(
         if (n > 1) sumar(mazo.principal, card.cardId, n - 1);
         break;
       case 'campos':
-        for (let i = 0; i < n; i++) mazo.campos.push(card.cardId);
+        // Los campos van sin repetir y son NUM_CAMPOS: lo demás no lo admiten las reglas.
+        if (!mazo.campos.includes(card.cardId) && mazo.campos.length < NUM_CAMPOS)
+          mazo.campos.push(card.cardId);
         break;
       case 'runas':
         sumar(mazo.runas, card.cardId, n);

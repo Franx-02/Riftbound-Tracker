@@ -45,6 +45,31 @@ describe('CollectionService (modo demo)', () => {
     expect(col.error()).toBeNull();
   });
 
+  it('si los guardados fallan, vuelve a lo último guardado y no a un clic intermedio', async () => {
+    col.adjust('OGN-001', 'normal', 2);
+    await col.flush();
+
+    // Firestore rechazando (reglas sin publicar, cuota agotada…): tres clics seguidos.
+    const store = (col as unknown as { store: { write: () => Promise<void> } }).store;
+    const original = store.write;
+    store.write = () => Promise.reject(new Error('sin permiso'));
+    col.adjust('OGN-001', 'normal', 1);
+    col.adjust('OGN-001', 'normal', 1);
+    col.adjust('OGN-001', 'normal', 1);
+    expect(col.qty('OGN-001').normal).toBe(5);
+    await col.flush();
+
+    expect(col.qty('OGN-001')).toEqual({ normal: 2, foil: 0 });
+    expect(col.error()).toBe('sin permiso');
+
+    // Y al volver a funcionar, se guarda sobre lo que de verdad había.
+    store.write = original;
+    col.adjust('OGN-001', 'normal', 1);
+    await col.flush();
+    expect(col.qty('OGN-001')).toEqual({ normal: 3, foil: 0 });
+    expect(col.error()).toBeNull();
+  });
+
   it('nunca baja de cero', async () => {
     col.adjust('RAD-114', 'normal', 1);
     col.adjust('RAD-114', 'normal', -5);

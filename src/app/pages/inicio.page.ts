@@ -9,6 +9,7 @@ import { UsersService } from '../core/users.service';
 import { ValuationService } from '../core/valuation.service';
 import { WishlistService, faltan } from '../core/wishlist.service';
 import { EurPipe, ThumbPipe } from '../ui/pipes';
+import { SECCIONES } from '../ui/secciones';
 import { CatalogFiltersState } from './catalog.page';
 
 interface Destacada {
@@ -21,6 +22,8 @@ interface Destacada {
 
 /** Para "subiendo": por debajo de esto, un céntimo arriba o abajo da porcentajes absurdos. */
 const PRECIO_MINIMO_SUBIDA = 1;
+
+const EUROS = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' });
 
 /**
  * Página de inicio, en forma de panel: portada con el arte de tu mejor carta y el valor de
@@ -41,10 +44,17 @@ const PRECIO_MINIMO_SUBIDA = 1;
         <div class="hero-texto">
           <p class="saludo">Hola, {{ nombre() }}</p>
           <h1 class="titular">Tu colección vale</h1>
-          <p class="valor">{{ valor().total | eur }}</p>
+          <!-- Sin precios cargados no se enseña "0,00 €": no es lo que vale. -->
+          @if (prices.data()) {
+            <p class="valor">{{ valor().total | eur }}</p>
+          } @else if (prices.error()) {
+            <p class="valor sin-datos">sin precios</p>
+          } @else {
+            <p class="valor esperando" aria-label="Calculando el valor">…</p>
+          }
           <p class="detalle">
             {{ totales().cards }} cartas distintas · {{ totales().copies }} copias
-            @if (valor().copiasSinPrecio) {
+            @if (prices.data() && valor().copiasSinPrecio) {
               · {{ valor().copiasSinPrecio }} sin precio
             }
           </p>
@@ -76,36 +86,15 @@ const PRECIO_MINIMO_SUBIDA = 1;
       }
 
       <nav class="accesos" aria-label="Ir a">
-        <a routerLink="/deseos" class="acceso" style="--dom: var(--fury)">
-          <span class="icono" aria-hidden="true">♡</span>
-          <span class="titulo">Lista de deseos</span>
-          <span class="muted">
-            {{ deseos().cartas }} cartas
-            @if (deseos().coste) {
-              · faltan {{ deseos().coste | eur }}
-            }
-          </span>
-        </a>
-        <a routerLink="/escanear" class="acceso" style="--dom: var(--mind)">
-          <span class="icono" aria-hidden="true">⌖</span>
-          <span class="titulo">Escanear</span>
-          <span class="muted">Añade cartas con la cámara</span>
-        </a>
-        <a routerLink="/intercambios" class="acceso" style="--dom: var(--calm)">
-          <span class="icono" aria-hidden="true">⇄</span>
-          <span class="titulo">Intercambios</span>
-          <span class="muted">Lo que les sobra a otros</span>
-        </a>
-        <a routerLink="/mazos" class="acceso" style="--dom: var(--order)">
-          <span class="icono" aria-hidden="true">❖</span>
-          <span class="titulo">Mazos</span>
-          <span class="muted">Crea y completa tus mazos</span>
-        </a>
-        <a routerLink="/catalogo" class="acceso" style="--dom: var(--chaos)">
-          <span class="icono" aria-hidden="true">⌕</span>
-          <span class="titulo">Catálogo</span>
-          <span class="muted">{{ catalog.cards().length }} cartas</span>
-        </a>
+        @for (a of accesos(); track a.ruta) {
+          <a [routerLink]="a.ruta" class="acceso" [style.--dom]="a.color">
+            <svg class="icono" viewBox="0 0 24 24" aria-hidden="true">
+              <path [attr.d]="a.icono" />
+            </svg>
+            <span class="titulo">{{ a.texto }}</span>
+            <span class="muted">{{ a.detalle }}</span>
+          </a>
+        }
       </nav>
 
       <section class="panel coleccion">
@@ -137,7 +126,7 @@ const PRECIO_MINIMO_SUBIDA = 1;
             }
           </ul>
         } @else {
-          <p class="muted">
+          <p class="muted" [hidden]="!prices.data()">
             Aún no tienes cartas con precio. Añádelas desde el
             <a routerLink="/catalogo">catálogo</a> o <a routerLink="/escanear">escanéalas</a>.
           </p>
@@ -215,15 +204,22 @@ const PRECIO_MINIMO_SUBIDA = 1;
             }
           </ul>
         </section>
+      } @else if (prices.error()) {
+        <p class="muted ancho">
+          Sin los precios de Cardmarket no se pueden enseñar las cartas destacadas.
+        </p>
       } @else {
-        <p class="muted ancho">Cargando precios de Cardmarket…</p>
+        <section class="panel ancho" aria-hidden="true">
+          <div class="esqueleto hueco-fila"></div>
+        </section>
+        <p class="sr-only" role="status">Cargando precios de Cardmarket…</p>
       }
     </main>
   `,
   styles: `
     /* Panel en rejilla: portada + novedad arriba, accesos, colección + personas, y filas. */
     .pagina {
-      padding: 20px 16px 48px;
+      padding: var(--pad-pagina);
       max-width: 1240px;
       margin: 0 auto;
       display: grid;
@@ -433,9 +429,28 @@ const PRECIO_MINIMO_SUBIDA = 1;
     }
 
     /* Accesos: cada uno con el color de un dominio. */
+    .valor.sin-datos {
+      font-size: clamp(1.6rem, 5vw, 2.4rem);
+    }
+    .valor.esperando {
+      animation: late-valor 1.2s ease-in-out infinite;
+    }
+    @keyframes late-valor {
+      50% {
+        opacity: 0.35;
+      }
+    }
+    .hueco-fila {
+      height: 220px;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .valor.esperando {
+        animation: none;
+      }
+    }
     .accesos {
       display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 12px;
     }
     .acceso {
@@ -459,14 +474,25 @@ const PRECIO_MINIMO_SUBIDA = 1;
         transform 0.15s ease,
         box-shadow 0.15s ease;
     }
+    @media (min-width: 1300px) {
+      .accesos {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+      }
+    }
     .acceso:hover {
       border-color: var(--dom);
       transform: translateY(-2px);
       box-shadow: 0 0 22px color-mix(in srgb, var(--dom) 30%, transparent);
     }
     .acceso .icono {
-      font-size: 1.4rem;
-      color: var(--dom);
+      width: 26px;
+      height: 26px;
+      margin-bottom: 4px;
+      fill: none;
+      stroke: var(--dom);
+      stroke-width: 1.7;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
     .acceso .titulo {
       font-family: var(--fuente-titulos);
@@ -591,9 +617,6 @@ const PRECIO_MINIMO_SUBIDA = 1;
       .pagina {
         grid-template-columns: minmax(0, 1fr);
       }
-      .accesos {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
       .rejilla-cartas {
         grid-template-columns: repeat(3, minmax(0, 1fr));
       }
@@ -605,6 +628,21 @@ const PRECIO_MINIMO_SUBIDA = 1;
       }
       .hero::before {
         background: linear-gradient(0deg, rgb(11 13 17 / 96%) 35%, rgb(11 13 17 / 30%) 80%);
+      }
+    }
+    @media (max-width: 600px) {
+      .accesos {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .acceso {
+        padding: 14px;
+      }
+      .hero {
+        min-height: 280px;
+      }
+      .hero-texto {
+        padding: 20px;
       }
     }
   `,
@@ -637,14 +675,42 @@ export class InicioPage {
     this.users.profiles().filter((p) => p.uid !== this.auth.user()?.uid),
   );
 
+  /** Accesos a las demás secciones, con los mismos iconos que el menú y un dato de cada una. */
+  protected readonly accesos = computed(() => {
+    const d = this.deseos();
+    const detalle: Record<string, { color: string; detalle: string }> = {
+      '/deseos': {
+        color: 'var(--fury)',
+        detalle:
+          `${d.cartas} ${d.cartas === 1 ? 'carta' : 'cartas'}` +
+          (d.coste ? ` · faltan ${EUROS.format(d.coste)}` : '') +
+          (d.sinPrecio ? ` · ${d.sinPrecio} sin precio` : ''),
+      },
+      '/escanear': { color: 'var(--mind)', detalle: 'Añade cartas con la cámara' },
+      '/intercambios': { color: 'var(--calm)', detalle: 'Lo que les sobra a otros' },
+      '/mazos': { color: 'var(--order)', detalle: 'Crea y prueba tus mazos' },
+      '/sobres': { color: 'var(--body)', detalle: 'Abre sobres virtuales' },
+      '/catalogo': {
+        color: 'var(--chaos)',
+        detalle: `${this.catalog.cards().length} cartas`,
+      },
+    };
+    return SECCIONES.filter((s) => detalle[s.ruta]).map((s) => ({ ...s, ...detalle[s.ruta] }));
+  });
+
   protected readonly deseos = computed(() => {
     let coste = 0;
+    let sinPrecio = 0;
     for (const [id, entry] of this.wish.entries()) {
       const n = faltan(entry, this.col.qty(id));
+      if (!n) continue;
       const p = this.valuation.pricing(id);
-      if (n) coste += (p.normal ?? p.foil ?? 0) * n;
+      const precio = p.normal ?? p.foil;
+      // Sin precio no suma, y se dice: no es que cueste 0 €.
+      if (precio === null) sinPrecio++;
+      else coste += precio * n;
     }
-    return { cartas: this.wish.entries().size, coste };
+    return { cartas: this.wish.entries().size, coste, sinPrecio };
   });
 
   /** Las 10 cartas propias que más valen (por copia, el acabado más caro que tengas). */

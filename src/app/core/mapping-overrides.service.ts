@@ -1,5 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { collection, deleteDoc, doc, getDocs, setDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDocsFromServer, setDoc } from 'firebase/firestore';
 import { AuthService } from './auth.service';
 import { DEMO, escribirDemo, leerDemo } from './demo';
 import { db } from './firebase';
@@ -41,7 +41,7 @@ export class MappingOverridesService {
         );
         return;
       }
-      const snap = await getDocs(collection(db, 'mappingOverrides'));
+      const snap = await getDocsFromServer(collection(db, 'mappingOverrides'));
       this.overrides.set(new Map(snap.docs.map((d) => [d.id, d.data() as MappingOverride])));
       this.error.set(null);
     } catch (e) {

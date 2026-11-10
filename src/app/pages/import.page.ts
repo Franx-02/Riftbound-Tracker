@@ -5,6 +5,7 @@ import { CollectionService, ImportMode } from '../core/collection.service';
 import { ImportResult, exportDotgg, importCsv } from '../core/csv';
 import { PricesService } from '../core/prices.service';
 import { ValuationService } from '../core/valuation.service';
+import { CabeceraComponent } from '../ui/cabecera.component';
 import { EurPipe } from '../ui/pipes';
 
 type Estado =
@@ -18,10 +19,15 @@ const MUESTRA = 20;
 
 @Component({
   selector: 'app-import-page',
-  imports: [RouterLink, EurPipe],
+  imports: [RouterLink, EurPipe, CabeceraComponent],
   template: `
     <main class="pagina">
-      <h1>Importar y exportar</h1>
+      <app-cabecera
+        titulo="Importar y exportar"
+        subtitulo="Trae tu colección de Riftbound.gg o Riftatlas, o llévate una copia de la tuya."
+      >
+        <a routerLink="/coleccion">← Mi colección</a>
+      </app-cabecera>
 
       <section class="bloque">
         <h2>Exportar mi colección</h2>
@@ -234,7 +240,7 @@ const MUESTRA = 20;
   `,
   styles: `
     .pagina {
-      padding: 12px 16px 48px;
+      padding: var(--pad-pagina);
       max-width: 760px;
       margin: 0 auto;
       display: grid;
@@ -242,14 +248,10 @@ const MUESTRA = 20;
       grid-template-columns: minmax(0, 1fr);
       gap: 16px;
     }
-    h1 {
-      font-size: 1.3rem;
-      margin: 0;
-    }
     .bloque {
-      background: var(--surface);
+      background: linear-gradient(180deg, rgb(255 255 255 / 2.5%), transparent 60%), var(--surface);
       border: 1px solid var(--border);
-      border-radius: var(--radio-s);
+      border-radius: var(--radio);
       padding: 16px;
       display: grid;
       grid-template-columns: minmax(0, 1fr);

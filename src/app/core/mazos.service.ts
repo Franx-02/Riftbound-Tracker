@@ -1,13 +1,15 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { collection, deleteDoc, doc, getDocs, setDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDocsFromServer, setDoc } from 'firebase/firestore';
 import { AuthService } from './auth.service';
 import { DEMO, escribirDemo, leerDemo } from './demo';
 import { db } from './firebase';
-import { Mazo, mazoVacio } from './mazos';
+import { Mazo, NUM_CAMPOS, mazoVacio } from './mazos';
 
 /** Los mismos límites que firestore.rules. */
 export const MAX_NOMBRE_MAZO = 80;
 const MAX_CARTAS_ZONA = 100;
+/** Tope de runas distintas de firestore.rules. */
+const MAX_RUNAS_DISTINTAS = 20;
 
 interface MazosStore {
   read(uid: string): Promise<Mazo[]>;
@@ -57,7 +59,7 @@ function normalizar(id: string, d: Record<string, unknown>): Mazo {
 
 class FirestoreStore implements MazosStore {
   async read(uid: string): Promise<Mazo[]> {
-    const snap = await getDocs(collection(db, 'users', uid, 'decks'));
+    const snap = await getDocsFromServer(collection(db, 'users', uid, 'decks'));
     return snap.docs.map((d) => normalizar(d.id, d.data()));
   }
   async write(uid: string, mazo: Mazo): Promise<void> {
@@ -101,11 +103,14 @@ export class MazosService {
   private carga: Promise<void> | null = null;
   private sesion: string | null = null;
   private cola: Promise<unknown> = Promise.resolve();
+  /** Los mazos tal como quedaron guardados por última vez, mientras haya guardados en vuelo. */
+  private confirmados: readonly Mazo[] | null = null;
 
   private comprobarSesion(): void {
     const uid = this.auth.user()?.uid ?? null;
     if (uid === this.sesion) return;
     this.sesion = uid;
+    this.confirmados = null;
     this.carga = null;
     this.mazos.set([]);
     this.cargado.set(false);
@@ -150,29 +155,29 @@ export class MazosService {
       nombre: mazo.nombre.trim().slice(0, MAX_NOMBRE_MAZO) || 'Mazo sin nombre',
       actualizado: new Date().toISOString(),
     };
+    // Los mismos topes que firestore.rules: lo que no cabe allí no se pinta aquí como guardado.
     if (
       Object.keys(limpio.principal).length > MAX_CARTAS_ZONA ||
-      Object.keys(limpio.banquillo).length > MAX_CARTAS_ZONA
+      Object.keys(limpio.banquillo).length > MAX_CARTAS_ZONA ||
+      Object.keys(limpio.runas).length > MAX_RUNAS_DISTINTAS
     ) {
       this.error.set('Demasiadas cartas distintas en el mazo');
       return;
     }
-    const anterior = this.mazos();
-    this.mazos.set(ordenar([...anterior.filter((m) => m.id !== limpio.id), limpio]));
-    this.encolar(
-      () => this.store.write(uid, limpio),
-      () => this.mazos.set(anterior),
-    );
+    if (limpio.campos.length > NUM_CAMPOS) {
+      this.error.set(`Un mazo lleva como mucho ${NUM_CAMPOS} campos de batalla`);
+      return;
+    }
+    const despues = ordenar([...this.mazos().filter((m) => m.id !== limpio.id), limpio]);
+    this.encolar(() => this.store.write(uid, limpio), despues);
   }
 
   borrar(id: string): void {
     const uid = this.auth.user()?.uid;
     if (!uid) return;
-    const anterior = this.mazos();
-    this.mazos.set(anterior.filter((m) => m.id !== id));
     this.encolar(
       () => this.store.remove(uid, id),
-      () => this.mazos.set(anterior),
+      this.mazos().filter((m) => m.id !== id),
     );
   }
 
@@ -180,16 +185,30 @@ export class MazosService {
     return this.cola.catch(() => {});
   }
 
-  private encolar(tarea: () => Promise<void>, deshacer: () => void): void {
+  /**
+   * Pinta `despues` ya y lo guarda en cola. Si el guardado falla y no hay otro detrás, se
+   * vuelve a lo último confirmado (no a lo que había en pantalla, que podía llevar cambios
+   * anteriores aún sin guardar).
+   */
+  private encolar(tarea: () => Promise<void>, despues: readonly Mazo[]): void {
     const sesion = this.sesion;
-    this.cola = this.cola
+    this.confirmados ??= this.mazos();
+    this.mazos.set(despues);
+    const paso: Promise<void> = this.cola
       .catch(() => {})
       .then(tarea)
-      .then(() => this.error.set(null))
+      .then(() => {
+        this.error.set(null);
+        if (this.sesion !== sesion) return;
+        this.confirmados = this.cola === paso ? null : despues;
+      })
       .catch((e: unknown) => {
-        if (this.sesion === sesion) deshacer();
         this.error.set(`No se pudo guardar el mazo: ${mensaje(e)}`);
+        if (this.sesion !== sesion || this.cola !== paso) return;
+        if (this.confirmados) this.mazos.set(this.confirmados);
+        this.confirmados = null;
       });
+    this.cola = paso;
   }
 }
 

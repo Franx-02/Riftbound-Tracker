@@ -1,5 +1,7 @@
-import { Component, OnInit, computed, inject } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Component, OnInit, computed, effect, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { filter, map } from 'rxjs';
 import { AuthService } from '../core/auth.service';
 import { CatalogService } from '../core/catalog.service';
 import { CollectionService } from '../core/collection.service';
@@ -9,71 +11,46 @@ import { DescartadasService } from '../core/descartadas.service';
 import { MappingOverridesService } from '../core/mapping-overrides.service';
 import { PricesService } from '../core/prices.service';
 import { TraduccionService } from '../core/traduccion.service';
+import { IMPORTAR, SECCIONES } from '../ui/secciones';
 
 /** Marco de la app con sesión: barra, navegación y carga de los datos compartidos. */
 @Component({
   selector: 'app-shell',
   imports: [RouterOutlet, RouterLink, RouterLinkActive],
   template: `
+    <a class="saltar" href="#contenido">Saltar al contenido</a>
     <header class="barra">
       <a class="marca" routerLink="/inicio">Riftbound <span class="marca-sub">Tracker</span></a>
-      <!-- En móvil esta misma navegación baja a una barra fija con iconos. -->
+      <!-- En móvil esta misma navegación baja a una barra fija con iconos: cuatro secciones
+           y "Más", que abre el resto en una hoja. Más de cinco botones no caben. -->
       <nav aria-label="Secciones">
-        <a routerLink="/inicio" routerLinkActive="activo">
+        @for (e of enlaces; track e.ruta) {
+          <a
+            [routerLink]="e.ruta"
+            routerLinkActive="activo"
+            [class.en-mas]="!e.barra"
+            [attr.aria-label]="e.texto"
+          >
+            <svg class="icono" viewBox="0 0 24 24" aria-hidden="true">
+              <path [attr.d]="e.icono" />
+            </svg>
+            <span class="texto-largo">{{ e.texto }}</span>
+            <span class="texto-corto" aria-hidden="true">{{ e.corto ?? e.texto }}</span>
+          </a>
+        }
+        <button
+          type="button"
+          class="boton-mas"
+          [class.activo]="masAbierto() || enSeccionDeMas()"
+          aria-haspopup="dialog"
+          [attr.aria-expanded]="masAbierto()"
+          (click)="masAbierto.set(!masAbierto())"
+        >
           <svg class="icono" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M4 11l8-7 8 7v8.5a1.5 1.5 0 0 1-1.5 1.5H15v-6H9v6H5.5A1.5 1.5 0 0 1 4 19.5z" />
+            <path d="M5 7h14M5 12h14M5 17h14" />
           </svg>
-          <span>Inicio</span>
-        </a>
-        <a routerLink="/coleccion" routerLinkActive="activo">
-          <svg class="icono" viewBox="0 0 24 24" aria-hidden="true">
-            <rect x="3" y="4" width="7" height="9" rx="1.5" />
-            <rect x="14" y="4" width="7" height="9" rx="1.5" />
-            <rect x="3" y="15" width="18" height="5" rx="1.5" />
-          </svg>
-          <span class="texto-largo">Mi colección</span><span class="texto-corto">Colección</span>
-        </a>
-        <a routerLink="/catalogo" routerLinkActive="activo">
-          <svg class="icono" viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="11" cy="11" r="6.5" />
-            <path d="M16 16l4.5 4.5" />
-          </svg>
-          <span>Catálogo</span>
-        </a>
-        <a routerLink="/escanear" routerLinkActive="activo" class="escanear">
-          <svg class="icono" viewBox="0 0 24 24" aria-hidden="true">
-            <path
-              d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16"
-            />
-            <rect x="8.5" y="7.5" width="7" height="9" rx="1" />
-          </svg>
-          <span>Escanear</span>
-        </a>
-        <a routerLink="/deseos" routerLinkActive="activo">
-          <svg class="icono" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" />
-          </svg>
-          <span>Deseos</span>
-        </a>
-        <a routerLink="/mazos" routerLinkActive="activo" class="solo-escritorio">
-          <svg class="icono" viewBox="0 0 24 24" aria-hidden="true">
-            <rect x="7" y="3" width="12" height="16" rx="1.5" />
-            <path d="M4 7v12.5A1.5 1.5 0 0 0 5.5 21H15" />
-          </svg>
-          <span>Mazos</span>
-        </a>
-        <a routerLink="/sobres" routerLinkActive="activo">
-          <svg class="icono" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M5 4h14l-1.5 3H6.5zM5 7h14v13H5zM5 7l7 5 7-5" />
-          </svg>
-          <span>Sobres</span>
-        </a>
-        <a routerLink="/intercambios" routerLinkActive="activo" class="solo-escritorio">
-          <svg class="icono" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M4 8h13l-3-3M20 16H7l3 3" />
-          </svg>
-          <span>Intercambios</span>
-        </a>
+          <span>Más</span>
+        </button>
       </nav>
       <div class="usuario">
         @if (auth.demo) {
@@ -84,19 +61,77 @@ import { TraduccionService } from '../core/traduccion.service';
           >
         }
         <span class="nombre">{{ auth.displayName() }}</span>
-        <button class="secondary salir" (click)="logout()">Salir</button>
+        <button type="button" class="secondary salir" (click)="logout()">Salir</button>
       </div>
     </header>
 
-    @for (e of errores(); track e) {
-      <p class="aviso error" role="alert">{{ e }}</p>
+    @if (masAbierto()) {
+      <div class="fondo-hoja" (click)="masAbierto.set(false)"></div>
+      <section class="hoja" role="dialog" aria-modal="true" aria-label="Más secciones">
+        <span class="asa" aria-hidden="true"></span>
+        <ul>
+          @for (e of enlacesMas; track e.ruta) {
+            <li>
+              <a [routerLink]="e.ruta" routerLinkActive="activo" (click)="masAbierto.set(false)">
+                <svg class="icono" viewBox="0 0 24 24" aria-hidden="true">
+                  <path [attr.d]="e.icono" />
+                </svg>
+                <span>{{ e.texto }}</span>
+              </a>
+            </li>
+          }
+        </ul>
+        <div class="hoja-pie">
+          <span class="nombre-hoja">{{ auth.displayName() }}</span>
+          <button type="button" class="secondary" (click)="logout()">Salir</button>
+        </div>
+      </section>
     }
 
-    <router-outlet />
+    @if (errores().length) {
+      <div class="avisos" role="alert">
+        <ul>
+          @for (e of errores(); track e) {
+            <li>{{ e }}</li>
+          }
+        </ul>
+        <button type="button" class="secondary" (click)="reintentar()">Reintentar</button>
+      </div>
+    }
+
+    <div id="contenido" tabindex="-1"><router-outlet /></div>
     <!-- Hueco para que la barra inferior del móvil no tape el final de la página. -->
     <div class="hueco-barra" aria-hidden="true"></div>
+
+    <!-- Los fallos al guardar salen aquí, flotando: al pie de una rejilla de cientos de
+         cartas nadie los vería, y el cambio se deshace solo. -->
+    @if (falloGuardado(); as f) {
+      <div class="tostada" role="alert">
+        <span>{{ f }}</span>
+        <button type="button" class="secondary" (click)="ocultarFallo()">Entendido</button>
+      </div>
+    }
   `,
   styles: `
+    .saltar {
+      position: fixed;
+      top: 8px;
+      left: 8px;
+      z-index: 100;
+      padding: 8px 14px;
+      border-radius: var(--radio-s);
+      background: var(--accent);
+      color: #1a1305;
+      font-weight: 600;
+      text-decoration: none;
+      transform: translateY(-200%);
+    }
+    .saltar:focus {
+      transform: none;
+    }
+    #contenido:focus {
+      outline: none;
+    }
     .barra {
       position: sticky;
       top: 0;
@@ -138,7 +173,8 @@ import { TraduccionService } from '../core/traduccion.service';
       overflow-x: auto;
       scrollbar-width: none;
     }
-    nav a {
+    nav a,
+    .boton-mas {
       color: var(--muted);
       text-decoration: none;
       padding: 7px 12px;
@@ -171,23 +207,87 @@ import { TraduccionService } from '../core/traduccion.service';
     .salir {
       padding: 6px 12px;
     }
-    .aviso {
-      margin: 8px 16px;
+    .avisos {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px 16px;
+      margin: 12px 16px 0;
+      padding: 10px 12px 10px 16px;
+      border-radius: var(--radio);
+      background: color-mix(in srgb, var(--error) 10%, var(--surface));
+      border: 1px solid color-mix(in srgb, var(--error) 45%, transparent);
+      font-size: 0.9rem;
+    }
+    .avisos ul {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 2px;
+    }
+    .avisos button {
+      padding: 6px 12px;
     }
 
-    .icono,
+    .icono {
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    nav .icono,
     .texto-corto,
+    .boton-mas,
     .hueco-barra {
       display: none;
     }
 
-    /* Móvil: arriba solo la marca y Salir; las secciones, en una barra fija abajo. */
+    .tostada {
+      position: fixed;
+      left: 50%;
+      bottom: calc(var(--alto-nav) + 16px);
+      z-index: 60;
+      translate: -50% 0;
+      width: min(520px, calc(100vw - 24px));
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px 10px 16px;
+      border-radius: var(--radio);
+      background: color-mix(in srgb, var(--error) 14%, var(--surface-2));
+      border: 1px solid color-mix(in srgb, var(--error) 60%, transparent);
+      box-shadow: 0 16px 40px rgb(0 0 0 / 55%);
+      font-size: 0.9rem;
+      animation: sube-tostada 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+    .tostada button {
+      flex-shrink: 0;
+      padding: 6px 12px;
+    }
+    @keyframes sube-tostada {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+    }
+
+    /* Hoja de "Más": solo existe en móvil. */
+    .fondo-hoja,
+    .hoja {
+      display: none;
+    }
+
+    /* Móvil: arriba solo la marca; las secciones, en una barra fija abajo. */
     @media (max-width: 700px) {
       /* Sin desenfoque: backdrop-filter haría que la barra fija de abajo se colocara
          respecto a la cabecera en vez de a la pantalla. */
       .barra {
         gap: 8px;
-        padding: 8px 12px;
+        padding: 10px 14px;
         background: rgb(13 15 19 / 96%);
         backdrop-filter: none;
         -webkit-backdrop-filter: none;
@@ -195,7 +295,8 @@ import { TraduccionService } from '../core/traduccion.service';
       .marca {
         flex: 1;
       }
-      .nombre {
+      .nombre,
+      .salir {
         display: none;
       }
       nav {
@@ -205,36 +306,63 @@ import { TraduccionService } from '../core/traduccion.service';
         bottom: 0;
         z-index: 15;
         display: grid;
-        grid-template-columns: repeat(5, 1fr);
+        grid-template-columns: repeat(5, minmax(0, 1fr));
         gap: 0;
         overflow: visible;
-        padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
-        background: rgb(13 15 19 / 82%);
+        height: var(--alto-nav);
+        padding: 5px 4px calc(5px + env(safe-area-inset-bottom));
+        line-height: 1.2;
+        background: rgb(13 15 19 / 88%);
         backdrop-filter: saturate(160%) blur(14px);
         -webkit-backdrop-filter: saturate(160%) blur(14px);
         border-top: 1px solid var(--border);
       }
-      nav a {
+      nav a,
+      .boton-mas {
         display: grid;
         justify-items: center;
         gap: 2px;
+        min-width: 0;
         padding: 6px 2px;
         font-size: 0.68rem;
         border-radius: 12px;
       }
-      nav a.activo {
+      nav a.en-mas {
+        display: none;
+      }
+      .boton-mas {
+        background: none;
+        border: 0;
+        box-shadow: none;
+      }
+      .boton-mas:hover:not(:disabled) {
+        filter: none;
+      }
+      nav a.activo,
+      .boton-mas.activo {
         background: transparent;
         color: var(--accent);
       }
-      .icono {
+      /* Marca fina encima de la sección en la que estás. */
+      nav a.activo::before,
+      .boton-mas.activo::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        width: 28px;
+        height: 2px;
+        border-radius: 0 0 2px 2px;
+        background: var(--accent);
+        box-shadow: 0 0 10px var(--accent);
+      }
+      nav a,
+      .boton-mas {
+        position: relative;
+      }
+      nav .icono {
         display: block;
         width: 24px;
         height: 24px;
-        fill: none;
-        stroke: currentColor;
-        stroke-width: 1.8;
-        stroke-linecap: round;
-        stroke-linejoin: round;
       }
       .texto-largo {
         display: none;
@@ -242,12 +370,105 @@ import { TraduccionService } from '../core/traduccion.service';
       .texto-corto {
         display: inline;
       }
-      nav a.solo-escritorio {
-        display: none;
-      }
       .hueco-barra {
         display: block;
-        height: calc(68px + env(safe-area-inset-bottom));
+        height: var(--alto-nav);
+      }
+
+      .fondo-hoja {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        background: rgb(0 0 0 / 55%);
+        animation: aparece-fondo 0.2s ease both;
+      }
+      .hoja {
+        display: grid;
+        gap: 12px;
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 51;
+        padding: 10px 16px calc(16px + env(safe-area-inset-bottom));
+        border-radius: 20px 20px 0 0;
+        background: var(--surface);
+        border: 1px solid var(--border-claro);
+        border-bottom: 0;
+        box-shadow: 0 -20px 50px rgb(0 0 0 / 55%);
+        animation: sube-hoja 0.26s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+      }
+      .asa {
+        justify-self: center;
+        width: 36px;
+        height: 4px;
+        border-radius: 999px;
+        background: var(--border-claro);
+      }
+      .hoja ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .hoja a {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px;
+        border-radius: var(--radio);
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        color: var(--text);
+        font-weight: 600;
+        text-decoration: none;
+      }
+      .hoja a.activo {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .hoja .icono {
+        width: 22px;
+        height: 22px;
+        flex-shrink: 0;
+        stroke: var(--accent);
+      }
+      .hoja-pie {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding-top: 12px;
+        border-top: 1px solid var(--border);
+      }
+      .nombre-hoja {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+    }
+    @keyframes aparece-fondo {
+      from {
+        opacity: 0;
+      }
+    }
+    @keyframes sube-hoja {
+      from {
+        transform: translateY(24px);
+        opacity: 0;
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .hoja,
+      .fondo-hoja,
+      .tostada {
+        animation: none;
       }
     }
 
@@ -257,6 +478,7 @@ import { TraduccionService } from '../core/traduccion.service';
       :host {
         display: block;
         padding-left: 236px;
+        /* Las usa el simulador para ocupar justo lo que deja libre la barra. */
         --alto-barra: 0px;
         --ancho-barra: 236px;
       }
@@ -288,7 +510,8 @@ import { TraduccionService } from '../core/traduccion.service';
         flex-direction: column;
         flex: 1;
         gap: 4px;
-        overflow: visible;
+        overflow-x: visible;
+        overflow-y: auto;
       }
       nav a {
         position: relative;
@@ -318,16 +541,13 @@ import { TraduccionService } from '../core/traduccion.service';
       nav a.activo .icono {
         stroke: #1a1305;
       }
-      .icono {
+      nav .icono {
         display: block;
         width: 24px;
         height: 24px;
         flex-shrink: 0;
-        fill: none;
         stroke: var(--accent);
         stroke-width: 1.7;
-        stroke-linecap: round;
-        stroke-linejoin: round;
       }
       .usuario {
         flex-wrap: wrap;
@@ -341,8 +561,12 @@ import { TraduccionService } from '../core/traduccion.service';
         text-overflow: ellipsis;
         white-space: nowrap;
       }
+      .tostada {
+        left: calc(50% + 118px);
+      }
     }
   `,
+  host: { '(document:keydown.escape)': 'masAbierto.set(false)' },
 })
 export class ShellComponent implements OnInit {
   protected readonly auth = inject(AuthService);
@@ -355,6 +579,51 @@ export class ShellComponent implements OnInit {
   private readonly wish = inject(WishlistService);
   private readonly intercambiables = inject(IntercambiablesService);
   private readonly router = inject(Router);
+
+  protected readonly enlaces = SECCIONES;
+  protected readonly enlacesMas = [...SECCIONES.filter((e) => !e.barra), IMPORTAR];
+  /** Hoja de "Más" de la barra inferior del móvil. */
+  protected readonly masAbierto = signal(false);
+
+  private readonly url = toSignal(
+    this.router.events.pipe(
+      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+      map((e) => e.urlAfterRedirects),
+    ),
+    { initialValue: this.router.url },
+  );
+  /** Estás en una sección que en móvil vive dentro de "Más": el botón se marca como activo. */
+  protected readonly enSeccionDeMas = computed(() =>
+    this.enlacesMas.some((e) => this.url().startsWith(e.ruta)),
+  );
+
+  /**
+   * El último fallo al guardar (copias, deseos, "no la quiero", "para cambiar"). Los
+   * servicios deshacen el cambio solos; esto solo lo cuenta.
+   */
+  private readonly falloActual = computed(
+    () =>
+      (this.collection.uid() ? this.collection.error() : null) ??
+      (this.wish.editable() ? this.wish.error() : null) ??
+      (this.descartadas.lista() ? this.descartadas.error() : null) ??
+      (this.intercambiables.lista() ? this.intercambiables.error() : null),
+  );
+  private readonly falloOculto = signal<string | null>(null);
+  protected readonly falloGuardado = computed(() => {
+    const f = this.falloActual();
+    return f && f !== this.falloOculto() ? `No se pudo guardar: ${f}` : null;
+  });
+
+  constructor() {
+    // Si el fallo desaparece (el siguiente guardado va bien), el aviso vuelve a poder salir.
+    effect(() => {
+      if (!this.falloActual()) this.falloOculto.set(null);
+    });
+  }
+
+  protected ocultarFallo(): void {
+    this.falloOculto.set(this.falloActual());
+  }
 
   /** Lo que impide usar la app, en una frase. Los errores de guardado los enseña cada pantalla. */
   protected readonly errores = computed(() => {
@@ -370,6 +639,11 @@ export class ShellComponent implements OnInit {
     return e;
   });
 
+  /** Vuelve a pedir lo que falló (cada servicio no repite lo que ya tiene cargado). */
+  protected reintentar(): void {
+    this.ngOnInit();
+  }
+
   ngOnInit(): void {
     void this.catalog.load();
     void this.prices.load();
@@ -382,6 +656,7 @@ export class ShellComponent implements OnInit {
   }
 
   async logout(): Promise<void> {
+    this.masAbierto.set(false);
     await this.auth.signOut();
     await this.router.navigateByUrl('/login');
   }
