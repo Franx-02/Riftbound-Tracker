@@ -9,6 +9,7 @@ import {
 } from '@angular/router';
 import { routes } from './app.routes';
 import { provideServiceWorker } from '@angular/service-worker';
+import { hayVuelo } from './ui/volar';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -22,7 +23,12 @@ export const appConfig: ApplicationConfig = {
       // Tras la primera página se descargan las demás en segundo plano: cambiar de sección
       // ya no espera a la red.
       withPreloading(PreloadAllModules),
-      withViewTransitions({ skipInitialTransition: true }),
+      withViewTransitions({
+        skipInitialTransition: true,
+        onViewTransitionCreated: ({ transition }) => {
+          if (!hayVuelo()) transition.skipTransition();
+        },
+      }),
     ),
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),

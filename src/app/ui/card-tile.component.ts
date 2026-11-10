@@ -1,7 +1,7 @@
-import { Component, computed, inject, input, output, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, input, output, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CatalogCard } from '../core/catalog.service';
-import { CardQty } from '../core/collection.service';
+import { CardQty, CollectionService } from '../core/collection.service';
 import { IntercambiablesService } from '../core/intercambiables.service';
 import { WishlistService } from '../core/wishlist.service';
 import { DescartadasService } from '../core/descartadas.service';
@@ -9,26 +9,24 @@ import { estiloDominios } from '../core/dominios';
 import { ValuationService } from '../core/valuation.service';
 import { ConfidenceBadgeComponent } from './confidence-badge.component';
 import { EurPipe, ThumbPipe } from './pipes';
-import { QtyControlComponent } from './qty-control.component';
+import { AccionesCarta } from './acciones-carta.component';
 import { InclinarDirective } from './inclinar.directive';
 import { volarA } from './volar';
 
+/** Cuánto se queda abierto el "− N +" tras el último toque antes de volver a ser un "+". */
+const CIERRE_MS = 2500;
+
 /**
- * Una carta en cuadrícula. El +/− de normal y foil va encima de la imagen: en
- * escritorio aparece al pasar el ratón (o al llegar con el tabulador) y en pantallas
- * táctiles, donde no hay "pasar el ratón", se ve siempre. La usan el catálogo y la
- * vista de carpeta de Mi colección.
+ * Una carta en cuadrícula. La imagen manda: encima solo lleva una insignia con las copias
+ * y, abajo a la derecha, un "+" que suma una copia normal de un toque y se abre en
+ * "− N +" mientras se usa (como el botón de añadir al carrito de cualquier tienda). Todo
+ * lo demás (foil, deseos, "no la quiero", "para cambiar") vive en la hoja que abre ⋯:
+ * antes cada carta llevaba hasta nueve botones encima. Con ratón, "+" y ⋯ aparecen al
+ * pasar por la carta; en táctil se ven siempre. La usan el catálogo y Mi colección.
  */
 @Component({
   selector: 'app-card-tile',
-  imports: [
-    RouterLink,
-    InclinarDirective,
-    QtyControlComponent,
-    ConfidenceBadgeComponent,
-    EurPipe,
-    ThumbPipe,
-  ],
+  imports: [RouterLink, InclinarDirective, ConfidenceBadgeComponent, EurPipe, ThumbPipe],
   template: `
     @if (seleccion()) {
       <button
@@ -46,7 +44,7 @@ import { volarA } from './volar';
     }
     <div class="marco" appInclinar [holo]="owned().foil > 0">
       <!-- Los botones no pueden ir dentro de un enlace (HTML inválido, y el teclado se
-           lía): la imagen es un enlace y el panel, un hermano posicionado encima.
+           lía): la imagen es un enlace y los controles, hermanos posicionados encima.
            Fuera del tabulador porque el nombre de abajo lleva al mismo sitio. -->
       <a
         [routerLink]="['/carta', card().cardId]"
@@ -72,7 +70,12 @@ import { volarA } from './volar';
         }
       </a>
       @if (copias() > 0) {
-        <span class="etiqueta tengo" [title]="detalleCopias()">×{{ copias() }}</span>
+        <span class="etiqueta tengo" [title]="detalleCopias()">
+          ×{{ copias() }}
+          @if (owned().foil > 0) {
+            <span class="foil" aria-hidden="true">✦{{ owned().foil }}</span>
+          }
+        </span>
       } @else if (descartada()) {
         <span class="etiqueta descartada">no la quiero</span>
       } @else if (deseo()) {
@@ -80,75 +83,47 @@ import { volarA } from './volar';
       } @else if (dim()) {
         <span class="etiqueta falta">falta</span>
       }
-      @if (!readonly()) {
-        <!-- Solo en táctil: allí el panel se ve siempre y con las cinco filas tapaba la carta
-             entera. Las acciones secundarias se despliegan con este botón. -->
+      @if (copias() > 0 && (paraCambiar() || deseo())) {
+        <span class="marcas" aria-hidden="true">
+          @if (paraCambiar()) {
+            <span class="marca cambio" title="Para cambiar">⇄</span>
+          }
+          @if (deseo()) {
+            <span class="marca deseo" title="En tu lista de deseos">♥</span>
+          }
+        </span>
+      }
+      @if (!readonly() && col.editable()) {
         <button
           type="button"
-          class="ver-extras"
-          [attr.aria-expanded]="extras()"
-          [attr.aria-label]="(extras() ? 'Ocultar' : 'Más') + ' acciones de ' + card().name"
-          (click)="extras.set(!extras())"
+          class="mas-acciones"
+          [attr.aria-label]="'Más acciones de ' + card().name"
+          (click)="acciones.abrir(card())"
         >
-          <span aria-hidden="true">{{ extras() ? '×' : '⋯' }}</span>
+          <span aria-hidden="true">⋯</span>
         </button>
-      }
-      <div class="panel" [class.con-extras]="extras()">
-        <app-qty-control
-          [cardId]="card().cardId"
-          [fixed]="readonly() ? owned() : null"
-          [overlay]="true"
-        />
-        <div class="extras">
-          @if (!readonly() && wish.editable()) {
-            <div class="deseos">
-              @if (deseo()) {
-                <button
-                  type="button"
-                  class="descartar activo-deseo quitar"
-                  [attr.aria-label]="
-                    'Quitar una copia de ' + card().name + ' de la lista de deseos'
-                  "
-                  (click)="wish.adjust(card().cardId, -1)"
-                >
-                  −
-                </button>
-              }
-              <button
-                type="button"
-                class="descartar"
-                [class.activo-deseo]="deseo()"
-                [attr.aria-label]="'Añadir ' + card().name + ' a la lista de deseos'"
-                (click)="wish.adjust(card().cardId, 1)"
-              >
-                {{ deseo() ? '♥ Deseo ×' + deseo() + ' +' : '♡ A deseos' }}
-              </button>
-            </div>
-          }
-          @if (!readonly() && descartadas.lista()) {
+        <div class="rapido" [class.abierto]="abierto()">
+          @if (owned().normal > 0) {
             <button
               type="button"
-              class="descartar"
-              [attr.aria-pressed]="descartada()"
-              [attr.aria-label]="(descartada() ? 'Volver a querer ' : 'No quiero ') + card().name"
-              (click)="descartadas.alternar(card().cardId)"
+              class="paso menos"
+              [attr.aria-label]="'Quitar una copia normal de ' + card().name"
+              (click)="ajustar(-1)"
             >
-              {{ descartada() ? 'La quiero' : 'No la quiero' }}
+              −
             </button>
+            <span class="n" aria-live="polite">{{ owned().normal }}</span>
           }
-          @if (!readonly() && intercambiables.lista() && copias() > 0) {
-            <button
-              type="button"
-              class="descartar"
-              [class.activo]="paraCambiar()"
-              [attr.aria-pressed]="paraCambiar()"
-              (click)="intercambiables.alternar(card().cardId)"
-            >
-              {{ paraCambiar() ? '⇄ Para cambiar ✓' : '⇄ Para cambiar' }}
-            </button>
-          }
+          <button
+            type="button"
+            class="paso suma"
+            [attr.aria-label]="'Añadir una copia normal de ' + card().name"
+            (click)="ajustar(1)"
+          >
+            +
+          </button>
         </div>
-      </div>
+      }
     </div>
     <a [routerLink]="['/carta', card().cardId]" class="enlace-carta" (click)="volarA(img)">
       <span class="nombre">{{ card().name }}</span>
@@ -269,16 +244,19 @@ import { volarA } from './volar';
         0 10px 30px rgb(0 0 0 / 0.5);
       transform: translateY(-2px) scale(0.98);
     }
+    /* En modo selección los controles de la carta sobran: toda ella es el botón. */
+    :host(.seleccionando) .mas-acciones,
+    :host(.seleccionando) .rapido {
+      display: none;
+    }
     .marco {
       position: relative;
       overflow: hidden;
       border-radius: var(--radio-s);
     }
-    .imagen {
-      display: block;
-    }
     /* Mientras llega la imagen, el hueco late; al llegar, aparece fundiéndose. */
     .imagen {
+      display: block;
       position: relative;
       background: var(--surface-2);
       animation: late 1.4s ease-in-out infinite;
@@ -300,7 +278,7 @@ import { volarA } from './volar';
       object-fit: contain;
       opacity: 0;
       transition:
-        opacity 0.3s ease,
+        opacity 0.2s ease,
         filter 0.15s ease,
         transform 0.25s ease;
     }
@@ -319,9 +297,6 @@ import { volarA } from './volar';
       font-weight: 600;
       color: var(--muted);
     }
-    .ver-extras {
-      display: none;
-    }
     /* La que no tienes se ve apagada, como un hueco en la carpeta, pero reconocible. */
     :host(.apagada) img {
       filter: grayscale(0.85) brightness(0.4);
@@ -334,71 +309,194 @@ import { volarA } from './volar';
     :host(.descartada) img {
       filter: grayscale(0.6) sepia(0.35) hue-rotate(-25deg) saturate(1.6) brightness(0.45);
     }
+
+    /* ── Insignias (no se pulsan) ─────────────────────────────────────────────── */
+    .etiqueta {
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      z-index: 1;
+      pointer-events: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 1px 7px;
+      border-radius: var(--radio-s);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+    .etiqueta.tengo {
+      background: var(--dom-a);
+      color: #0d0f13;
+    }
+    .etiqueta .foil {
+      padding-left: 5px;
+      border-left: 1px solid rgb(0 0 0 / 0.3);
+      letter-spacing: 0;
+    }
+    .etiqueta.falta {
+      background: rgb(0 0 0 / 0.65);
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
     .etiqueta.descartada {
       background: #b3261e;
       color: #fff;
-    }
-    .descartar {
-      display: block;
-      width: 100%;
-      margin-top: 6px;
-      padding: 4px 6px;
-      font-size: 0.72rem;
-      background: rgb(255 255 255 / 0.08);
-      color: var(--muted);
-      border: 1px solid rgb(255 255 255 / 0.15);
-      box-shadow: none;
-      backdrop-filter: blur(6px);
-    }
-
-    .deseos {
-      display: flex;
-      gap: 4px;
-    }
-    .deseos .descartar {
-      flex: 1;
-    }
-    .deseos .quitar {
-      flex: 0 0 30px;
-      order: 1;
-    }
-    .descartar.activo-deseo {
-      color: #fb7185;
-      border-color: #fb7185;
     }
     .etiqueta.deseada {
       background: rgb(225 29 72 / 0.85);
       color: #fff;
     }
-    .descartar.activo {
-      color: var(--hextech);
-      border-color: var(--hextech);
-    }
-
-    /* El panel del +/−: degradado oscuro sobre la parte de abajo de la imagen. */
-    .panel {
+    .marcas {
       position: absolute;
-      inset: auto 0 0 0;
-      padding: 28px 8px 8px;
-      background: linear-gradient(to bottom, transparent, rgb(0 0 0 / 0.85) 40%);
-      transition:
-        opacity 0.15s ease,
-        transform 0.15s ease;
+      left: 6px;
+      bottom: 6px;
+      z-index: 1;
+      display: flex;
+      gap: 4px;
+      pointer-events: none;
+    }
+    .marca {
+      width: 22px;
+      height: 22px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      font-size: 0.75rem;
+      background: rgb(0 0 0 / 0.7);
+      border: 1px solid rgb(255 255 255 / 0.2);
+    }
+    .marca.cambio {
+      color: var(--hextech);
+    }
+    .marca.deseo {
+      color: #fb7185;
     }
 
-    /* Con ratón: el panel aparece al pasar por encima o al llegar con el tabulador,
-       y la carta se levanta un poco. */
+    /* ── Controles sobre la imagen ────────────────────────────────────────────── */
+    .mas-acciones,
+    .paso {
+      padding: 0;
+      display: grid;
+      place-items: center;
+      line-height: 1;
+      color: #fff;
+      background: rgb(8 10 14 / 0.72);
+      border: 1px solid rgb(255 255 255 / 0.22);
+      box-shadow: 0 2px 8px rgb(0 0 0 / 0.5);
+      backdrop-filter: blur(6px);
+    }
+    .mas-acciones {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      z-index: 2;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-size: 1.15rem;
+    }
+    /* El "+" rápido: una píldora que se estira hacia la izquierda al abrirse. */
+    .rapido {
+      position: absolute;
+      right: 6px;
+      bottom: 6px;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      padding: 0;
+      border-radius: 999px;
+      transition:
+        background-color 0.15s ease,
+        padding 0.15s ease;
+    }
+    .paso {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+    .paso.suma {
+      background: linear-gradient(180deg, #fde68a, var(--accent-fuerte));
+      border-color: transparent;
+      color: #1a1305;
+    }
+    .rapido .menos,
+    .rapido .n {
+      display: none;
+    }
+    .rapido .n {
+      min-width: 1.5em;
+      text-align: center;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: #fff;
+    }
+    .rapido.abierto {
+      padding: 3px;
+      background: rgb(8 10 14 / 0.86);
+      box-shadow:
+        0 0 0 1px rgb(255 255 255 / 0.18),
+        0 6px 18px rgb(0 0 0 / 0.55);
+      backdrop-filter: blur(6px);
+    }
+    .rapido.abierto .menos {
+      display: grid;
+      box-shadow: none;
+      background: rgb(255 255 255 / 0.1);
+    }
+    .rapido.abierto .n {
+      display: block;
+    }
+    .rapido.abierto .paso {
+      width: 32px;
+      height: 32px;
+    }
+    .paso:active:not(:disabled),
+    .mas-acciones:active {
+      transform: scale(0.92);
+    }
+
+    /* Con ratón: los controles aparecen al pasar por la carta (o al llegar con el
+       tabulador), la píldora se abre sola y la carta se levanta un poco. */
     @media (hover: hover) {
-      .panel {
+      .mas-acciones,
+      .rapido {
         opacity: 0;
-        transform: translateY(8px);
-        pointer-events: none;
+        transition: opacity 0.12s ease;
       }
-      :host(:hover) .panel,
-      :host(:focus-within) .panel {
+      :host(:hover) .mas-acciones,
+      :host(:hover) .rapido,
+      :host(:focus-within) .mas-acciones,
+      :host(:focus-within) .rapido,
+      .rapido.abierto {
         opacity: 1;
-        transform: none;
-        pointer-events: auto;
+      }
+      :host(:hover) .rapido:has(.menos) {
+        padding: 3px;
+        background: rgb(8 10 14 / 0.86);
+        box-shadow: 0 0 0 1px rgb(255 255 255 / 0.18);
+      }
+      :host(:hover) .rapido .menos {
+        display: grid;
+        box-shadow: none;
+        background: rgb(255 255 255 / 0.1);
+      }
+      :host(:hover) .rapido .n {
+        display: block;
+      }
+      :host(:hover) .rapido:has(.menos) .paso {
+        width: 32px;
+        height: 32px;
+      }
+      .paso.menos:hover,
+      .mas-acciones:hover {
+        filter: none;
+        border-color: var(--accent);
       }
       :host(:hover) {
         transform: translateY(-4px);
@@ -418,38 +516,11 @@ import { volarA } from './volar';
     :host(:focus-within) {
       border-color: var(--dom-a);
     }
-    /* Táctil: el panel se ve siempre, así que por defecto solo lleva las copias. */
-    @media (hover: none) {
-      .panel:not(.con-extras) .extras {
-        display: none;
-      }
-      .panel {
-        padding-top: 20px;
-      }
-      .ver-extras {
-        position: absolute;
-        top: 6px;
-        right: 6px;
-        z-index: 2;
-        width: 30px;
-        height: 30px;
-        padding: 0;
-        display: grid;
-        place-items: center;
-        border-radius: 50%;
-        font-size: 1.1rem;
-        line-height: 1;
-        color: #fff;
-        background: rgb(0 0 0 / 0.6);
-        border: 1px solid rgb(255 255 255 / 0.25);
-        box-shadow: none;
-        backdrop-filter: blur(4px);
-      }
-    }
     @media (prefers-reduced-motion: reduce) {
       :host,
       img,
-      .panel {
+      .rapido,
+      .mas-acciones {
         transition: none;
       }
       .imagen {
@@ -459,28 +530,6 @@ import { volarA } from './volar';
       :host(:hover) img {
         transform: none;
       }
-    }
-    .etiqueta {
-      position: absolute;
-      top: 6px;
-      left: 6px;
-      z-index: 1;
-      pointer-events: none;
-      padding: 1px 7px;
-      border-radius: var(--radio-s);
-      font-size: 0.72rem;
-      font-weight: 700;
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
-    }
-    .etiqueta.tengo {
-      background: var(--dom-a);
-      color: #0d0f13;
-    }
-    .etiqueta.falta {
-      background: rgb(0 0 0 / 0.65);
-      color: var(--muted);
-      border: 1px solid var(--border);
     }
     .nombre {
       font-weight: 600;
@@ -496,14 +545,12 @@ import { volarA } from './volar';
     .codigo {
       color: var(--muted);
       font-variant-numeric: tabular-nums;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .precio {
       font-variant-numeric: tabular-nums;
       white-space: nowrap;
-    }
-    .codigo {
-      overflow: hidden;
-      text-overflow: ellipsis;
     }
     @media (max-width: 420px) {
       :host {
@@ -516,17 +563,20 @@ import { volarA } from './volar';
     '[class.apagada]': 'dim() && copias() === 0',
     '[class.descartada]': 'descartada() && copias() === 0',
     '[class.seleccionada]': 'seleccionada()',
+    '[class.seleccionando]': 'seleccion()',
     '[style]': 'colores()',
   },
 })
 export class CardTileComponent {
   private readonly valuation = inject(ValuationService);
+  protected readonly col = inject(CollectionService);
+  protected readonly acciones = inject(AccionesCarta);
   protected readonly volarA = volarA;
-  protected readonly descartadas = inject(DescartadasService);
-  protected readonly wish = inject(WishlistService);
+  private readonly descartadas = inject(DescartadasService);
+  private readonly wish = inject(WishlistService);
+  private readonly intercambiables = inject(IntercambiablesService);
   /** Copias que pides en la lista de deseos (0 si no está). */
   protected readonly deseo = computed(() => this.wish.get(this.card().cardId)?.qty ?? 0);
-  protected readonly intercambiables = inject(IntercambiablesService);
   protected readonly paraCambiar = computed(() =>
     this.intercambiables.ids().has(this.card().cardId.toUpperCase()),
   );
@@ -545,8 +595,23 @@ export class CardTileComponent {
 
   protected readonly cargada = signal(false);
   protected readonly sinImagen = signal(false);
-  /** Acciones secundarias desplegadas (solo importa en táctil; con ratón van siempre). */
-  protected readonly extras = signal(false);
+  /** La píldora "− N +" está desplegada (se cierra sola al rato de no tocarla). */
+  protected readonly abierto = signal(false);
+  private cierre: ReturnType<typeof setTimeout> | null = null;
+
+  constructor() {
+    inject(DestroyRef).onDestroy(() => {
+      if (this.cierre) clearTimeout(this.cierre);
+    });
+  }
+
+  /** Suma o quita una copia normal y deja la píldora abierta un momento, para seguir. */
+  protected ajustar(delta: number): void {
+    this.col.adjust(this.card().cardId, 'normal', delta);
+    this.abierto.set(true);
+    if (this.cierre) clearTimeout(this.cierre);
+    this.cierre = setTimeout(() => this.abierto.set(false), CIERRE_MS);
+  }
 
   protected readonly pricing = computed(() => this.valuation.pricing(this.card().cardId));
   protected readonly colores = computed(() => estiloDominios(this.card().domains));

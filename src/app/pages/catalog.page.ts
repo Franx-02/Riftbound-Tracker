@@ -7,6 +7,9 @@ import { CardTileComponent } from '../ui/card-tile.component';
 import { LoadMoreComponent } from '../ui/load-more.component';
 import { VolverArribaComponent } from '../ui/volver-arriba.component';
 
+/** Cartas que se pintan al entrar: las que caben en un par de pantallas. Así la sección aparece al
+ * instante; el resto llega solo al acercarse al final, de POR_PAGINA en POR_PAGINA. */
+const PRIMERA_TANDA = 30;
 const POR_PAGINA = 60;
 
 /**
@@ -21,7 +24,7 @@ export class CatalogFiltersState {
   readonly domain = signal('');
   readonly type = signal('');
   readonly soloMias = signal(false);
-  readonly limite = signal(POR_PAGINA);
+  readonly limite = signal(PRIMERA_TANDA);
 
   limpiar(): void {
     this.texto.set('');
@@ -30,7 +33,7 @@ export class CatalogFiltersState {
     this.domain.set('');
     this.type.set('');
     this.soloMias.set(false);
-    this.limite.set(POR_PAGINA);
+    this.limite.set(PRIMERA_TANDA);
   }
 }
 
@@ -228,12 +231,12 @@ export class CatalogPage {
 
   protected cambiar(destino: { set(v: string): void }, ev: Event): void {
     destino.set((ev.target as HTMLInputElement | HTMLSelectElement).value);
-    this.f.limite.set(POR_PAGINA);
+    this.f.limite.set(PRIMERA_TANDA);
   }
 
   protected alternarMias(ev: Event): void {
     this.f.soloMias.set((ev.target as HTMLInputElement).checked);
-    this.f.limite.set(POR_PAGINA);
+    this.f.limite.set(PRIMERA_TANDA);
   }
 
   protected mostrarMas(): void {

@@ -35,6 +35,9 @@ type Orden = 'valor' | 'nombre' | 'set' | 'energia';
 type Vista = 'carpeta' | 'lista';
 type Mostrar = 'todas' | 'tengo' | 'faltan' | 'descartadas';
 
+/** Cartas que se pintan al entrar: las que caben en un par de pantallas. Así la sección aparece al
+ * instante; el resto llega solo al acercarse al final, de POR_PAGINA en POR_PAGINA. */
+const PRIMERA_TANDA = 30;
 const POR_PAGINA = 60;
 
 /**
@@ -47,7 +50,7 @@ export class CollectionViewState {
   readonly texto = signal('');
   readonly set = signal('');
   readonly mostrar = signal<Mostrar>('todas');
-  readonly limite = signal(POR_PAGINA);
+  readonly limite = signal(PRIMERA_TANDA);
   /** Filtros de "Más filtros". Cadena vacía = sin filtrar. Energía '7' = 7 o más. */
   readonly energia = signal('');
   readonly dominio = signal('');
@@ -67,7 +70,7 @@ export class CollectionViewState {
     if (uid === this.ultimaColeccion) return;
     this.ultimaColeccion = uid;
     this.texto.set('');
-    this.limite.set(POR_PAGINA);
+    this.limite.set(PRIMERA_TANDA);
   }
 }
 
@@ -1297,7 +1300,7 @@ export class CollectionPage implements OnInit {
     ])
       s.set('');
     this.v.acabado.set('');
-    this.v.limite.set(POR_PAGINA);
+    this.v.limite.set(PRIMERA_TANDA);
   }
 
   /**
@@ -1335,14 +1338,14 @@ export class CollectionPage implements OnInit {
 
   protected cambiarVista(vista: Vista): void {
     this.v.vista.set(vista);
-    this.v.limite.set(POR_PAGINA);
+    this.v.limite.set(PRIMERA_TANDA);
     // La selección múltiple solo existe en la carpeta.
     if (vista === 'lista' && this.seleccionando()) this.alternarSeleccionando();
   }
 
   protected cambiar(destino: { set(v: never): void }, ev: Event): void {
     destino.set((ev.target as HTMLInputElement | HTMLSelectElement).value as never);
-    this.v.limite.set(POR_PAGINA);
+    this.v.limite.set(PRIMERA_TANDA);
   }
 
   ngOnInit(): void {

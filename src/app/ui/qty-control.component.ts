@@ -97,6 +97,7 @@ import { CardQty, CollectionService, Finish } from '../core/collection.service';
       background: var(--surface-2);
       color: var(--text);
       border-color: var(--border);
+      box-shadow: none;
     }
     /* En cartas estrechas no caben botones de 32 px. */
     @container (max-width: 200px) {
