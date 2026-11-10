@@ -43,24 +43,24 @@ interface Fila {
         <p class="error" role="alert">{{ wish.error() }}</p>
       }
 
-      <section class="resumen">
+      <section class="cifras" aria-label="Resumen">
         <div class="cifra principal">
-          <span class="etiqueta">Coste de lo que falta</span>
-          <span class="numero">{{ resumen().coste | eur: '—' }}</span>
+          <span class="cifra-etiqueta">Coste de lo que falta</span>
+          <span class="cifra-numero">{{ resumen().coste | eur: '—' }}</span>
           @if (resumen().sinPrecio) {
-            <span class="muted pie">
+            <span class="cifra-pie">
               Sin contar {{ resumen().sinPrecio }}
               {{ resumen().sinPrecio === 1 ? 'carta sin precio' : 'cartas sin precio' }}
             </span>
           }
         </div>
         <div class="cifra">
-          <span class="etiqueta">Cartas en la lista</span>
-          <span class="numero">{{ filas().length }}</span>
+          <span class="cifra-etiqueta">Cartas en la lista</span>
+          <span class="cifra-numero">{{ filas().length }}</span>
         </div>
         <div class="cifra">
-          <span class="etiqueta">Copias que faltan</span>
-          <span class="numero">{{ resumen().copias }}</span>
+          <span class="cifra-etiqueta">Copias que faltan</span>
+          <span class="cifra-numero">{{ resumen().copias }}</span>
         </div>
       </section>
 
@@ -78,11 +78,19 @@ interface Fila {
           <ul class="resultados">
             @for (c of resultados(); track c.cardId) {
               <li>
-                <span>
-                  {{ c.name }} <span class="muted">· {{ c.cardId }}</span>
+                <img
+                  [src]="c.imgUrl | thumb: 80"
+                  alt=""
+                  width="28"
+                  height="39"
+                  loading="lazy"
+                  decoding="async"
+                />
+                <span class="resultado-nombre">
+                  {{ c.name }} <span class="muted">· {{ c.cardId }} · {{ c.setName }}</span>
                 </span>
                 @if (wish.get(c.cardId)) {
-                  <span class="muted">Ya está</span>
+                  <span class="en-lista">En la lista ✓</span>
                 } @else {
                   <button type="button" class="secondary" (click)="anadir(c.cardId)">Añadir</button>
                 }
@@ -94,32 +102,34 @@ interface Fila {
         }
       </section>
 
-      <section class="grupo">
-        <p class="muted">
-          Para saber quién tiene copias hay que leer la colección de los demás: cuesta una lectura
-          de Firebase por carta de cada persona, así que solo se hace cuando lo pides.
-        </p>
-        <button
-          type="button"
-          class="secondary"
-          [disabled]="buscando() || !filas().length"
-          (click)="buscarQuienTiene()"
-        >
-          {{
-            buscando()
-              ? 'Buscando…'
-              : buscado()
-                ? 'Volver a buscar quién las tiene'
-                : 'Buscar quién las tiene'
-          }}
-        </button>
-        @if (buscado() && !buscando()) {
-          <span class="muted"
-            >{{ otros().length }}
-            {{ otros().length === 1 ? 'colección revisada' : 'colecciones revisadas' }}</span
+      @if (filas().length) {
+        <section class="grupo">
+          <button
+            type="button"
+            class="secondary"
+            [disabled]="buscando() || !filas().length"
+            (click)="buscarQuienTiene()"
           >
-        }
-      </section>
+            {{
+              buscando()
+                ? 'Buscando…'
+                : buscado()
+                  ? 'Volver a buscar quién las tiene'
+                  : 'Buscar quién las tiene'
+            }}
+          </button>
+          @if (buscado() && !buscando()) {
+            <span class="muted"
+              >{{ otros().length }}
+              {{ otros().length === 1 ? 'colección revisada' : 'colecciones revisadas' }}</span
+            >
+          } @else if (!buscado()) {
+            <span class="muted nota-grupo"
+              >Mira en las colecciones de los demás quién tiene copias.</span
+            >
+          }
+        </section>
+      }
 
       @if (wish.loading()) {
         <p class="muted">Cargando tu lista…</p>
@@ -220,47 +230,16 @@ interface Fila {
   `,
   styles: `
     .pagina {
-      padding: 12px 16px 48px;
+      padding: var(--pad-pagina);
       max-width: 1000px;
       margin: 0 auto;
       display: grid;
       grid-template-columns: minmax(0, 1fr);
       gap: 16px;
     }
-    .cabecera h1 {
-      margin: 0;
-      font-size: 1.3rem;
-    }
-    .resumen {
-      display: grid;
-      grid-template-columns: 2fr 1fr 1fr;
-      gap: 12px;
-    }
-    .cifra {
-      display: grid;
-      gap: 2px;
-      align-content: start;
-      padding: 14px 16px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radio-s);
-    }
     .etiqueta {
       font-size: 0.8rem;
       color: var(--muted);
-    }
-    .numero {
-      font-family: var(--fuente-titulos);
-      font-size: 1.6rem;
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-    }
-    .principal .numero {
-      color: var(--accent);
-      font-size: 2rem;
-    }
-    .pie {
-      font-size: 0.75rem;
     }
     .anadir {
       display: grid;
@@ -285,6 +264,25 @@ interface Fila {
       gap: 8px;
       padding: 6px 10px;
       border-top: 1px solid var(--border);
+    }
+    .resultados img {
+      flex: none;
+      width: 28px;
+      height: auto;
+      border-radius: 3px;
+      background: var(--surface-2);
+    }
+    .resultado-nombre {
+      flex: 1;
+      min-width: 0;
+    }
+    .en-lista {
+      flex: none;
+      font-size: 0.85rem;
+      color: var(--ok);
+    }
+    .nota-grupo {
+      font-size: 0.85rem;
     }
     .resultados li:first-child {
       border-top: 0;
@@ -322,7 +320,7 @@ interface Fila {
       padding: 10px;
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: var(--radio-s);
+      border-radius: var(--radio);
     }
     .fila.conseguida {
       opacity: 0.65;
@@ -381,6 +379,18 @@ interface Fila {
       width: 32px;
       height: 32px;
       padding: 0;
+      display: grid;
+      place-items: center;
+      font-size: 1.1rem;
+      line-height: 1;
+      background: var(--surface-2);
+      color: var(--text);
+      border-color: var(--border-claro);
+      box-shadow: none;
+    }
+    .paso:hover:not(:disabled) {
+      filter: none;
+      border-color: var(--accent);
     }
     .n {
       min-width: 2ch;
@@ -393,12 +403,6 @@ interface Fila {
     }
 
     @media (max-width: 600px) {
-      .resumen {
-        grid-template-columns: 1fr 1fr;
-      }
-      .principal {
-        grid-column: 1 / -1;
-      }
       .fila {
         grid-template-columns: auto minmax(0, 1fr);
       }
@@ -492,8 +496,8 @@ export class WishlistPage implements OnInit {
   }
 
   protected anadir(cardId: string): void {
+    // La búsqueda se queda abierta: es normal añadir varias versiones de la misma carta.
     this.wish.add(cardId);
-    this.texto.set('');
   }
 
   protected copias(p: Poseedor): string {
@@ -505,7 +509,7 @@ export class WishlistPage implements OnInit {
   protected async buscarQuienTiene(): Promise<void> {
     this.buscando.set(true);
     try {
-      await this.users.loadProfiles();
+      await this.users.loadProfiles(true);
       const recargar = this.buscado();
       await Promise.all(this.otros().map((p) => this.col.loadOther(p.uid, recargar)));
       this.buscado.set(true);

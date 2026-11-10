@@ -29,7 +29,9 @@ const UMBRAL_PX = 800;
     button {
       position: fixed;
       right: 16px;
-      bottom: calc(20px + env(safe-area-inset-bottom));
+      /* Por encima de la barra de navegación inferior del móvil (--alto-nav ya lleva el
+         margen seguro del dispositivo). */
+      bottom: calc(var(--alto-nav) + 16px);
       z-index: 20;
       width: 48px;
       height: 48px;
@@ -38,11 +40,23 @@ const UMBRAL_PX = 800;
       place-items: center;
       border-radius: 50%;
       box-shadow: 0 4px 14px rgb(0 0 0 / 45%);
+      animation: asoma 0.2s ease both;
     }
-    /* En móvil, por encima de la barra de navegación inferior (ver shell.component). */
+    @keyframes asoma {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      button {
+        animation: none;
+      }
+    }
     @media (max-width: 700px) {
       button {
-        bottom: calc(80px + env(safe-area-inset-bottom));
+        width: 44px;
+        height: 44px;
       }
     }
   `,

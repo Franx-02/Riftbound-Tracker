@@ -36,7 +36,11 @@ export class TraduccionService {
     try {
       const res = await fetch('/data/catalog_es.json');
       // Sin fichero de traducciones la app funciona igual, todo en inglés.
-      if (!res.ok) return;
+      if (!res.ok) {
+        // Un 5xx pasajero no debe dejar la sesión entera en inglés: se reintenta al volver a pedir.
+        if (res.status !== 404) this.carga = null;
+        return;
+      }
       const datos = (await res.json()) as { traducciones?: Record<string, string> };
       this.traducciones.set(datos.traducciones ?? {});
     } catch {

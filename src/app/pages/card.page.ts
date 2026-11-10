@@ -333,7 +333,7 @@ import { GraficaPrecioComponent, PuntoPrecio } from '../ui/grafica-precio.compon
   `,
   styles: `
     .pagina {
-      padding: 12px 16px 48px;
+      padding: var(--pad-pagina);
       max-width: 1000px;
       margin: 0 auto;
     }

@@ -26,11 +26,14 @@ export class DescartadasService {
   private sesion: string | null = null;
   /** Guardados en cadena: el último cambio siempre llega el último. */
   private cola: Promise<unknown> = Promise.resolve();
+  /** La lista tal como quedó guardada por última vez, mientras haya guardados en vuelo. */
+  private confirmado: ReadonlySet<string> | null = null;
 
   private comprobarSesion(): void {
     const uid = this.auth.user()?.uid ?? null;
     if (uid === this.sesion) return;
     this.sesion = uid;
+    this.confirmado = null;
     this.carga = null;
     this.ids.set(new Set());
     this.uid.set(null);
@@ -77,19 +80,29 @@ export class DescartadasService {
     const nuevo = new Set(anterior);
     if (nuevo.has(id)) nuevo.delete(id);
     else if (nuevo.size < MAX_DESCARTADAS) nuevo.add(id);
+    this.confirmado ??= anterior;
     this.ids.set(nuevo);
     const cardIds = [...nuevo].sort();
-    this.cola = this.cola
+    const paso: Promise<void> = this.cola
       .catch(() => {})
       .then(async () => {
         if (DEMO) escribirDemo(`descartadas-${uid}`, cardIds);
         else await setDoc(referencia(uid), { cardIds });
       })
-      .then(() => this.error.set(null))
+      .then(() => {
+        this.error.set(null);
+        if (this.uid() !== uid) return;
+        // Cada guardado lleva la lista entera: lo confirmado es la de este paso.
+        this.confirmado = this.cola === paso ? null : nuevo;
+      })
       .catch((e: unknown) => {
-        if (this.uid() === uid) this.ids.set(anterior);
         this.error.set(`No se pudo guardar: ${mensaje(e)}`);
+        // Con otro guardado detrás, decide ese: lleva también este cambio.
+        if (this.uid() !== uid || this.cola !== paso) return;
+        if (this.confirmado) this.ids.set(this.confirmado);
+        this.confirmado = null;
       });
+    this.cola = paso;
   }
 
   /** Para los tests: espera a que acaben los guardados. */

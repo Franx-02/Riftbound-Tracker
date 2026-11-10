@@ -121,7 +121,7 @@ export class CatalogFiltersState {
   `,
   styles: `
     .pagina {
-      padding: 12px 16px 48px;
+      padding: var(--pad-pagina);
       max-width: 1400px;
       margin: 0 auto;
       display: grid;

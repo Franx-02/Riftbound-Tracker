@@ -1,5 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { collection, deleteDoc, doc, getDocs, setDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDocsFromServer, setDoc } from 'firebase/firestore';
 import { AuthService } from './auth.service';
 import { CardQty, CollectionMap } from './collection.service';
 import { DEMO, escribirDemo, leerDemo } from './demo';
@@ -31,7 +31,7 @@ function documento(entry: WishEntry) {
 
 class FirestoreStore implements WishlistStore {
   async read(uid: string): Promise<Map<string, WishEntry>> {
-    const snap = await getDocs(collection(db, 'users', uid, 'wishlist'));
+    const snap = await getDocsFromServer(collection(db, 'users', uid, 'wishlist'));
     const salida = new Map<string, WishEntry>();
     for (const d of snap.docs) {
       const entry = normalizar(d.data());
@@ -81,6 +81,8 @@ export class WishlistService {
   readonly editable = computed(() => !!this.uid() && this.uid() === this.auth.user()?.uid);
 
   private cola = new Map<string, Promise<unknown>>();
+  /** Lo último guardado de cada carta con escrituras en vuelo: a eso se vuelve si una falla. */
+  private confirmado = new Map<string, WishEntry | null>();
   private carga: Promise<void> | null = null;
   private sesion: string | null = null;
 
@@ -90,6 +92,7 @@ export class WishlistService {
     if (uid === this.sesion) return;
     this.sesion = uid;
     this.cola.clear();
+    this.confirmado.clear();
     this.carga = null;
     this.entries.set(new Map());
     this.uid.set(null);
@@ -162,17 +165,29 @@ export class WishlistService {
       return;
     }
     const limpio = entry ? { ...entry, qty: Math.min(MAX_DESEO, Math.max(1, entry.qty)) } : null;
-    const anterior = this.entries().get(id) ?? null;
+    if (!this.confirmado.has(id)) this.confirmado.set(id, this.entries().get(id) ?? null);
     this.aplicar(uid, id, limpio);
 
+    const sesion = this.sesion;
     const pendiente = this.cola.get(id) ?? Promise.resolve();
-    const tarea = pendiente
+    const tarea: Promise<void> = pendiente
       .catch(() => {})
       .then(() => this.store.write(uid, id, limpio))
-      .then(() => this.error.set(null))
+      .then(() => {
+        this.error.set(null);
+        if (this.sesion !== sesion) return;
+        if (this.cola.get(id) === tarea) {
+          this.cola.delete(id);
+          this.confirmado.delete(id);
+        } else this.confirmado.set(id, limpio);
+      })
       .catch((e: unknown) => {
-        this.aplicar(uid, id, anterior);
         this.error.set(`No se pudo guardar: ${e instanceof Error ? e.message : String(e)}`);
+        // Si hay otro guardado de la misma carta detrás, decide ese (ver CollectionService).
+        if (this.sesion !== sesion || this.cola.get(id) !== tarea) return;
+        this.aplicar(uid, id, this.confirmado.get(id) ?? null);
+        this.cola.delete(id);
+        this.confirmado.delete(id);
       });
     this.cola.set(id, tarea);
   }

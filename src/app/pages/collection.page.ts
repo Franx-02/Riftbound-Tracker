@@ -23,6 +23,7 @@ import { UsersService } from '../core/users.service';
 import { CardPricing, ValuationService } from '../core/valuation.service';
 import { ConfidenceBadgeComponent } from '../ui/confidence-badge.component';
 import { EurPipe, ThumbPipe } from '../ui/pipes';
+import { CabeceraComponent } from '../ui/cabecera.component';
 import { CardTileComponent } from '../ui/card-tile.component';
 import { LoadMoreComponent } from '../ui/load-more.component';
 import { VolverArribaComponent } from '../ui/volver-arriba.component';
@@ -90,6 +91,7 @@ interface Fila {
     ThumbPipe,
     QtyControlComponent,
     ConfidenceBadgeComponent,
+    CabeceraComponent,
     CardTileComponent,
     LoadMoreComponent,
     VolverArribaComponent,
@@ -97,44 +99,53 @@ interface Fila {
   ],
   template: `
     <main class="pagina">
-      <header class="cabecera">
-        <h1>
-          @if (propia()) {
-            Mi colección
-          } @else {
-            Colección de {{ nombreDueno() }}
-          }
-        </h1>
-        @if (!propia()) {
-          <span class="solo-lectura">solo lectura</span>
+      <app-cabecera
+        [titulo]="propia() ? 'Mi colección' : 'Colección de ' + nombreDueno()"
+        [subtitulo]="propia() ? '' : 'Solo lectura: lo oscurecido es lo que le falta.'"
+      >
+        @if (propia()) {
+          <a class="enlace-accion" routerLink="/importar">Importar / exportar</a>
         }
-        <div class="acciones">
-          @if (propia()) {
-            <a class="enlace-accion" routerLink="/importar">Importar / exportar</a>
-          }
-          @if (otros().length) {
-            <label class="selector">
-              <span class="muted">Ver</span>
-              <!-- [selected] por opción y no [value] en el select: los perfiles llegan después
-                   y un [value] aplicado antes de que exista la opción se pierde. -->
-              <select aria-label="Ver la colección de" (change)="cambiarDueno($event)">
-                <option value="" [selected]="propia()">Mi colección</option>
-                @for (p of otros(); track p.uid) {
-                  <option [value]="p.uid" [selected]="p.uid === uid()">{{ p.displayName }}</option>
-                }
-              </select>
-            </label>
-          }
-        </div>
-      </header>
+        @if (otros().length) {
+          <label class="selector">
+            <span class="muted">Ver</span>
+            <!-- [selected] por opción y no [value] en el select: los perfiles llegan después
+                 y un [value] aplicado antes de que exista la opción se pierde. -->
+            <select aria-label="Ver la colección de" (change)="cambiarDueno($event)">
+              <option value="" [selected]="propia()">Mi colección</option>
+              @for (p of otros(); track p.uid) {
+                <option [value]="p.uid" [selected]="p.uid === uid()">{{ p.displayName }}</option>
+              }
+            </select>
+          </label>
+        }
+      </app-cabecera>
 
-      @if (!catalog.loaded() || !fuente()) {
-        <p class="muted">Cargando {{ propia() ? 'tu colección' : 'la colección' }}…</p>
+      <!-- Los fallos al guardar los enseña el marco de la app, flotando; aquí, el de lectura. -->
+      @if (col.error() && !fuente()) {
+        <p class="error" role="alert">
+          No se pudo leer {{ propia() ? 'tu colección' : 'la colección' }}: {{ col.error() }}
+        </p>
+      } @else if (!catalog.loaded() || !fuente()) {
+        <!-- Huecos con la forma de lo que viene: sin saltos al llegar los datos. -->
+        <div class="cifras" aria-hidden="true">
+          <div class="esqueleto alto-cifra"></div>
+          <div class="esqueleto alto-cifra"></div>
+          <div class="esqueleto alto-cifra"></div>
+        </div>
+        <ul class="rejilla" aria-hidden="true">
+          @for (i of huecos; track i) {
+            <li class="esqueleto hueco-carta"></li>
+          }
+        </ul>
+        <p class="sr-only" role="status">
+          Cargando {{ propia() ? 'tu colección' : 'la colección' }}…
+        </p>
       } @else {
-        <section class="resumen" aria-label="Resumen">
+        <section class="cifras" aria-label="Resumen">
           <div class="cifra principal">
-            <span class="etiqueta">Valor estimado</span>
-            <span class="numero">
+            <span class="cifra-etiqueta">Valor estimado</span>
+            <span class="cifra-numero">
               @if (prices.data()) {
                 {{ valor().total | eur }}
               } @else if (prices.error()) {
@@ -144,19 +155,19 @@ interface Fila {
               }
             </span>
             @if (prices.data(); as d) {
-              <span class="muted pie"
+              <span class="cifra-pie"
                 >Tendencia de Cardmarket del {{ d.updatedAt | date: 'dd/MM/yyyy' }}</span
               >
             }
           </div>
           <div class="cifra">
-            <span class="etiqueta">Cartas distintas</span>
-            <span class="numero">{{ totales().cards }}</span>
+            <span class="cifra-etiqueta">Cartas distintas</span>
+            <span class="cifra-numero">{{ totales().cards }}</span>
           </div>
           <div class="cifra">
-            <span class="etiqueta">Copias</span>
-            <span class="numero">{{ totales().copies }}</span>
-            <span class="muted pie"
+            <span class="cifra-etiqueta">Copias</span>
+            <span class="cifra-numero">{{ totales().copies }}</span>
+            <span class="cifra-pie"
               >{{ totales().normal }} normales · {{ totales().foil }} foil</span
             >
           </div>
@@ -276,11 +287,7 @@ interface Fila {
               <option value="nombre" [selected]="v.ordenCarpeta() === 'nombre'">Por nombre</option>
             </select>
           } @else {
-            <select
-              aria-label="Ordenar"
-              [value]="orden()"
-              (change)="orden.set($any($event.target).value)"
-            >
+            <select aria-label="Ordenar" [value]="orden()" (change)="cambiar(orden, $event)">
               <option value="valor">Más valiosas primero</option>
               <option value="nombre">Por nombre</option>
               <option value="set">Por set y número</option>
@@ -314,7 +321,7 @@ interface Fila {
               type="button"
               [class.activa]="v.vista() === 'carpeta'"
               [attr.aria-pressed]="v.vista() === 'carpeta'"
-              (click)="v.vista.set('carpeta')"
+              (click)="cambiarVista('carpeta')"
             >
               Carpeta
             </button>
@@ -322,7 +329,7 @@ interface Fila {
               type="button"
               [class.activa]="v.vista() === 'lista'"
               [attr.aria-pressed]="v.vista() === 'lista'"
-              (click)="v.vista.set('lista')"
+              (click)="cambiarVista('lista')"
             >
               Lista
             </button>
@@ -349,7 +356,7 @@ interface Fila {
 
         @if (v.filtrosAbiertos()) {
           <div class="fondo-cajon" (click)="v.filtrosAbiertos.set(false)"></div>
-          <section class="filtros cajon" aria-label="Más filtros" role="dialog">
+          <section class="filtros cajon" aria-label="Más filtros" role="dialog" aria-modal="true">
             <div class="cajon-cabecera">
               <h2>Filtros</h2>
               <button type="button" class="secondary" (click)="v.filtrosAbiertos.set(false)">
@@ -509,7 +516,7 @@ interface Fila {
           }
         } @else {
           <ul class="lista">
-            @for (f of filas(); track f.card.cardId) {
+            @for (f of filasVisibles(); track f.card.cardId) {
               <li class="fila">
                 <a [routerLink]="['/carta', f.card.cardId]" class="miniatura">
                   <img
@@ -553,6 +560,12 @@ interface Fila {
               </li>
             }
           </ul>
+          @if (filasVisibles().length < filas().length) {
+            <app-load-more
+              [remaining]="filas().length - filasVisibles().length"
+              (more)="v.limite.update((n) => n + porPagina)"
+            />
+          }
         }
 
         @if (huerfanas().length) {
@@ -568,18 +581,12 @@ interface Fila {
           </p>
         }
       }
-
-      @if (col.error()) {
-        <p class="error" role="alert">
-          {{ propia() ? 'No se pudo guardar' : 'No se pudo leer la colección' }}: {{ col.error() }}
-        </p>
-      }
     </main>
     <app-volver-arriba />
   `,
   styles: `
     .pagina {
-      padding: 12px 16px 48px;
+      padding: var(--pad-pagina);
       max-width: 1400px;
       margin: 0 auto;
       display: grid;
@@ -587,30 +594,6 @@ interface Fila {
          y en móvil la página se salía por la derecha. */
       grid-template-columns: minmax(0, 1fr);
       gap: 16px;
-    }
-    .cabecera {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 8px 12px;
-    }
-    .cabecera h1 {
-      margin: 0;
-      font-size: 1.3rem;
-    }
-    .solo-lectura {
-      font-size: 0.75rem;
-      color: var(--muted);
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      padding: 1px 8px;
-    }
-    .acciones {
-      margin-left: auto;
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 8px 16px;
     }
     .enlace-accion {
       font-size: 0.9rem;
@@ -638,39 +621,11 @@ interface Fila {
       background: var(--surface);
       border: 1px solid var(--border);
     }
-    .resumen {
-      display: grid;
-      grid-template-columns: 2fr 1fr 1fr;
-      gap: 12px;
+    .alto-cifra {
+      height: 92px;
     }
-    .cifra {
-      display: grid;
-      gap: 2px;
-      align-content: start;
-      padding: 14px 16px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radio-s);
-    }
-    .etiqueta {
-      font-size: 0.8rem;
-      color: var(--muted);
-    }
-    .numero {
-      font-family: var(--fuente-titulos);
-      font-size: 1.6rem;
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-    }
-    .principal .numero {
-      color: var(--accent);
-      font-size: 2rem;
-    }
-    .pie {
-      font-size: 0.75rem;
-    }
-    .cifra {
-      border-radius: var(--radio);
+    .hueco-carta {
+      aspect-ratio: 744 / 1250;
     }
 
     /* Progreso por dominio: una tarjeta por color, que además filtra la carpeta. */
@@ -885,8 +840,8 @@ interface Fila {
     }
     .barra-seleccion {
       position: sticky;
-      bottom: 12px;
-      z-index: 30;
+      bottom: calc(var(--alto-nav) + 12px);
+      z-index: 25;
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
@@ -1044,12 +999,6 @@ interface Fila {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 8px;
       }
-      .resumen {
-        grid-template-columns: 1fr 1fr;
-      }
-      .principal {
-        grid-column: 1 / -1;
-      }
       .fila {
         grid-template-columns: 48px minmax(0, 1fr) auto;
         grid-template-areas: 'img info valor' 'img qty qty';
@@ -1074,6 +1023,7 @@ interface Fila {
       }
     }
   `,
+  host: { '(document:keydown.escape)': 'v.filtrosAbiertos.set(false)' },
 })
 export class CollectionPage implements OnInit {
   protected readonly catalog = inject(CatalogService);
@@ -1160,6 +1110,8 @@ export class CollectionPage implements OnInit {
   protected readonly v = inject(CollectionViewState);
   protected readonly vacio: CardQty = { normal: 0, foil: 0 };
   protected readonly porPagina = POR_PAGINA;
+  /** Huecos de la rejilla mientras carga. */
+  protected readonly huecos = Array.from({ length: 12 }, (_, i) => i);
 
   /** De la ruta `/coleccion/:uid`. Sin él, o si es el tuyo, es tu colección. */
   readonly uid = input<string>();
@@ -1381,6 +1333,13 @@ export class CollectionPage implements OnInit {
     };
   });
 
+  protected cambiarVista(vista: Vista): void {
+    this.v.vista.set(vista);
+    this.v.limite.set(POR_PAGINA);
+    // La selección múltiple solo existe en la carpeta.
+    if (vista === 'lista' && this.seleccionando()) this.alternarSeleccionando();
+  }
+
   protected cambiar(destino: { set(v: never): void }, ev: Event): void {
     destino.set((ev.target as HTMLInputElement | HTMLSelectElement).value as never);
     this.v.limite.set(POR_PAGINA);
@@ -1457,6 +1416,9 @@ export class CollectionPage implements OnInit {
     }
     return ordenadas;
   });
+
+  /** La lista también va por tandas: una colección grande son cientos de filas con sus +/−. */
+  protected readonly filasVisibles = computed(() => this.filas().slice(0, this.v.limite()));
 
   protected nombre(cardId: string): string {
     return this.catalog.card(cardId)?.name ?? cardId;

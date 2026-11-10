@@ -1,5 +1,12 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { collection, deleteDoc, doc, getDocs, setDoc, writeBatch } from 'firebase/firestore';
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDocsFromServer,
+  setDoc,
+  writeBatch,
+} from 'firebase/firestore';
 import { AuthService } from './auth.service';
 import { DEMO, escribirDemo, leerDemo } from './demo';
 import { db } from './firebase';
@@ -52,7 +59,7 @@ function documento(qty: CardQty) {
 
 class FirestoreStore implements CollectionStore {
   async read(uid: string): Promise<Map<string, CardQty>> {
-    const snap = await getDocs(collection(db, 'users', uid, 'collection'));
+    const snap = await getDocsFromServer(collection(db, 'users', uid, 'collection'));
     return new Map(snap.docs.map((d) => [d.id, normalizarQty(d.data())]));
   }
 
@@ -124,6 +131,12 @@ export class CollectionService {
 
   /** Una cadena de escrituras por carta, para que varios clics seguidos no se pisen. */
   private cola = new Map<string, Promise<unknown>>();
+  /**
+   * Lo último que se sabe guardado de cada carta con escrituras en vuelo (null = sin
+   * documento). Si un guardado falla se vuelve a esto, no a lo que había en pantalla al
+   * pulsar, que podía incluir clics anteriores todavía sin confirmar.
+   */
+  private confirmado = new Map<string, CardQty | null>();
   private cargaPropia: Promise<void> | null = null;
 
   /** Sesión a la que pertenece lo cacheado. Ver `comprobarSesion`. */
@@ -140,6 +153,7 @@ export class CollectionService {
     if (uid === this.sesion) return;
     this.sesion = uid;
     this.cola.clear();
+    this.confirmado.clear();
     this.cargaPropia = null;
     this.cards.set(new Map());
     this.uid.set(null);
@@ -237,19 +251,31 @@ export class CollectionService {
       normal: Math.max(0, qty.normal),
       foil: Math.max(0, qty.foil),
     };
-    const anterior = this.cards().get(id);
+    if (!this.confirmado.has(id)) this.confirmado.set(id, this.cards().get(id) ?? null);
     this.aplicar(uid, id, limpio);
 
+    const guardado = limpio.normal || limpio.foil ? limpio : null;
+    const sesion = this.sesion;
     const pendiente = this.cola.get(id) ?? Promise.resolve();
-    const tarea = pendiente
+    const tarea: Promise<void> = pendiente
       .catch(() => {})
-      .then(() => this.store.write(uid, id, limpio.normal || limpio.foil ? limpio : null))
+      .then(() => this.store.write(uid, id, guardado))
       .then(() => {
         this.error.set(null);
+        if (this.sesion !== sesion) return;
+        if (this.cola.get(id) === tarea) {
+          this.cola.delete(id);
+          this.confirmado.delete(id);
+        } else this.confirmado.set(id, guardado);
       })
       .catch((e: unknown) => {
-        this.aplicar(uid, id, anterior ?? null);
         this.error.set(e instanceof Error ? e.message : String(e));
+        // Con otro guardado de la misma carta detrás, decide ese: deshacer aquí pintaría
+        // un valor que el siguiente va a pisar (o que el servidor nunca tuvo).
+        if (this.sesion !== sesion || this.cola.get(id) !== tarea) return;
+        this.aplicar(uid, id, this.confirmado.get(id) ?? null);
+        this.cola.delete(id);
+        this.confirmado.delete(id);
       });
     this.cola.set(id, tarea);
   }

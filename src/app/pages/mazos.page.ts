@@ -106,7 +106,7 @@ import { CabeceraComponent } from '../ui/cabecera.component';
   `,
   styles: `
     .pagina {
-      padding: 20px 16px 48px;
+      padding: var(--pad-pagina);
       max-width: 1240px;
       margin: 0 auto;
       display: grid;

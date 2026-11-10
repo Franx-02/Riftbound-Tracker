@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import { collection, doc, getDoc, getDocs, setDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocsFromServer, setDoc } from 'firebase/firestore';
 import { AppUser } from './auth.service';
 import { DEMO, escribirDemo, leerDemo } from './demo';
 import { db } from './firebase';
@@ -53,14 +53,26 @@ export class UsersService {
     }
   }
 
-  async loadProfiles(): Promise<void> {
+  /**
+   * Lista de usuarios. Una lectura de Firestore por usuario, así que se cachea para la
+   * sesión: la piden cuatro páginas al entrar. `recargar` fuerza otra lectura.
+   */
+  loadProfiles(recargar = false): Promise<void> {
+    if (recargar) this.cargaPerfiles = null;
+    this.cargaPerfiles ??= this.leerPerfiles();
+    return this.cargaPerfiles;
+  }
+
+  private cargaPerfiles: Promise<void> | null = null;
+
+  private async leerPerfiles(): Promise<void> {
     try {
       if (DEMO) {
         const todos = leerDemo<Record<string, Profile>>(CLAVE_DEMO, {});
         this.profiles.set(ordenar(Object.values(todos)));
         return;
       }
-      const snap = await getDocs(collection(db, 'users'));
+      const snap = await getDocsFromServer(collection(db, 'users'));
       this.profiles.set(
         ordenar(
           snap.docs.map((d) => ({
@@ -71,6 +83,7 @@ export class UsersService {
       );
       this.error.set(null);
     } catch (e) {
+      this.cargaPerfiles = null;
       this.error.set(e instanceof Error ? e.message : String(e));
     }
   }

@@ -1,7 +1,12 @@
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { CollectionService } from '../core/collection.service';
 import { ValuationService } from '../core/valuation.service';
 import { GraficaPrecioComponent, PuntoPrecio } from './grafica-precio.component';
+
+/** Tras el último cambio en la colección, cuánto se espera antes de volver a pedir el historial. */
+const ESPERA_MS = 2000;
+/** La última respuesta, por cuerpo de la petición: volver a la página no repite la llamada. */
+const cache = new Map<string, PuntoPrecio[]>();
 
 /**
  * Cómo ha evolucionado el valor de tu colección: lo que habría valido cada día lo que
@@ -68,23 +73,47 @@ export class ValorColeccionComponent {
   constructor() {
     effect((onCleanup) => {
       const cuerpo = this.pedido();
-      if (cuerpo === '{"items":[]}') return;
+      if (cuerpo === '{"items":[]}') {
+        // Nada con producto de Cardmarket: sin esto se quedaba en "Cargando…" para siempre.
+        this.historial.set([]);
+        return;
+      }
+      const guardado = cache.get(cuerpo);
+      if (guardado) {
+        this.historial.set(guardado);
+        this.error.set(null);
+        return;
+      }
       const ctrl = new AbortController();
-      onCleanup(() => ctrl.abort());
-      fetch('/api/historial-coleccion', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: cuerpo,
-        signal: ctrl.signal,
-      })
-        .then(async (r) => {
-          if (!r.ok) throw new Error(`HTTP ${r.status}`);
-          this.historial.set(((await r.json()) as { puntos: PuntoPrecio[] }).puntos);
-          this.error.set(null);
-        })
-        .catch((e: unknown) => {
-          if (!ctrl.signal.aborted) this.error.set(e instanceof Error ? e.message : String(e));
-        });
+      // Cada petición es una función de Netlify que lee el historial entero y, al ser un
+      // POST, no se cachea: se espera a que dejes de tocar los +/− en vez de lanzar una
+      // por clic (abortar el fetch no para la función, que ya está contada).
+      const espera = setTimeout(
+        () => {
+          fetch('/api/historial-coleccion', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: cuerpo,
+            signal: ctrl.signal,
+          })
+            .then(async (r) => {
+              if (!r.ok) throw new Error(`HTTP ${r.status}`);
+              const puntos = ((await r.json()) as { puntos: PuntoPrecio[] }).puntos;
+              cache.clear();
+              cache.set(cuerpo, puntos);
+              this.historial.set(puntos);
+              this.error.set(null);
+            })
+            .catch((e: unknown) => {
+              if (!ctrl.signal.aborted) this.error.set(e instanceof Error ? e.message : String(e));
+            });
+        },
+        untracked(this.historial) === null ? 0 : ESPERA_MS,
+      );
+      onCleanup(() => {
+        clearTimeout(espera);
+        ctrl.abort();
+      });
     });
   }
 }

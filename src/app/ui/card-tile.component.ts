@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, output } from '@angular/core';
+import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CatalogCard } from '../core/catalog.service';
 import { CardQty } from '../core/collection.service';
@@ -63,7 +63,13 @@ import { volarA } from './volar';
           decoding="async"
           width="240"
           height="335"
+          [class.cargada]="cargada()"
+          (load)="cargada.set(true)"
+          (error)="sinImagen.set(true)"
         />
+        @if (sinImagen()) {
+          <span class="sin-imagen">{{ card().name }}</span>
+        }
       </a>
       @if (copias() > 0) {
         <span class="etiqueta tengo" [title]="detalleCopias()">×{{ copias() }}</span>
@@ -74,57 +80,74 @@ import { volarA } from './volar';
       } @else if (dim()) {
         <span class="etiqueta falta">falta</span>
       }
-      <div class="panel">
+      @if (!readonly()) {
+        <!-- Solo en táctil: allí el panel se ve siempre y con las cinco filas tapaba la carta
+             entera. Las acciones secundarias se despliegan con este botón. -->
+        <button
+          type="button"
+          class="ver-extras"
+          [attr.aria-expanded]="extras()"
+          [attr.aria-label]="(extras() ? 'Ocultar' : 'Más') + ' acciones de ' + card().name"
+          (click)="extras.set(!extras())"
+        >
+          <span aria-hidden="true">{{ extras() ? '×' : '⋯' }}</span>
+        </button>
+      }
+      <div class="panel" [class.con-extras]="extras()">
         <app-qty-control
           [cardId]="card().cardId"
           [fixed]="readonly() ? owned() : null"
           [overlay]="true"
         />
-        @if (!readonly() && wish.editable()) {
-          <div class="deseos">
-            @if (deseo()) {
+        <div class="extras">
+          @if (!readonly() && wish.editable()) {
+            <div class="deseos">
+              @if (deseo()) {
+                <button
+                  type="button"
+                  class="descartar activo-deseo quitar"
+                  [attr.aria-label]="
+                    'Quitar una copia de ' + card().name + ' de la lista de deseos'
+                  "
+                  (click)="wish.adjust(card().cardId, -1)"
+                >
+                  −
+                </button>
+              }
               <button
                 type="button"
-                class="descartar activo-deseo quitar"
-                [attr.aria-label]="'Quitar una copia de ' + card().name + ' de la lista de deseos'"
-                (click)="wish.adjust(card().cardId, -1)"
+                class="descartar"
+                [class.activo-deseo]="deseo()"
+                [attr.aria-label]="'Añadir ' + card().name + ' a la lista de deseos'"
+                (click)="wish.adjust(card().cardId, 1)"
               >
-                −
+                {{ deseo() ? '♥ Deseo ×' + deseo() + ' +' : '♡ A deseos' }}
               </button>
-            }
+            </div>
+          }
+          @if (!readonly() && descartadas.lista()) {
             <button
               type="button"
               class="descartar"
-              [class.activo-deseo]="deseo()"
-              [attr.aria-label]="'Añadir ' + card().name + ' a la lista de deseos'"
-              (click)="wish.adjust(card().cardId, 1)"
+              [attr.aria-pressed]="descartada()"
+              [attr.aria-label]="(descartada() ? 'Volver a querer ' : 'No quiero ') + card().name"
+              (click)="descartadas.alternar(card().cardId)"
             >
-              {{ deseo() ? '♥ Deseo ×' + deseo() + ' +' : '♡ A deseos' }}
+              {{ descartada() ? 'La quiero' : 'No la quiero' }}
             </button>
-          </div>
-        }
-        @if (!readonly() && descartadas.lista()) {
-          <button
-            type="button"
-            class="descartar"
-            [attr.aria-pressed]="descartada()"
-            [attr.aria-label]="(descartada() ? 'Volver a querer ' : 'No quiero ') + card().name"
-            (click)="descartadas.alternar(card().cardId)"
-          >
-            {{ descartada() ? 'La quiero' : 'No la quiero' }}
-          </button>
-        }
-        @if (!readonly() && intercambiables.lista() && copias() > 0) {
-          <button
-            type="button"
-            class="descartar"
-            [class.activo]="paraCambiar()"
-            [attr.aria-pressed]="paraCambiar()"
-            (click)="intercambiables.alternar(card().cardId)"
-          >
-            {{ paraCambiar() ? '⇄ Para cambiar ✓' : '⇄ Para cambiar' }}
-          </button>
-        }
+          }
+          @if (!readonly() && intercambiables.lista() && copias() > 0) {
+            <button
+              type="button"
+              class="descartar"
+              [class.activo]="paraCambiar()"
+              [attr.aria-pressed]="paraCambiar()"
+              (click)="intercambiables.alternar(card().cardId)"
+            >
+              {{ paraCambiar() ? '⇄ Para cambiar ✓' : '⇄ Para cambiar' }}
+            </button>
+          }
+        </div>
       </div>
     </div>
     <a [routerLink]="['/carta', card().cardId]" class="enlace-carta" (click)="volarA(img)">
@@ -254,16 +277,50 @@ import { volarA } from './volar';
     .imagen {
       display: block;
     }
+    /* Mientras llega la imagen, el hueco late; al llegar, aparece fundiéndose. */
+    .imagen {
+      position: relative;
+      background: var(--surface-2);
+      animation: late 1.4s ease-in-out infinite;
+    }
+    .imagen:has(img.cargada),
+    .imagen:has(.sin-imagen) {
+      animation: none;
+    }
+    @keyframes late {
+      50% {
+        background: var(--surface-hover);
+      }
+    }
     img {
       display: block;
       width: 100%;
       height: auto;
       aspect-ratio: 744 / 1039;
       object-fit: contain;
-      background: var(--surface-2);
+      opacity: 0;
       transition:
+        opacity 0.3s ease,
         filter 0.15s ease,
         transform 0.25s ease;
+    }
+    img.cargada {
+      opacity: 1;
+    }
+    /* Sin imagen (sin conexión, o el CDN no la tiene): al menos el nombre. */
+    .sin-imagen {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 12px;
+      text-align: center;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--muted);
+    }
+    .ver-extras {
+      display: none;
     }
     /* La que no tienes se ve apagada, como un hueco en la carpeta, pero reconocible. */
     :host(.apagada) img {
@@ -361,11 +418,42 @@ import { volarA } from './volar';
     :host(:focus-within) {
       border-color: var(--dom-a);
     }
+    /* Táctil: el panel se ve siempre, así que por defecto solo lleva las copias. */
+    @media (hover: none) {
+      .panel:not(.con-extras) .extras {
+        display: none;
+      }
+      .panel {
+        padding-top: 20px;
+      }
+      .ver-extras {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        z-index: 2;
+        width: 30px;
+        height: 30px;
+        padding: 0;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        font-size: 1.1rem;
+        line-height: 1;
+        color: #fff;
+        background: rgb(0 0 0 / 0.6);
+        border: 1px solid rgb(255 255 255 / 0.25);
+        box-shadow: none;
+        backdrop-filter: blur(4px);
+      }
+    }
     @media (prefers-reduced-motion: reduce) {
       :host,
       img,
       .panel {
         transition: none;
+      }
+      .imagen {
+        animation: none;
       }
       :host(:hover),
       :host(:hover) img {
@@ -454,6 +542,11 @@ export class CardTileComponent {
   readonly seleccion = input(false);
   readonly seleccionada = input(false);
   readonly alternarSeleccion = output<void>();
+
+  protected readonly cargada = signal(false);
+  protected readonly sinImagen = signal(false);
+  /** Acciones secundarias desplegadas (solo importa en táctil; con ratón van siempre). */
+  protected readonly extras = signal(false);
 
   protected readonly pricing = computed(() => this.valuation.pricing(this.card().cardId));
   protected readonly colores = computed(() => estiloDominios(this.card().domains));
