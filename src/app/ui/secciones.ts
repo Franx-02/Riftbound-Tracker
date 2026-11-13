@@ -68,6 +68,12 @@ export const SECCIONES: readonly Seccion[] = [
     barra: false,
   },
   {
+    ruta: '/bote',
+    texto: 'Bote',
+    icono: 'M5 9h14l-1 11H6zM8 9V6.5a4 4 0 0 1 8 0V9M9.5 14.5h5',
+    barra: false,
+  },
+  {
     ruta: '/intercambios',
     texto: 'Intercambios',
     icono: 'M4 8h13l-3-3M20 16H7l3 3',

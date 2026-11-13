@@ -91,6 +91,25 @@ service cloud.firestore {
         && shortString(request.resource.data.actualizado, 40);
     }
 
+    // Bote (presupuesto mensual): users/{uid}/bote/datos =
+    // { aportacion, inicio, movimientos: [{id, fecha, tipo, categoria, concepto, importe}], actualizado }.
+    // Es dinero propio: solo lo lee y escribe el dueño, nunca los demás. Las aportaciones no se
+    // guardan (se calculan); la lista de movimientos solo se limita en tamaño.
+    match /users/{uid}/bote/{documento} {
+      allow read, delete: if owner(uid);
+      allow create, update: if owner(uid)
+        && documento == 'datos'
+        && request.resource.data.keys().hasOnly(['aportacion', 'inicio', 'movimientos', 'actualizado'])
+        && request.resource.data.aportacion is number
+        && request.resource.data.aportacion >= 0
+        && request.resource.data.aportacion <= 100000
+        && request.resource.data.inicio is string
+        && request.resource.data.inicio.size() == 7
+        && request.resource.data.movimientos is list
+        && request.resource.data.movimientos.size() <= 2000
+        && shortString(request.resource.data.actualizado, 40);
+    }
+
     match /users/{uid}/publico/{documento} {
       allow read: if signedIn();
       allow delete: if owner(uid);

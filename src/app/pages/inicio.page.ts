@@ -690,6 +690,7 @@ export class InicioPage {
       '/intercambios': { color: 'var(--calm)', detalle: 'Lo que les sobra a otros' },
       '/mazos': { color: 'var(--order)', detalle: 'Crea y prueba tus mazos' },
       '/sobres': { color: 'var(--body)', detalle: 'Abre sobres virtuales' },
+      '/bote': { color: 'var(--accent)', detalle: 'Tu presupuesto mensual' },
       '/catalogo': {
         color: 'var(--chaos)',
         detalle: `${this.catalog.cards().length} cartas`,
