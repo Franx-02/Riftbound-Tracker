@@ -27,8 +27,9 @@ import { CabeceraComponent } from '../ui/cabecera.component';
         <section class="importar">
           <h2>Importar un mazo</h2>
           <p class="muted">
-            Pega la lista (una carta por línea, como "3 Brawl" o "3x Brawl") o sube un .txt. Vale la
-            que exporta esta app y la de las webs de mazos habituales.
+            Pega la lista (una carta por línea, como "3 Brawl" o "3x Brawl"), un código de mazo
+            (como "CMAAAAAAAAAQCAAB…") o sube un .txt. Vale lo que exporta esta app y lo de las
+            webs de mazos habituales (Riftmana y similares).
           </p>
           <textarea
             rows="10"

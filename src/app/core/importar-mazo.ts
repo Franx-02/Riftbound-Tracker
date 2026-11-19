@@ -1,4 +1,5 @@
 import { CatalogCard } from './catalog.service';
+import { codigoATexto, pareceCodigoMazo } from './codigo-mazo';
 import { Mazo, NUM_CAMPOS, esCampeonDe, esCampo, esLeyenda, esRuna, mazoVacio } from './mazos';
 
 /** Resultado de leer una lista de mazo en texto. */
@@ -37,13 +38,25 @@ const normalizar = (s: string) =>
  * o "3xOGN-004" (Riftmana); el código, si viene, manda sobre el nombre. Las
  * cabeceras (Legend, Champion, Main Deck, Runes, Battlefields, Sideboard o en español)
  * son opcionales: sin ellas cada carta va a la zona que le toca por tipo, y el Campeón
- * elegido es la primera unidad de campeón de la Leyenda.
+ * elegido es la primera unidad de campeón de la Leyenda. Si en vez de una lista llega un
+ * código de mazo (base32, como "CMAAAAAAAAAQCAAB…"), se descodifica primero.
  */
 export function importarMazo(
   texto: string,
   cartas: readonly CatalogCard[],
   id: string,
 ): MazoImportado {
+  if (pareceCodigoMazo(texto)) {
+    try {
+      texto = codigoATexto(texto);
+    } catch (e) {
+      return {
+        mazo: mazoVacio(id, 'Mazo importado'),
+        noEncontradas: [`Código de mazo no válido: ${e instanceof Error ? e.message : e}`],
+        cartas: 0,
+      };
+    }
+  }
   const porId = new Map(cartas.map((c) => [c.cardId.toUpperCase(), c]));
   // Por nombre, la impresión que uno tiene en la mano: la de un set normal antes que la de
   // un set de promos (el catálogo empieza por JDG, OPP y PR, que repiten nombres de los
